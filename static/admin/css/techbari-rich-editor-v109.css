@@ -1,0 +1,85 @@
+/* TechBari v1.0.9 — self-contained product description editor */
+.techbari-editor{margin-top:6px}
+.techbari-editor-toolbar{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:4px;
+  min-height:42px;
+  padding:5px 7px;
+  border:1px solid #cddced;
+  border-bottom:0;
+  border-radius:8px 8px 0 0;
+  background:#f8fbff;
+}
+.techbari-editor-toolbar select{
+  width:130px!important;
+  min-height:31px!important;
+  height:31px!important;
+  padding:0 9px!important;
+  border:1px solid #d7e3f0!important;
+  border-radius:6px!important;
+  background:#fff!important;
+  color:#173c68!important;
+  font-size:13px!important;
+  font-weight:700!important;
+}
+.techbari-editor-toolbar button{
+  width:33px!important;
+  height:31px!important;
+  min-height:31px!important;
+  padding:0!important;
+  border:1px solid transparent!important;
+  border-radius:6px!important;
+  background:transparent!important;
+  color:#173e6a!important;
+  display:grid!important;
+  place-items:center!important;
+  font-size:14px!important;
+  font-weight:700!important;
+  box-shadow:none!important;
+  transform:none!important;
+  transition:background .15s ease,border-color .15s ease,color .15s ease!important;
+}
+.techbari-editor-toolbar button::after{display:none!important}
+.techbari-editor-toolbar button:hover,
+.techbari-editor-toolbar button:focus-visible{
+  background:#eaf4ff!important;
+  border-color:#c9dff7!important;
+  color:#0b6fe8!important;
+  outline:none!important;
+}
+.techbari-editor-surface{
+  min-height:220px;
+  max-height:520px;
+  overflow:auto;
+  border:1px solid #cddced;
+  border-radius:0 0 8px 8px;
+  background:#fff;
+  padding:13px 14px;
+  color:#17355d;
+  font-size:14px;
+  line-height:1.65;
+  outline:none;
+  cursor:text;
+}
+.techbari-editor-surface:focus{
+  border-color:#78aff7;
+  box-shadow:0 0 0 3px rgba(15,115,246,.08);
+}
+.techbari-editor-surface:empty:before{
+  content:attr(data-placeholder);
+  color:#94a4b8;
+  pointer-events:none;
+}
+.techbari-editor-surface p{margin:0 0 10px}
+.techbari-editor-surface h2{font-size:22px!important;line-height:1.3;margin:14px 0 8px;color:#10213d}
+.techbari-editor-surface h3{font-size:18px!important;line-height:1.35;margin:12px 0 7px;color:#10213d}
+.techbari-editor-surface ul,.techbari-editor-surface ol{margin:8px 0 10px 24px;padding:0}
+.techbari-editor-surface li{margin:3px 0}
+.techbari-editor-surface blockquote{margin:10px 0;padding:8px 12px;border-left:3px solid #8bbcf7;background:#f6faff;color:#4d6684}
+.techbari-editor-source{display:none!important}
+@media(max-width:700px){
+  .techbari-editor-toolbar select{width:112px!important}
+  .techbari-editor-surface{min-height:190px;padding:12px}
+}
