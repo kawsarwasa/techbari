@@ -71,7 +71,8 @@ def _description_data(product):
     else:
         plain = raw
         paragraphs = product.description_paragraphs or ([raw] if raw else [])
-    short = product.short_description or plain[:300]
+    short_source = product.short_description or plain[:300]
+    short = " ".join(strip_tags(short_source).split())
     return plain, short, paragraphs
 
 
