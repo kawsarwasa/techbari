@@ -1,0 +1,121 @@
+/* TechBari v1.0.2 — unified catalog dashboard redesign */
+.catalog-theme{
+  --cat-blue:#1677ff;
+  --cat-blue-dark:#0f63dc;
+  --cat-blue-soft:#eef6ff;
+  --cat-ink:#0b1534;
+  --cat-text:#173458;
+  --cat-muted:#7286a5;
+  --cat-line:#dbe6f3;
+  --cat-green:#12b76a;
+  --cat-red:#ef4b5f;
+  --cat-orange:#f59e0b;
+  --cat-purple:#7357f5;
+  --cat-shadow:0 8px 28px rgba(31,82,143,.055);
+}
+.catalog-theme .main{background:linear-gradient(180deg,#f8fbff 0,#f6faff 100%)}
+.catalog-theme .page{max-width:1450px;margin:0 auto;padding:24px 24px 16px}
+.catalog-theme .breadcrumbs{font-size:13px;color:#6f83a2;margin-bottom:12px}
+.catalog-theme .page-head{align-items:flex-start;margin-bottom:20px}
+.catalog-theme .page-head h1{font-size:31px;line-height:1.08;letter-spacing:-.8px;color:var(--cat-ink);margin-bottom:6px}
+.catalog-theme .page-head p{font-size:15px;color:#7488a7}
+.catalog-theme .head-actions{gap:10px}
+.catalog-theme .btn{min-height:43px;border-radius:10px;border:1px solid #d5e1ee;background:#fff;color:#173d6a;font-weight:750;padding:0 17px;box-shadow:none}
+.catalog-theme .btn:hover{box-shadow:0 7px 16px rgba(31,89,151,.09);transform:translateY(-1px)}
+.catalog-theme .btn-primary{background:linear-gradient(180deg,#2082ff,#0f70f1);border-color:#1172f2;color:#fff}
+.catalog-theme .btn.small,.catalog-theme .btn-sm{min-height:35px;padding:0 11px;font-size:13px}
+.catalog-theme .card,.catalog-theme .form-card,.catalog-theme .form-side,.catalog-theme .filters-card,.catalog-theme .product-list-card{border:1px solid var(--cat-line)!important;border-radius:14px!important;background:#fff;box-shadow:var(--cat-shadow)!important}
+.catalog-theme .section-head{min-height:66px;padding:15px 19px;border-bottom:1px solid #e6eef7;background:#fff}
+.catalog-theme .section-head h3{font-size:18px;color:#102343;font-weight:800;display:flex;align-items:center;gap:12px}
+.catalog-theme .section-head h3:before{content:"";width:42px;height:42px;border-radius:11px;display:inline-block;flex:none;background:linear-gradient(145deg,#eff7ff,#dfeeff)}
+.catalog-theme .form-card>.section-head h3:before{box-shadow:inset 0 0 0 1px #d7e9fb}
+.catalog-theme .form-side>.section-head h3:before{background:linear-gradient(145deg,#eaf4ff,#dcecff)}
+.catalog-theme .info-body{padding:18px 19px}
+.catalog-theme .form-layout{display:grid!important;grid-template-columns:minmax(0,1.75fr) minmax(320px,.68fr)!important;gap:18px!important;align-items:start}
+.catalog-theme .form-layout>.form-card{overflow:hidden}
+.catalog-theme .form-layout>.form-side{overflow:hidden;position:sticky;top:88px}
+.catalog-theme .form-grid{padding:18px 20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px 18px}
+.catalog-theme .field{display:flex;flex-direction:column;gap:7px;color:#193a62;font-size:13px;font-weight:750}
+.catalog-theme .field>span{font-size:13px;font-weight:750;color:#193a62}
+.catalog-theme .field small{font-size:13px;color:#7b8eaa;font-weight:500;line-height:1.4}
+.catalog-theme .field input:not([type=checkbox]):not([type=radio]):not([type=file]),.catalog-theme .field select,.catalog-theme .field textarea,.catalog-theme .form-grid input:not([type=checkbox]):not([type=radio]):not([type=file]),.catalog-theme .form-grid select,.catalog-theme .form-grid textarea{width:100%;min-height:42px;border:1px solid #cad9e8;border-radius:8px;background:#fff;padding:9px 12px;outline:none;font-size:14px;color:#183153;font-weight:500;transition:border-color .15s,box-shadow .15s}
+.catalog-theme .field textarea,.catalog-theme .form-grid textarea{min-height:118px;resize:vertical}
+.catalog-theme .field input:focus,.catalog-theme .field select:focus,.catalog-theme .field textarea:focus,.catalog-theme .form-grid input:focus,.catalog-theme .form-grid select:focus,.catalog-theme .form-grid textarea:focus{border-color:#79aff6;box-shadow:0 0 0 3px rgba(22,119,255,.09)}
+.catalog-theme input[type=file]{font-size:13px;color:#637d9b}
+.catalog-theme input[type=file]::file-selector-button{border:1px solid #bcd6f2;background:#edf6ff;color:#1271eb;border-radius:8px;padding:8px 12px;margin-right:8px;font-weight:750;cursor:pointer}
+.catalog-theme input[type=checkbox]{width:18px;height:18px;accent-color:var(--cat-blue)}
+.catalog-theme .errorlist{list-style:none;margin:2px 0 0;padding:0;font-size:13px;color:#df3348;font-weight:650}
+.catalog-theme .soft-note{border:1px solid #cfe4fb!important;border-radius:10px!important;background:#eef7ff!important;color:#446a90!important;padding:13px 14px!important;font-size:13px!important;line-height:1.45}
+.catalog-theme .form-side .soft-note{margin-top:13px}
+.catalog-theme .form-side .field{margin-bottom:15px}
+.catalog-theme .form-side .btn-primary{width:100%;margin-top:14px}
+.catalog-theme .kpi-grid-4{gap:14px;margin-bottom:16px}
+.catalog-theme .kpi{border:1px solid var(--cat-line);border-radius:13px;box-shadow:var(--cat-shadow);min-height:96px;padding:16px 17px}
+.catalog-theme .kpi-icon{width:50px;height:50px;border-radius:12px}
+.catalog-theme .kpi-value{font-size:23px}
+.catalog-theme .filters-card{padding:13px 14px;margin-top:15px}
+.catalog-theme .filter-row{gap:10px}
+.catalog-theme .control{height:42px;border:1px solid #d3e0ed;border-radius:9px;background:#fff;padding:0 12px;font-size:13px;outline:none}
+.catalog-theme .control.search{min-width:280px}
+.catalog-theme .orders-table-card{margin-top:12px;overflow:hidden}
+.catalog-theme .data-table th{background:#f5f9fe;color:#486281;font-size:13px;padding:11px 12px;border-bottom:1px solid #e5edf6}
+.catalog-theme .data-table td{font-size:13px;padding:11px 12px;border-color:#e8eff7;color:#35516f}
+.catalog-theme .data-table tbody tr:hover{background:#fbfdff}
+.catalog-theme .status{border-radius:999px;padding:5px 10px;font-size:13px}
+.catalog-theme .crud-actions{display:flex;align-items:center;gap:7px}
+.catalog-theme .icon-btn{width:34px;height:34px;border:1px solid #d7e4f1;border-radius:8px;background:#fff;color:#176cca;display:inline-grid;place-items:center;font-size:15px;font-weight:800}
+.catalog-theme .icon-btn.danger{color:#e43a4f;background:#fff5f6;border-color:#ffd4da}
+.catalog-theme .table-footer{padding:12px 14px;border-top:1px solid #e8eff7}
+.catalog-theme .empty-state{padding:28px;color:#758aa7;text-align:center;font-size:14px}
+.catalog-theme .product-form-page{max-width:1450px}
+.catalog-theme .product-form-head{margin-bottom:18px}
+.catalog-theme .product-add-layout,.catalog-theme .product-edit-layout{display:grid!important;grid-template-columns:minmax(0,1.65fr) minmax(360px,.72fr)!important;gap:18px!important;align-items:start}
+.catalog-theme .product-add-left,.catalog-theme .product-add-right,.catalog-theme .product-edit-left,.catalog-theme .product-edit-right{display:flex!important;flex-direction:column;gap:16px!important}
+.catalog-theme .product-form-page .form-card{padding:0!important;overflow:hidden;border:1px solid var(--cat-line)!important;border-radius:14px!important;box-shadow:var(--cat-shadow)!important;background:#fff}
+.catalog-theme .product-form-page .form-card>h2,.catalog-theme .product-form-page .form-card>.section-title-line{margin:0!important;min-height:64px;padding:14px 18px!important;border-bottom:1px solid #e6eef7;display:flex;align-items:center;gap:11px;background:#fff}
+.catalog-theme .product-form-page .form-card>h2{font-size:17px!important;color:#102343!important;font-weight:800!important}
+.catalog-theme .product-form-page .form-card>.section-title-line h2{font-size:17px!important;color:#102343!important;font-weight:800!important;margin:0}
+.catalog-theme .section-icon{width:40px!important;height:40px!important;border-radius:11px!important;background:#eaf4ff!important;color:#1677ff!important;display:grid!important;place-items:center!important;font-size:18px!important}
+.catalog-theme .product-form-page .form-card>label,.catalog-theme .product-form-page .form-card>.field-grid,.catalog-theme .product-form-page .form-card>.variant-line,.catalog-theme .product-form-page .form-card>.product-image-manager,.catalog-theme .product-form-page .form-card>.spec-editor,.catalog-theme .product-form-page .form-card>.spec-list,.catalog-theme .product-form-page .form-card>.publish-grid,.catalog-theme .product-form-page .form-card>.edit-image-gallery,.catalog-theme .product-form-page .form-card>.edit-upload-box,.catalog-theme .product-form-page .form-card>.metadata-grid,.catalog-theme .product-form-page .form-card>.status-toggle-row{margin-left:18px!important;margin-right:18px!important}
+.catalog-theme .product-form-page .form-card>.field-grid:first-of-type,.catalog-theme .product-form-page .form-card>label:first-of-type{margin-top:17px!important}
+.catalog-theme .product-form-page .form-card>label:last-child,.catalog-theme .product-form-page .form-card>.field-grid:last-child,.catalog-theme .product-form-page .form-card>.variant-line:last-child,.catalog-theme .product-form-page .form-card>.product-image-manager:last-child,.catalog-theme .product-form-page .form-card>.spec-editor:last-child,.catalog-theme .product-form-page .form-card>.spec-list:last-child,.catalog-theme .product-form-page .form-card>.publish-grid:last-child,.catalog-theme .product-form-page .form-card>.edit-upload-box:last-child,.catalog-theme .product-form-page .form-card>.metadata-grid:last-child{margin-bottom:18px!important}
+.catalog-theme .product-form-page label{font-size:13px;color:#18385f;font-weight:750}
+.catalog-theme .product-form-page input:not([type=checkbox]):not([type=radio]):not([type=file]),.catalog-theme .product-form-page select,.catalog-theme .product-form-page textarea{border:1px solid #cad9e8!important;border-radius:8px!important;background:#fff!important;min-height:42px;padding:9px 12px;font-size:14px!important;color:#183153;outline:none}
+.catalog-theme .product-form-page textarea{min-height:100px}
+.catalog-theme .field-grid{gap:15px 16px!important}
+.catalog-theme .product-mini-grid{gap:16px!important}
+.catalog-theme .variant-line{background:#fbfdff;border:1px solid #e3ebf5;border-radius:10px;padding:13px 14px!important;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.catalog-theme .variant-line .choice{border:1px solid #d8e5f2;border-radius:999px;padding:7px 11px;background:#fff;display:flex;gap:6px;align-items:center}
+.catalog-theme .upload-tile,.catalog-theme .edit-upload-box{min-height:150px!important;border:1.5px dashed #b8d1ec!important;border-radius:11px!important;background:#fbfdff!important;display:flex!important;align-items:center!important;justify-content:center!important;flex-direction:column!important;text-align:center!important;gap:6px!important;color:#50708f!important;padding:18px!important}
+.catalog-theme .upload-cloud{font-size:28px!important;color:#2c88ff}
+.catalog-theme .image-strip{gap:9px!important}
+.catalog-theme .image-tile{border:1px solid #dce7f3!important;border-radius:9px!important;background:#fff!important;padding:4px!important}
+.catalog-theme .edit-main-image{border:1px solid #dce7f3!important;border-radius:11px!important;background:#fbfdff!important;padding:10px!important}
+.catalog-theme .edit-main-image>div{min-height:240px!important}
+.catalog-theme .edit-thumbs{gap:8px!important}
+.catalog-theme .edit-thumbs button{border:1px solid #d9e5f1!important;border-radius:8px!important;background:#fff!important;padding:4px!important}
+.catalog-theme .spec-editor>div,.catalog-theme .spec-list>div{grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr) 38px!important;gap:8px!important}
+.catalog-theme .spec-editor input,.catalog-theme .spec-list input{min-height:40px!important;border:1px solid #d4e0ed!important;border-radius:8px!important;padding:8px 10px!important}
+.catalog-theme .spec-editor button,.catalog-theme .spec-list button{border:1px solid #ffd0d6!important;background:#fff5f6!important;color:#df3348!important;border-radius:8px!important}
+.catalog-theme .status-toggle-row{padding:12px 0!important;border-top:1px solid #edf2f7!important}
+.catalog-theme .metadata-grid{padding:12px 0!important}
+.catalog-theme .product-list-head{margin-bottom:18px}
+.catalog-theme .product-kpis{gap:14px}
+.catalog-theme .product-list-card{margin-top:14px}
+.catalog-theme .product-filterbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:13px 14px!important;border-bottom:1px solid #e7eef6;background:#fff}
+.catalog-theme .product-filterbar .product-search{min-width:300px;flex:1}
+.catalog-theme .product-filterbar input,.catalog-theme .product-filterbar select{height:42px!important;border:1px solid #d3e0ed!important;border-radius:9px!important;background:#fff!important;padding:0 12px!important;font-size:13px!important}
+.catalog-theme .product-table-toolbar{padding:11px 14px!important;border-bottom:1px solid #e7eef6}
+.catalog-theme .products-reference-table th{background:#f5f9fe!important}
+.catalog-theme .products-reference-table td{padding:10px 12px!important}
+.catalog-theme .products-reference-table .product-cell img{width:46px!important;height:46px!important;border:1px solid #dfe8f2!important;border-radius:9px!important;background:#f8fbff!important;object-fit:contain!important;padding:3px!important}
+.catalog-theme .stock-num{font-size:13px!important;font-weight:800!important}
+.catalog-theme .row-actions{gap:7px!important}
+.catalog-theme .edit-product,.catalog-theme .more-product{width:34px!important;height:34px!important;border:1px solid #d7e4f1!important;border-radius:8px!important;background:#fff!important;color:#176cca!important;display:grid!important;place-items:center!important}
+.catalog-theme .orders-table-card .btn.small{min-height:32px}
+.catalog-theme .muted{font-size:13px;color:#8495aa}
+.catalog-theme .table-scroll img{border:1px solid #dce7f3;background:#fbfdff}
+.catalog-theme .footer{color:#7185a2}
+@media (max-width:1120px){.catalog-theme .form-layout,.catalog-theme .product-add-layout,.catalog-theme .product-edit-layout{grid-template-columns:1fr!important}.catalog-theme .form-layout>.form-side{position:static}.catalog-theme .kpi-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.catalog-theme .page{padding:18px 14px 12px}.catalog-theme .page-head{flex-direction:column}.catalog-theme .page-head h1{font-size:27px}.catalog-theme .head-actions{width:100%}.catalog-theme .head-actions .btn{flex:1}.catalog-theme .form-grid{grid-template-columns:1fr;padding:16px}.catalog-theme .field-grid.two,.catalog-theme .field-grid.three,.catalog-theme .field-grid.four{grid-template-columns:1fr!important}.catalog-theme .product-filterbar .product-search{min-width:100%;width:100%}.catalog-theme .control.search{min-width:100%}.catalog-theme .kpi-grid-4{grid-template-columns:1fr 1fr}}
+@media (max-width:480px){.catalog-theme .page-head h1{font-size:24px}.catalog-theme .kpi-grid-4{grid-template-columns:1fr}}
