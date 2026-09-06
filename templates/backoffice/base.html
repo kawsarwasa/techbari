@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="{% static 'admin/css/catalog-v102.css' %}">
   <link rel="stylesheet" href="{% static 'admin/css/catalog-v102-polish.css' %}">
   {% endif %}
+  {% block page_theme_css %}{% endblock %}
 </head>
 <body{% if active_section == 'products' %} class="catalog-theme"{% endif %}>
   <div class="admin-shell">
