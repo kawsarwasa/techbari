@@ -1,16 +1,20 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v1.0.3**
+**Current version: v1.0.4**
 
 TechBari started as a database-free Django template demo. The catalog phase is now backed by MySQL 8 while the remaining business modules continue to use the approved static/mock presentation until their database phases are implemented.
 
+## v1.0.4 — Unified Add/Edit Product design
+
+The Add Product page now uses the Edit Product page as the visual and structural standard. Both product forms share the same two-column layout, card hierarchy, field placement, image/status/shipping/SEO sections and responsive behavior. Product-form buttons also include a subtle slide/shine hover animation and smoother toggle motion, while respecting reduced-motion preferences.
+
 ## v1.0.3 — Add Product redesign
 
-The Add Product dashboard page has been rebuilt to match the approved TechBari visual reference more closely. It now uses the reference-style Basic Information card, Category & Brand and Pricing cards, Inventory and Product Status cards, Product Images area, Specifications/SEO tabs, a sticky Publishing sidebar, responsive behavior, and the existing MySQL-backed product form fields and validation.
+The Add Product dashboard page was rebuilt around the approved TechBari catalog direction while preserving the MySQL-backed form fields and validation.
 
 ## v1.0.2 — Catalog dashboard redesign
 
-All catalog-related dashboard pages now use a unified modern TechBari design system based on the approved visual direction. The redesign covers Products, Categories, Brands, Variants / SKUs, Product Media and Product Specifications, including their list/add/edit forms where available. Existing Django routes and MySQL-backed CRUD behavior are preserved.
+All catalog-related dashboard pages use a unified modern TechBari design system. The redesign covers Products, Categories, Brands, Variants / SKUs, Product Media and Product Specifications, including their list/add/edit forms where available. Existing Django routes and MySQL-backed CRUD behavior are preserved.
 
 ## Current database-backed catalog
 
