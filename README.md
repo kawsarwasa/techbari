@@ -1,16 +1,20 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v1.0.8**
+**Current version: v1.0.9**
 
 TechBari started as a database-free Django template demo. The catalog phase is now backed by MySQL 8 while the remaining business modules continue to use the approved static/mock presentation until their database phases are implemented.
 
-## v1.0.8 — Jodit product description editor
+## v1.0.9 — Self-contained product description editor
 
-The custom contenteditable Full Description editor has been replaced with Jodit 4.13.23 on catalog product forms. Add Product and Edit Product now use the same maintained WYSIWYG editor with paragraph styles, bold, italic, underline, unordered/ordered lists, undo/redo and clear formatting. The legacy custom toolbar/editor DOM is removed before Jodit initializes, the original Django description textarea remains the fallback if the CDN is unavailable, and editor content is synchronized back to the submitted description field.
+The Jodit experiment has been removed from Add Product and Edit Product. Both forms now use the same local, dependency-free editor component with Paragraph, Heading 2, Heading 3, Quote, Bold, Italic, Underline, bulleted list and numbered list controls. The toolbar is isolated from dashboard button styles so active formatting does not inherit unrelated red/button states. The editor stores sanitized HTML in the existing Django `description` field and requires no CDN or external editor script.
+
+## v1.0.8 — Jodit experiment
+
+Jodit was tested for the product description field but was removed in v1.0.9 because its toolbar behavior conflicted with the existing dashboard styling/runtime in the local project.
 
 ## v1.0.7 — Native editable description surface
 
-The previous custom editor improved loading and browser-cache handling, but it has now been superseded by the Jodit integration in v1.0.8.
+The previous custom editor improved loading and browser-cache handling and provided the basis for the self-contained v1.0.9 implementation.
 
 ## v1.0.5 — Working rich product description editor
 
