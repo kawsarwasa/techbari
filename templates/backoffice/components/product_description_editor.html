@@ -1,0 +1,18 @@
+<div class="techbari-editor" data-techbari-editor>
+  <div class="techbari-editor-toolbar" role="toolbar" aria-label="Product description formatting">
+    <select type="button" data-editor-block aria-label="Paragraph style">
+      <option value="P">Paragraph</option>
+      <option value="H2">Heading 2</option>
+      <option value="H3">Heading 3</option>
+      <option value="BLOCKQUOTE">Quote</option>
+    </select>
+    <button type="button" data-editor-command="bold" title="Bold" aria-label="Bold"><strong>B</strong></button>
+    <button type="button" data-editor-command="italic" title="Italic" aria-label="Italic"><em>I</em></button>
+    <button type="button" data-editor-command="underline" title="Underline" aria-label="Underline"><u>U</u></button>
+    <button type="button" data-editor-command="ul" title="Bulleted list" aria-label="Bulleted list">•</button>
+    <button type="button" data-editor-command="ol" title="Numbered list" aria-label="Numbered list">1.</button>
+  </div>
+  <div class="techbari-editor-surface" contenteditable="true" role="textbox" aria-multiline="true" data-editor-surface data-placeholder="Write the full product description..."></div>
+  <textarea name="description" class="techbari-editor-source" rows="7" data-editor-source>{{ form.description.value|default_if_none:'' }}</textarea>
+</div>
+{{ form.description.errors }}
