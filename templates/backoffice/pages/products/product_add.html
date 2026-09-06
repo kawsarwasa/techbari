@@ -35,11 +35,10 @@
           <label>Brand <em>*</em>{{ form.brand }}{{ form.brand.errors }}</label>
         </div>
         <label>Short Description{{ form.short_description }}{{ form.short_description.errors }}</label>
-        <label data-rich-field>Full Description
-          <div class="rich-toolbar"><select><option>Paragraph</option></select><button type="button"><b>B</b></button><button type="button"><i>I</i></button><button type="button"><u>U</u></button><button type="button">≡</button></div>
-          <div class="rich-area rich-editor-v105" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Full product description" data-rich-editor data-placeholder="Write the full product description..."></div>
-          <textarea name="description" class="rich-area rich-source-hidden" rows="7">{{ form.description.value|default_if_none:'' }}</textarea>{{ form.description.errors }}
-        </label>
+        <div class="product-description-field">
+          <label>Full Description</label>
+          {% include "backoffice/components/product_description_editor.html" %}
+        </div>
         <div class="field-grid two">
           <label>Display Name{{ form.short_name }}</label>
           <label>Subtitle{{ form.subtitle }}</label>
