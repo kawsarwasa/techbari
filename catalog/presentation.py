@@ -2,8 +2,11 @@ from decimal import Decimal
 
 from django.db.models import Count, Prefetch, Q
 from django.templatetags.static import static
+from django.utils.html import strip_tags
+from django.utils.safestring import mark_safe
 
 from .models import Brand, Category, Product, ProductImage, ProductSpecification, ProductVariant
+from .richtext import inline_rich_html
 
 
 def catalog_queryset(include_inactive=False):
@@ -58,6 +61,20 @@ def _number(value):
     return value
 
 
+def _description_data(product):
+    raw = product.description or ""
+    has_markup = "<" in raw and ">" in raw
+    if has_markup:
+        rich = inline_rich_html(raw)
+        plain = " ".join(strip_tags(rich).split())
+        paragraphs = [mark_safe(rich)] if rich else []
+    else:
+        plain = raw
+        paragraphs = product.description_paragraphs or ([raw] if raw else [])
+    short = product.short_description or plain[:300]
+    return plain, short, paragraphs
+
+
 def serialize_product(product):
     variants = list(product.variants.all())
     images = list(product.images.all())
@@ -82,6 +99,7 @@ def serialize_product(product):
     image_url = _image_url(primary_image) or static("store/images/baseus-e16.webp")
     detail_image_url = _image_url(detail_image) or image_url
     gallery_urls = [_image_url(i) for i in gallery_images if _image_url(i)] or [image_url]
+    description, short_description, description_paragraphs = _description_data(product)
     return {
         "pk": product.pk,
         "id": product.public_id,
@@ -104,9 +122,9 @@ def serialize_product(product):
         "detail_image_url": detail_image_url,
         "short_name": product.short_name or product.name,
         "subtitle": product.subtitle,
-        "description": product.description,
-        "short_description": product.short_description,
-        "description_paragraphs": product.description_paragraphs or ([product.description] if product.description else []),
+        "description": description,
+        "short_description": short_description,
+        "description_paragraphs": description_paragraphs,
         "features": product.features or [],
         "specifications": [{"name": s.name, "value": s.value} for s in specs],
         "variants": [

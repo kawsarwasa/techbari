@@ -1,0 +1,90 @@
+/* TechBari v1.0.5 — working rich description editor */
+.rich-toolbar-v105{
+  display:flex!important;
+  align-items:center;
+  gap:4px!important;
+  min-height:40px!important;
+  padding:4px 7px!important;
+  border:1px solid #cddced!important;
+  border-bottom:0!important;
+  border-radius:8px 8px 0 0!important;
+  background:#f8fbff!important;
+}
+.rich-toolbar-v105 select{
+  width:126px!important;
+  height:31px!important;
+  min-height:31px!important;
+  padding:0 9px!important;
+  border:1px solid transparent!important;
+  border-radius:6px!important;
+  background:transparent!important;
+  font-size:13px!important;
+  font-weight:700!important;
+  color:#173c68!important;
+}
+.rich-toolbar-v105 select:hover,
+.rich-toolbar-v105 select:focus{
+  background:#fff!important;
+  border-color:#d4e1ef!important;
+  outline:none!important;
+}
+.rich-toolbar-v105 button{
+  width:32px!important;
+  height:31px!important;
+  min-height:31px!important;
+  padding:0!important;
+  border:1px solid transparent!important;
+  border-radius:6px!important;
+  background:transparent!important;
+  color:#173e6a!important;
+  display:grid!important;
+  place-items:center!important;
+  font-size:14px!important;
+  transition:transform .16s ease,background .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease!important;
+}
+.rich-toolbar-v105 button:hover{
+  transform:translateY(-1px);
+  background:#fff!important;
+  border-color:#d7e4f1!important;
+  box-shadow:0 4px 10px rgba(23,77,139,.07)!important;
+}
+.rich-toolbar-v105 button:active{transform:translateY(0) scale(.96)}
+.rich-toolbar-v105 button.is-active{
+  background:#e9f3ff!important;
+  border-color:#bcd8fb!important;
+  color:#0b6fe8!important;
+}
+.rich-source-hidden{display:none!important}
+.rich-editor-v105{
+  min-height:170px!important;
+  max-height:460px;
+  overflow:auto;
+  border:1px solid #cddced!important;
+  border-radius:0 0 8px 8px!important;
+  background:#fff!important;
+  padding:13px 14px!important;
+  color:#17355d!important;
+  font-size:14px!important;
+  line-height:1.65!important;
+  outline:none!important;
+  white-space:normal;
+  transition:border-color .16s ease,box-shadow .16s ease!important;
+}
+.rich-editor-v105:focus{
+  border-color:#78aff7!important;
+  box-shadow:0 0 0 3px rgba(15,115,246,.08)!important;
+}
+.rich-editor-v105:empty:before{
+  content:attr(data-placeholder);
+  color:#94a4b8;
+  pointer-events:none;
+}
+.rich-editor-v105 p{margin:0 0 10px}
+.rich-editor-v105 p:last-child{margin-bottom:0}
+.rich-editor-v105 h2{font-size:22px!important;line-height:1.3;margin:14px 0 8px;color:#10213d}
+.rich-editor-v105 h3{font-size:18px!important;line-height:1.35;margin:12px 0 7px;color:#10213d}
+.rich-editor-v105 ul,.rich-editor-v105 ol{margin:8px 0 10px 22px;padding:0}
+.rich-editor-v105 li{margin:3px 0}
+.rich-editor-v105 blockquote{margin:10px 0;padding:8px 12px;border-left:3px solid #8bbcf7;background:#f6faff;color:#4d6684}
+.rich-editor-v105 strong,.rich-editor-v105 b{font-weight:800}
+@media (prefers-reduced-motion:reduce){.rich-toolbar-v105 button{transition:none!important}}

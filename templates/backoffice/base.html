@@ -10,6 +10,7 @@
   {% if active_section == 'products' %}
   <link rel="stylesheet" href="{% static 'admin/css/catalog-v102.css' %}">
   <link rel="stylesheet" href="{% static 'admin/css/catalog-v102-polish.css' %}">
+  <link rel="stylesheet" href="{% static 'admin/css/rich-editor-v105.css' %}">
   {% endif %}
   {% block page_theme_css %}{% endblock %}
 </head>
@@ -28,5 +29,8 @@
   {{ routes|json_script:"admin-routes" }}
   <script src="{% static 'admin/js/admin.js' %}"></script>
   {% block extra_js %}{% endblock %}
+  {% if active_section == 'products' %}
+  <script src="{% static 'admin/js/rich-editor-v105.js' %}"></script>
+  {% endif %}
 </body>
 </html>
