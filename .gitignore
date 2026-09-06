@@ -9,9 +9,11 @@ env/
 ENV/
 .virtualenv/
 staticfiles/
+media/
 *.sqlite3
 db.sqlite3
 .DS_Store
+Thumbs.db
 
 # Local logs and credentials; keep real static/ source assets tracked.
 *.log

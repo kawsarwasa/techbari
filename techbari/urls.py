@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import include, path
 
 handler404 = "techbari.views.not_found"
@@ -7,3 +9,6 @@ urlpatterns = [
     path("dashboard/", include("backoffice.urls")),
     path("", include("storefront.urls")),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
