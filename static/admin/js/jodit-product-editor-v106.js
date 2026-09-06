@@ -1,19 +1,20 @@
 (function () {
   const selector = 'textarea[name="description"].rich-area, textarea#id_description';
 
-  function hideLegacyToolbar(source) {
-    const field = source.closest('label');
+  function removeLegacyEditor(source) {
+    const field = source.closest('[data-rich-field]') || source.closest('label');
     const toolbar = field ? field.querySelector('.rich-toolbar') : null;
-    if (toolbar) {
-      toolbar.hidden = true;
-      toolbar.setAttribute('aria-hidden', 'true');
-    }
+    const legacyEditor = field ? field.querySelector('[data-rich-editor]') : null;
+
+    if (toolbar) toolbar.remove();
+    if (legacyEditor) legacyEditor.remove();
+    source.classList.remove('rich-source-hidden');
   }
 
   function initEditor(source) {
     if (!source || source.dataset.joditReady === 'true') return;
     source.dataset.joditReady = 'true';
-    hideLegacyToolbar(source);
+    removeLegacyEditor(source);
 
     if (!window.Jodit || typeof window.Jodit.make !== 'function') {
       source.classList.add('jodit-editor-fallback');
@@ -66,6 +67,7 @@
       }
     } catch (error) {
       console.error('TechBari Jodit editor failed to initialize:', error);
+      source.classList.remove('rich-source-hidden');
       source.classList.add('jodit-editor-fallback');
     }
   }
