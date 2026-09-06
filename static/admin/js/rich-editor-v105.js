@@ -43,8 +43,8 @@
 
   function setupEditor(toolbar) {
     if (toolbar.dataset.richReady === 'true') return;
-    const label = toolbar.closest('label');
-    const source = label?.querySelector('textarea.rich-area');
+    const field = toolbar.closest('[data-rich-field]') || toolbar.closest('label');
+    const source = field?.querySelector('textarea.rich-area');
     if (!source) return;
 
     toolbar.dataset.richReady = 'true';
@@ -70,7 +70,8 @@
       button.setAttribute('aria-label', labels[index] || 'Format');
     });
 
-    const editor = document.createElement('div');
+    const existingEditor = field?.querySelector('[data-rich-editor]');
+    const editor = existingEditor || document.createElement('div');
     editor.className = 'rich-area rich-editor-v105';
     editor.contentEditable = 'true';
     editor.setAttribute('role', 'textbox');
@@ -80,9 +81,11 @@
 
     const raw = source.value || '';
     const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(raw);
-    editor.innerHTML = sanitizeFragment(looksLikeHtml ? raw : plainTextToHtml(raw));
+    if (raw || !editor.innerHTML.trim()) {
+      editor.innerHTML = sanitizeFragment(looksLikeHtml ? raw : plainTextToHtml(raw));
+    }
     source.classList.add('rich-source-hidden');
-    source.insertAdjacentElement('afterend', editor);
+    if (!existingEditor) source.insertAdjacentElement('afterend', editor);
 
     let savedRange = null;
 
@@ -184,5 +187,20 @@
     sync();
   }
 
-  document.querySelectorAll('.rich-toolbar').forEach(setupEditor);
+  function initializeEditors(root = document) {
+    root.querySelectorAll('.rich-toolbar').forEach(setupEditor);
+  }
+
+  // The editor script is intentionally safe to load on every dashboard page.
+  // It also handles cached or dynamically restored form pages where the DOM is
+  // already ready by the time this script runs.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initializeEditors(), { once: true });
+  } else {
+    initializeEditors();
+  }
+
+  document.addEventListener('techbari:rich-editor-init', (event) => {
+    initializeEditors(event.detail?.root || document);
+  });
 })();

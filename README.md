@@ -1,12 +1,20 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v1.0.5**
+**Current version: v1.0.7**
 
 TechBari started as a database-free Django template demo. The catalog phase is now backed by MySQL 8 while the remaining business modules continue to use the approved static/mock presentation until their database phases are implemented.
 
 ## v1.0.5 — Working rich product description editor
 
 The Add Product and Edit Product Full Description toolbar is now interactive. Paragraph/heading styles, bold, italic, underline and bulleted lists work in a contenteditable editor, formatting is synchronized back to the Django description field before submit, and stored rich description output is sanitized before storefront presentation.
+
+## v1.0.6 — Reliable rich editor loading
+
+## v1.0.7 — Native editable description surface
+
+The editor no longer inherits textarea resizing behavior, has a text cursor, and uses a new asset URL so browsers load the repaired editor immediately.
+
+The description editor now initializes whether the page is freshly loaded, restored from browser cache, or its dashboard context is incomplete. Its stylesheet and script use a new versioned URL so browsers fetch the working editor instead of an older cached script.
 
 ## v1.0.4 — Unified Add/Edit Product design
 
