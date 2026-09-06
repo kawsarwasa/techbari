@@ -2,161 +2,140 @@
 {% load static demo %}
 {% block title %}Add Product | TechBari Admin{% endblock %}
 {% block content %}
-<section class="page product-form-page add-product-v103" data-product-form-page="add" data-catalog-db="true">
+<section class="page product-form-page" data-product-form-page="add" data-catalog-db="true">
   {% include "backoffice/includes/breadcrumbs/product_add.html" %}
-
-  <div class="page-head add-product-v103-head">
+  <div class="page-head product-form-head">
     <div>
       <h1>Add Product</h1>
-      <p>Create a new product and add it to your store.</p>
+      <p>Create product, default SKU, pricing, media, specifications and SEO.</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn" href="{% url 'backoffice:products' %}">Cancel</a>
+      <button class="btn" type="button" data-product-save-draft>▣ Save Draft</button>
+      <button class="btn btn-primary" type="submit" form="productAddForm">▣ Save Product</button>
     </div>
   </div>
 
   {% if form.errors %}
-  <div class="soft-note add-product-errors"><strong>Please fix the form errors below.</strong> {{ form.non_field_errors }}</div>
+  <div class="soft-note" style="margin-bottom:14px"><strong>Please fix the form errors below.</strong> {{ form.non_field_errors }}</div>
   {% endif %}
 
-  <form id="productAddForm" method="post" enctype="multipart/form-data" data-catalog-product-form="add" class="add-product-v103-layout">
+  <form id="productAddForm" class="product-edit-layout" method="post" enctype="multipart/form-data" data-catalog-product-form="add">
     {% csrf_token %}
 
-    <div class="add-product-v103-main">
-      <section class="v103-card v103-basic-card">
-        <header class="v103-card-head">
-          <span class="v103-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h6l1.5 2H20v9.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M4 8.5V6a2 2 0 0 1 2-2h4l1.5 2H18a2 2 0 0 1 2 2v.5"/></svg></span>
-          <div><h2>Basic Information</h2><p>Provide the essential details about the product.</p></div>
-        </header>
-        <div class="v103-card-body">
-          <div class="v103-grid two">
-            <label class="v103-field"><span>Product Name <em>*</em></span>{{ form.name }}{{ form.name.errors }}<small>This name will be displayed to customers.</small></label>
-            <label class="v103-field"><span>Slug <em>*</em></span>{{ form.slug }}{{ form.slug.errors }}<small>Leave blank to generate automatically from the name.</small></label>
-          </div>
-          <label class="v103-field"><span>Short Description</span>{{ form.short_description }}{{ form.short_description.errors }}<small>This description will be shown on product lists and search results.</small></label>
+    <div class="product-edit-left">
+      <section class="form-card">
+        <h2><span class="section-icon blue">▤</span> Basic Information</h2>
+        <div class="field-grid two">
+          <label>Product Name <em>*</em>{{ form.name }}{{ form.name.errors }}</label>
+          <label>URL Slug{{ form.slug }}{{ form.slug.errors }}<small>Leave blank to generate automatically.</small></label>
+        </div>
+        <div class="field-grid two">
+          <label>Category <em>*</em>{{ form.category }}{{ form.category.errors }}</label>
+          <label>Brand <em>*</em>{{ form.brand }}{{ form.brand.errors }}</label>
+        </div>
+        <label>Short Description{{ form.short_description }}{{ form.short_description.errors }}</label>
+        <label>Full Description
+          <div class="rich-toolbar"><select><option>Paragraph</option></select><button type="button"><b>B</b></button><button type="button"><i>I</i></button><button type="button"><u>U</u></button><button type="button">≡</button></div>
+          <textarea name="description" class="rich-area" rows="7">{{ form.description.value|default_if_none:'' }}</textarea>{{ form.description.errors }}
+        </label>
+        <div class="field-grid two">
+          <label>Display Name{{ form.short_name }}</label>
+          <label>Subtitle{{ form.subtitle }}</label>
         </div>
       </section>
 
-      <div class="v103-split-row">
-        <section class="v103-card">
-          <header class="v103-card-head compact">
-            <span class="v103-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 5V3M16 5V3M4 9h16"/></svg></span>
-            <div><h2>Category &amp; Brand</h2><p>Choose the category and brand for this product.</p></div>
-          </header>
-          <div class="v103-card-body compact">
-            <div class="v103-grid two">
-              <label class="v103-field"><span>Category <em>*</em></span>{{ form.category }}{{ form.category.errors }}</label>
-              <label class="v103-field"><span>Brand <em>*</em></span>{{ form.brand }}{{ form.brand.errors }}</label>
-            </div>
-          </div>
-        </section>
+      <section class="form-card">
+        <div class="section-title-line"><h2><span class="section-icon purple">▱</span> Default Variant / SKU</h2></div>
+        <div class="field-grid four">
+          <label>Default SKU <em>*</em>{{ form.sku }}{{ form.sku.errors }}</label>
+          <label>Barcode{{ form.barcode }}{{ form.barcode.errors }}</label>
+          <label>Stock Quantity <em>*</em>{{ form.stock_quantity }}{{ form.stock_quantity.errors }}</label>
+          <label>Low Stock Alert{{ form.low_stock_alert }}{{ form.low_stock_alert.errors }}</label>
+        </div>
+        <div class="soft-note add-product-note">This creates the first/default variant. After saving the product, additional color, storage or bundle variants can be managed from Variants / SKUs.</div>
+      </section>
 
-        <section class="v103-card">
-          <header class="v103-card-head compact">
-            <span class="v103-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span>
-            <div><h2>Product Pricing</h2><p>Set the product pricing information.</p></div>
-          </header>
-          <div class="v103-card-body compact">
-            <div class="v103-grid two">
-              <label class="v103-field"><span>Regular Price <em>*</em></span><div class="v103-money"><b>৳</b>{{ form.regular_price }}</div>{{ form.regular_price.errors }}<small>The normal price.</small></label>
-              <label class="v103-field"><span>Sale Price</span><div class="v103-money"><b>৳</b>{{ form.sale_price }}</div>{{ form.sale_price.errors }}<small>Leave empty if the product is not on sale.</small></label>
-            </div>
-          </div>
-        </section>
-      </div>
+      <section class="form-card">
+        <h2><span class="section-icon blue">◆</span> Product Pricing</h2>
+        <div class="field-grid two">
+          <label>Regular Price <em>*</em><div class="money-input"><span>৳</span>{{ form.regular_price }}</div>{{ form.regular_price.errors }}</label>
+          <label>Sale Price<div class="money-input"><span>৳</span>{{ form.sale_price }}</div>{{ form.sale_price.errors }}</label>
+        </div>
+        <small>Individual variants can override both prices later from the Variants / SKUs manager.</small>
+      </section>
 
-      <div class="v103-split-row">
-        <section class="v103-card">
-          <header class="v103-card-head compact">
-            <span class="v103-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span>
-            <div><h2>Inventory</h2><p>Manage the default SKU and opening stock.</p></div>
-          </header>
-          <div class="v103-card-body compact">
-            <div class="v103-grid inventory-grid">
-              <label class="v103-field"><span>SKU <em>*</em></span>{{ form.sku }}{{ form.sku.errors }}<small>Stock Keeping Unit.</small></label>
-              <label class="v103-field"><span>Barcode</span>{{ form.barcode }}{{ form.barcode.errors }}<small>Product barcode (optional).</small></label>
-              <label class="v103-field"><span>Stock Quantity <em>*</em></span>{{ form.stock_quantity }}{{ form.stock_quantity.errors }}<small>Opening quantity.</small></label>
-              <label class="v103-field"><span>Low Stock Alert</span>{{ form.low_stock_alert }}{{ form.low_stock_alert.errors }}<small>Warning threshold.</small></label>
-            </div>
-          </div>
-        </section>
-
-        <section class="v103-card">
-          <header class="v103-card-head compact">
-            <span class="v103-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21H10v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14v-4a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3h4a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg></span>
-            <div><h2>Product Status</h2><p>Set storefront visibility and special flags.</p></div>
-          </header>
-          <div class="v103-status-grid">
-            <label class="v103-switch-row">{{ form.is_featured }}<span class="v103-switch"></span><span><b>Featured Product</b><small>Show this product in featured sections.</small></span></label>
-            <label class="v103-switch-row">{{ form.is_new_arrival }}<span class="v103-switch"></span><span><b>New Arrival</b><small>Mark this product as new.</small></span></label>
-          </div>
-        </section>
-      </div>
-
-      <div class="v103-bottom-row">
-        <section class="v103-card v103-images-card">
-          <header class="v103-card-head compact">
-            <span class="v103-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 17 5-5 4 4 2-2 5 4"/></svg></span>
-            <div><h2>Product Images</h2><p>Upload the main image and additional gallery images.</p></div>
-          </header>
-          <div class="v103-card-body compact">
-            <label class="v103-upload-grid" for="productImageInput">
-              <div class="v103-upload-tile"><span class="v103-upload-icon">▣</span><strong>Main Product Image</strong><span>First selected image becomes primary</span><small>JPG, PNG or WebP, maximum 2MB each</small></div>
-              <div class="v103-upload-tile"><span class="v103-upload-icon">▤</span><strong>Product Gallery Images</strong><span>Select multiple images in one upload</span><small>Up to 8 images total</small></div>
-              <input type="file" name="images" multiple accept="image/jpeg,image/png,image/webp" hidden id="productImageInput">
-            </label>
-            <div class="image-strip v103-image-strip" id="productImageStrip"></div>
-          </div>
-        </section>
-
-        <section class="v103-card v103-spec-card">
-          <div class="v103-tabs" role="tablist">
-            <button class="v103-tab active" type="button" data-v103-tab="specifications">☷ Specifications</button>
-            <button class="v103-tab" type="button" data-v103-tab="seo">⌕ SEO</button>
-          </div>
-          <div class="v103-tab-panel active" data-v103-panel="specifications">
-            <div class="v103-spec-title"><div><strong>Product Specifications</strong><span>Add key specifications for this product.</span></div><button class="btn small" type="button" id="addSpecificationBtn">＋ Add Specification</button></div>
-            <div class="spec-editor v103-spec-editor" id="specEditor">{% for specification in specifications %}<div><input name="spec_name" value="{{ specification.name }}" placeholder="Specification"><input name="spec_value" value="{{ specification.value }}" placeholder="Value"><button type="button" data-remove-spec>×</button></div>{% endfor %}</div>
-          </div>
-          <div class="v103-tab-panel" data-v103-panel="seo">
-            <div class="v103-seo-grid">
-              <label class="v103-field"><span>Meta Title</span>{{ form.meta_title }}</label>
-              <label class="v103-field"><span>Meta Description</span>{{ form.meta_description }}</label>
-              <div class="v103-grid two"><label class="v103-field"><span>Badge</span>{{ form.badge }}</label><label class="v103-field"><span>Detail Badge</span>{{ form.detail_badge }}</label></div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <section class="v103-card v103-extra-card">
-        <header class="v103-card-head compact">
-          <span class="v103-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>
-          <div><h2>Description &amp; Shipping</h2><p>Additional storefront and fulfillment information.</p></div>
-        </header>
-        <div class="v103-card-body">
-          <label class="v103-field"><span>Full Description</span>{{ form.description }}{{ form.description.errors }}</label>
-          <div class="v103-grid two"><label class="v103-field"><span>Display Name</span>{{ form.short_name }}</label><label class="v103-field"><span>Subtitle</span>{{ form.subtitle }}</label></div>
-          <div class="v103-grid three"><label class="v103-field"><span>Weight (kg)</span>{{ form.weight }}</label><label class="v103-field"><span>Shipping Class</span>{{ form.shipping_class }}</label><label class="v103-field"><span>Warranty</span>{{ form.warranty }}</label></div>
+      <section class="form-card">
+        <div class="section-title-line">
+          <h2><span class="section-icon blue">▤</span> Product Specifications</h2>
+          <button class="btn small product-form-action" type="button" id="addSpecificationBtn">＋ Add Specification</button>
+        </div>
+        <div class="spec-list" id="specEditor">
+          {% for specification in specifications %}
+          <div><input name="spec_name" value="{{ specification.name }}" placeholder="Specification"><input name="spec_value" value="{{ specification.value }}" placeholder="Value"><button type="button" data-remove-spec>×</button></div>
+          {% endfor %}
         </div>
       </section>
     </div>
 
-    <aside class="v103-publish v103-card">
-      <header class="v103-card-head">
-        <span class="v103-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 14-6v14L3 13Z"/><path d="M8 15v5"/></svg></span>
-        <div><h2>Publishing</h2><p>Save and set the product visibility.</p></div>
-      </header>
-      <div class="v103-publish-body">
-        <label class="v103-field"><span>Status</span>{{ form.status }}{{ form.status.errors }}<small>Active products are visible in your store.</small></label>
-        <div class="v103-readonly-field"><span>Visibility</span><strong><i></i> Public</strong><small>Visible to everyone in your storefront.</small></div>
-        <div class="v103-db-note"><b>ⓘ</b><div><strong>Stored in MySQL Database</strong><span>Product data will be saved in your application's MySQL catalog database.</span></div></div>
-        <div class="v103-publish-actions">
-          <button class="btn btn-primary v103-save" type="submit">✓ Save Product</button>
-          <button class="btn v103-draft" type="button" data-product-save-draft>▣ Save Draft</button>
-          <a class="btn" href="{% url 'backoffice:products' %}">× Cancel</a>
+    <div class="product-edit-right">
+      <section class="form-card">
+        <div class="section-title-line"><h2><span class="section-icon blue">▣</span> Product Images</h2><span>Up to 8 images</span></div>
+        <label class="add-product-empty-media" for="productImageInput">
+          <span class="media-upload-icon">▣</span>
+          <strong>Click to add product images</strong>
+          <span>or drag and choose multiple images</span>
+          <small>JPG, PNG, WebP — maximum 2MB each. First image becomes primary.</small>
+          <input type="file" name="images" accept="image/jpeg,image/png,image/webp" multiple id="productImageInput">
+        </label>
+        <div class="image-strip add-product-image-strip" id="productImageStrip"></div>
+      </section>
+
+      <section class="form-card">
+        <h2><span class="section-icon blue">⚙</span> Product Status</h2>
+        <label>Product Status{{ form.status }}{{ form.status.errors }}</label>
+        <div class="status-toggle-row">
+          <span class="status-star">★</span>
+          <div><strong>Featured Product</strong><small>Show in featured sections</small></div>
+          <label class="switch">{{ form.is_featured }}<span></span></label>
         </div>
-      </div>
-    </aside>
+        <div class="status-toggle-row">
+          <span class="status-cube">◇</span>
+          <div><strong>New Arrival</strong><small>Mark as new arrival</small></div>
+          <label class="switch">{{ form.is_new_arrival }}<span></span></label>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <h2><span class="section-icon blue">🚚</span> Shipping Information</h2>
+        <div class="field-grid two">
+          <label>Weight (kg){{ form.weight }}{{ form.weight.errors }}</label>
+          <label>Shipping Class{{ form.shipping_class }}{{ form.shipping_class.errors }}</label>
+        </div>
+        <label>Warranty{{ form.warranty }}{{ form.warranty.errors }}</label>
+      </section>
+
+      <section class="form-card">
+        <h2><span class="section-icon blue">⌕</span> SEO Information</h2>
+        <label>Meta Title{{ form.meta_title }}{{ form.meta_title.errors }}</label>
+        <label>Meta Description{{ form.meta_description }}{{ form.meta_description.errors }}</label>
+        <div class="field-grid two">
+          <label>Badge{{ form.badge }}{{ form.badge.errors }}</label>
+          <label>Detail Badge{{ form.detail_badge }}{{ form.detail_badge.errors }}</label>
+        </div>
+      </section>
+
+      <section class="form-card metadata-card">
+        <h2><span class="section-icon blue">◷</span> Product Setup</h2>
+        <div class="soft-note">Product data is stored in the MySQL catalog database. Save Draft keeps the product in draft status; Save Product uses the selected status.</div>
+        <div class="head-actions" style="margin-top:12px">
+          <button class="btn btn-primary product-form-action" type="submit">▣ Save Product</button>
+          <button class="btn product-form-action" type="button" data-product-save-draft>▣ Save Draft</button>
+        </div>
+      </section>
+    </div>
   </form>
 </section>
 {% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-crud.css' %}">{% endblock %}
-{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/add-product-v103.css' %}">{% endblock %}
-{% block extra_js %}<script src="{% static 'admin/js/product-crud.js' %}"></script><script src="{% static 'admin/js/add-product-v103.js' %}"></script>{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-crud.css' %}"><link rel="stylesheet" href="{% static 'admin/css/product-form-v104.css' %}">{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/product-crud.js' %}"></script>{% endblock %}
