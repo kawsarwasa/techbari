@@ -1,8 +1,9 @@
-# Catalog Database Phase 1
+# TechBari Catalog Database Phase
 
-The runtime catalog source is now Django ORM/MySQL instead of the static product list.
+The catalog is MySQL-backed and the dashboard exposes CRUD workflows for the catalog entities.
 
-## Models
+## Database entities
+
 - Category
 - Brand
 - Product
@@ -10,50 +11,101 @@ The runtime catalog source is now Django ORM/MySQL instead of the static product
 - ProductImage
 - ProductSpecification
 
-## Real CRUD
-- Product list/add/edit/delete/archive/bulk actions
-- Category list/add/edit/delete
-- Brand list/add/edit/delete
+## CRUD coverage
 
-## First local installation
+### Category
+- List
+- Create
+- Edit
+- Delete when unused
+- Parent category
+- Active/inactive
+- Sort order
+- Image upload (JPG/PNG/WebP, max 2MB)
 
-```powershell
-git pull origin main
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-Copy-Item .env.example .env
-```
+### Brand
+- List
+- Create
+- Edit
+- Delete when unused
+- Featured flag
+- Active/inactive
+- Sort order
+- Logo upload (JPG/PNG/WebP, max 2MB)
 
-If `.env` already exists, do not overwrite it; only add/update the DB variables.
+### Product
+- List/search/filter/sort
+- Create
+- Edit
+- Delete
+- Archive
+- Bulk activate/draft/archive/delete
+- Category and brand
+- Regular price / sale price
+- Default SKU, barcode, stock and low-stock alert
+- Status, featured, new arrival
+- Shipping/warranty
+- SEO title, meta description and slug
+- Initial multi-image upload
+- Initial specification editing
 
-Create MySQL database:
+### Variants / SKUs
+Route: `/dashboard/variants/`
 
-```sql
-CREATE DATABASE techbari CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+- List/filter by product
+- Create
+- Edit
+- Delete (the last variant of a product is protected)
+- SKU
+- Unique optional barcode
+- Variant symbol/name
+- Regular-price override
+- Selling-price override
+- Stock quantity
+- Low-stock alert
+- Active/inactive
+- Default variant management
 
-Then:
+### Product Media
+Route: `/dashboard/product-media/`
+
+- List/filter by product
+- Upload
+- Replace
+- Edit alt text
+- Edit sort order
+- Set Primary
+- Set Detail
+- Delete
+- Maximum 8 images per product
+- JPG/PNG/WebP, max 2MB each
+
+### Specifications
+Route: `/dashboard/specifications/`
+
+- List/filter by product
+- Create
+- Edit
+- Delete
+- Sort order
+- Case-insensitive duplicate-name validation per product
+
+## Migration
+
+After pulling this phase:
 
 ```powershell
 python manage.py migrate
-python manage.py seed_catalog
 python manage.py check
 python manage.py test catalog
-python manage.py runserver
 ```
 
-`python manage.py seed_catalog` is idempotent for the original demo products and preserves stable public IDs used by browser cart/wishlist data.
+Migration `catalog.0002_catalog_crud_expansion` adds variant barcodes, catalog indexes and changes `Product.slug` to 255 characters to avoid the MySQL unique-character-field warning.
 
-`python manage.py seed_catalog --reset` deletes and reseeds the catalog. Do not use `--reset` after entering real data unless you intentionally want to remove it.
+## Seed behavior
 
-## Manual QA
-- `/`
-- `/products/`
-- product detail
-- `/dashboard/products/`
-- add/edit/delete/archive product
-- category CRUD
-- brand CRUD
-- <=2MB image accepted
-- >2MB image rejected
-- desktop/mobile visual checks
+A normal `python manage.py seed_catalog` preserves existing products and their variants/images/specifications. Use `python manage.py seed_catalog --refresh-demo` only when you intentionally want to overwrite the demo catalog, or `--reset` for a destructive full reseed.
+
+## Architecture note
+
+Variant stock is still the catalog-phase stock field. The future Inventory phase will replace it as the authoritative inventory source with warehouse balances and stock movements. Catalog CRUD remains the source of product identity, SKU/barcode and presentation data.

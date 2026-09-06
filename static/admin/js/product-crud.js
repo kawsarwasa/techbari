@@ -15,7 +15,7 @@
       const stock = $('#productStockFilter')?.value || '';
       const sort = $('#productSort')?.value || 'newest';
       dataRows().forEach((row) => {
-        const searchable = `${row.dataset.name} ${row.dataset.sku} ${row.dataset.brand} ${row.dataset.category}`.toLowerCase();
+        const searchable = `${row.dataset.name} ${row.dataset.sku} ${row.dataset.barcode || ''} ${row.dataset.brand} ${row.dataset.category}`.toLowerCase();
         const quantity = Number(row.dataset.stock || 0);
         const matches = (!query || searchable.includes(query)) && (!category || row.dataset.category === category) && (!stock || (stock === 'out' ? quantity <= 0 : stock === 'low' ? quantity > 0 && quantity <= 10 : quantity > 0));
         row.style.display = matches ? '' : 'none';
@@ -32,7 +32,7 @@
     document.addEventListener('change', (event) => { if (!event.target.matches('[data-product-select]')) return; const id=String(event.target.dataset.productSelect); event.target.checked ? selected.add(id) : selected.delete(id); applyFilters(); });
     const setAll=(checked)=>{ visibleRows().forEach((row)=>{ const id=String(row.dataset.id); const box=row.querySelector('[data-product-select]'); if(box) box.checked=checked; checked ? selected.add(id) : selected.delete(id); }); applyFilters(); };
     $('#selectAllProducts')?.addEventListener('change',(e)=>setAll(e.target.checked)); $('#selectAllProductsHead')?.addEventListener('change',(e)=>setAll(e.target.checked));
-    document.addEventListener('click',(event)=>{ const button=event.target.closest('[data-product-delete]'); if(!button)return; const row=button.closest('[data-product-row]'); if(!row)return; actionProductId=row.dataset.id; const preview=$('#deleteProductPreview'); if(preview) preview.innerHTML=`<img src="${row.dataset.image}" alt=""><div><strong>${row.dataset.name}</strong><p>SKU: ${row.dataset.sku}<br>${row.dataset.category}</p></div><span class="brand-mini">${row.dataset.brand}</span>`; const overlay=$('#productDeleteOverlay'); if(overlay) overlay.hidden=false; });
+    document.addEventListener('click',(event)=>{ const button=event.target.closest('[data-product-delete]'); if(!button)return; const row=button.closest('[data-product-row]'); if(!row)return; actionProductId=row.dataset.id; const preview=$('#deleteProductPreview'); if(preview) preview.innerHTML=`<img src="${row.dataset.image}" alt=""><div><strong>${row.dataset.name}</strong><p>SKU: ${row.dataset.sku}<br>Barcode: ${row.dataset.barcode || '—'}<br>${row.dataset.category}</p></div><span class="brand-mini">${row.dataset.brand}</span>`; const overlay=$('#productDeleteOverlay'); if(overlay) overlay.hidden=false; });
     $$('[data-close-product-delete]').forEach((button)=>button.addEventListener('click',()=>{ const overlay=$('#productDeleteOverlay'); if(overlay) overlay.hidden=true; actionProductId=''; }));
     const submitAction=(action,productId='')=>{ const form=$('#productActionForm'); if(!form)return; $('#productAction').value=action; $('#productActionId').value=productId; $('#bulkProductIds').replaceChildren(); if(action.startsWith('bulk_')) selected.forEach((id)=>{ const input=document.createElement('input'); input.type='hidden'; input.name='product_ids'; input.value=id; $('#bulkProductIds').appendChild(input); }); form.submit(); };
     $('#confirmProductDelete')?.addEventListener('click',()=>actionProductId&&submitAction('delete',actionProductId));

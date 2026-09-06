@@ -58,7 +58,7 @@ class Product(models.Model):
         help_text="Stable browser/cart identifier. Existing demo IDs are preserved.",
     )
     name = models.CharField(max_length=255)
-    slug = models.SlugField(max_length=280, unique=True)
+    slug = models.SlugField(max_length=255, unique=True)
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="products")
     brand = models.ForeignKey(Brand, on_delete=models.PROTECT, related_name="products")
     short_name = models.CharField(max_length=255, blank=True)
@@ -117,6 +117,7 @@ class ProductVariant(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="variants")
     name = models.CharField(max_length=120, default="Default")
     sku = models.CharField(max_length=64, unique=True)
+    barcode = models.CharField(max_length=64, unique=True, null=True, blank=True)
     symbol = models.CharField(max_length=16, blank=True)
     price_override = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
     regular_price_override = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
@@ -129,7 +130,12 @@ class ProductVariant(models.Model):
 
     class Meta:
         ordering = ("product_id", "-is_default", "id")
-        constraints = [models.UniqueConstraint(fields=("product", "name"), name="uniq_product_variant_name")]
+        constraints = [
+            models.UniqueConstraint(fields=("product", "name"), name="uniq_product_variant_name")
+        ]
+        indexes = [
+            models.Index(fields=("product", "is_active"), name="cat_var_prod_active_idx"),
+        ]
 
     def __str__(self):
         return f"{self.product.name} - {self.name}"
@@ -151,6 +157,9 @@ class ProductImage(models.Model):
 
     class Meta:
         ordering = ("sort_order", "id")
+        indexes = [
+            models.Index(fields=("product", "role", "sort_order"), name="cat_img_prod_role_idx")
+        ]
 
     def __str__(self):
         return f"{self.product.name} image"
@@ -164,7 +173,9 @@ class ProductSpecification(models.Model):
 
     class Meta:
         ordering = ("sort_order", "id")
-        constraints = [models.UniqueConstraint(fields=("product", "name"), name="uniq_product_spec_name")]
+        constraints = [
+            models.UniqueConstraint(fields=("product", "name"), name="uniq_product_spec_name")
+        ]
 
     def __str__(self):
         return f"{self.product.name}: {self.name}"

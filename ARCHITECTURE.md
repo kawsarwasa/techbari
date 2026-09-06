@@ -1,90 +1,89 @@
-TechBari uses Django template inheritance and Python fixtures while remaining entirely database-free. The approved CSS, image assets, DOM wrappers, icons and responsive rules are preserved. The existing browser cart, wishlist, CRUD and POS behavior remains vanilla JavaScript.
+# TechBari Architecture
 
-The application is organized as follows:
+TechBari is being converted in phases from the approved static Django demo into a database-backed commerce platform. The visual templates and CSS remain the presentation layer while business modules are moved to MySQL one domain at a time.
+
+## Current state
+
+### Database-backed now
+
+The catalog domain is backed by MySQL 8 / Django ORM:
+
+- `Category`
+- `Brand`
+- `Product`
+- `ProductVariant`
+- `ProductImage`
+- `ProductSpecification`
+
+The storefront reads catalog products, categories and brands from the ORM. Dashboard catalog CRUD writes to the same catalog database.
+
+### Still static/mock for later phases
+
+Orders, customers, POS sale completion, purchasing, warehouse/inventory engine, accounting, shipping, returns, users/permissions, marketing and reporting still retain their approved mock/static presentation until their database phases are implemented.
+
+## Catalog source of truth
+
+`catalog/` owns catalog persistence. `storefront/` consumes catalog presentation serializers. `backoffice/catalog_views.py` contains database-backed dashboard workflows.
+
+Catalog dashboard routes:
 
 ```text
-techbari/
-    settings.py             Dummy database backend; no auth or session apps
-    urls.py                 Namespaced application routes and error handlers
-    views.py                Branded error responses
-storefront/
-    urls.py                 Named storefront routes and legacy redirects
-    views.py                Static page and product-detail views
-    context.py              Catalog presentation and browser JSON payloads
-    mock_data.py            Catalog, images, specifications, categories, brands,
-                            gallery variants, reviews, coupons, cart and tracking
-    templatetags/demo.py     Display helpers shared by both applications
-backoffice/
-    urls.py                 Routes generated from the explicit page registry
-    views.py                Static dashboard page and detail views
-    page_registry.py        Route names, paths, templates and sidebar selection
-    context.py              View context and browser JSON payloads
-    mock_data.py            Business collections, POS catalog and statistics
-    page_data.py            Reports, dashboard summaries, form defaults/options,
-                            campaigns, notifications and other static page data
-    table_config.py         Table field definitions shared with JavaScript
-templates/
-    404.html
-    500.html
-    storefront/
-        base.html
-        includes/           Header, footer, responsive category nav, messages
-        components/         Product cards, breadcrumbs, pagination, empty states
-        pages/              Nine approved storefront templates
-    backoffice/
-        base.html
-        includes/           Sidebar, topbar, footer, messages, breadcrumb content
-        components/         Statistics, rows, badges, pagination, form actions,
-                            modal, reports, campaigns, notifications, alerts, icons
-        pages/              Dashboard and grouped business pages
-static/
-    store/                  Original storefront CSS, JavaScript and images
-    admin/                  Original dashboard asset namespace retained
-scripts/
-    validate_static.py      Database-free route, template, asset and syntax audit
-    validate_interactions.cjs  Optional DOM interaction checks
+/dashboard/products/
+/dashboard/products/add/
+/dashboard/products/edit/
+/dashboard/categories/
+/dashboard/brands/
+/dashboard/variants/
+/dashboard/product-media/
+/dashboard/specifications/
 ```
 
-Each view obtains presentation data from its context module. Templates use fields such as `product.name`, `product.price`, `order.order_no` and `customer.name`. The future MySQL/ORM phase can replace the fixture lookup inside these context/view boundaries while retaining the templates and CSS. No future database configuration is enabled now.
+## Product identity and variants
 
-JavaScript receives data using Django's `json_script`, with URLs produced by `reverse()` and image URLs produced by `static()`. Storefront cards, including the different approved wishlist layout, use one Django component. Hidden `<template>` elements let JavaScript reuse that component when filtering or updating localStorage lists. No HTML is stored in the product or business fixture dictionaries; icon markup stays in template files.
+A `Product` contains shared merchandising data such as category, brand, descriptions, product-level regular/sale price, publishing status and SEO.
 
-The browser storage keys remain `nu_cart`, `nu_wish`, `nu_coupon` and `techbari_admin_<entity>` so existing demo state survives the conversion. The two conflicting dashboard product seeds were consolidated using the original custom product page's ten-record seed. Deleting every product now keeps the catalog empty after reload. Repeated storefront listing cards use their real catalog IDs, so their cart and wishlist buttons work.
+A `ProductVariant` represents a sellable SKU. Each variant may have a unique SKU, unique optional barcode, variant name/symbol, regular-price override, selling-price override, catalog-phase stock quantity, low-stock alert, active flag and default flag.
 
-Canonical navigation uses namespaced Django URLs. Legacy `.html` URLs redirect to the corresponding canonical route while preserving query parameters. Product details support both catalog slug and stable demo ID and return HTTP 404 for invalid products. `/register/` opens the existing register panel in the approved login layout. Dashboard edit forms continue using `?id=...` for localStorage records.
+Only one default variant is maintained per product by the dashboard workflows. The default variant supplies the product card/list SKU and barcode.
 
-All database-backed functionality remains absent: no models, migrations, database files, ORM queries, authentication views, database sessions, admin integration, or database connection was added. The two existing empty `models.py` placeholders are unchanged. Do not run `migrate` or `makemigrations` during this phase.
+## Images
 
-To run the project on Windows:
+`ProductImage` supports Primary, Gallery and Detail roles. The media manager can add, replace, edit, reorder by sort value, set Primary/Detail and delete images. New uploads are limited to JPG/PNG/WebP and 2MB per image, with a maximum of eight images per product.
+
+## Specifications
+
+`ProductSpecification` stores structured name/value rows with display order. Specification names are unique per product and rendered on product-detail pages.
+
+## Inventory boundary
+
+`ProductVariant.stock_quantity` is transitional for the catalog phase. The planned Inventory phase will introduce warehouses, inventory balances and append-only stock movements. At that point inventory will become the source of truth instead of catalog stock fields.
+
+The long-term platform rule remains:
+
+**One Product Database + One Inventory Engine + One Sales Engine + One Accounting Ledger.**
+
+## Database configuration
+
+`techbari/settings.py` loads MySQL connection details from `.env`.
+
+```env
+DB_NAME=techbari
+DB_USER=root
+DB_PASSWORD=...
+DB_HOST=127.0.0.1
+DB_PORT=3306
+```
+
+Apply migrations after pulling database changes:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe manage.py runserver
+python manage.py migrate
+python manage.py check
+python manage.py test catalog
 ```
 
-To validate without creating a database:
+`python manage.py seed_catalog` preserves existing catalog CRUD edits by default. Use `--refresh-demo` only when intentionally replacing seeded demo data.
 
-```powershell
-.\.venv\Scripts\python.exe manage.py check
-.\.venv\Scripts\python.exe scripts\validate_static.py
-.\.venv\Scripts\python.exe -m compileall -q techbari storefront backoffice scripts
-node --check static\store\js\app.js
-node --check static\admin\js\admin.js
-node --check static\admin\js\product-crud.js
-```
+## Important legacy note
 
-The optional interaction test uses jsdom installed outside the project. It is a development validation tool; there is no Node frontend, package manifest, build step or added production dependency:
-
-```powershell
-npm install --prefix "$env:TEMP\techbari-validation" jsdom --no-audit --no-fund
-.\.venv\Scripts\python.exe scripts\validate_static.py --export-dir "$env:TEMP\techbari-validation"
-node scripts\validate_interactions.cjs "$env:TEMP\techbari-validation\node_modules\jsdom" "$env:TEMP\techbari-validation\pages.json"
-```
-
-The static validator prevents database connections while rendering 89 page/detail URLs, follows navigation targets, checks legacy redirects and branded errors, compiles every template, parses Python sources, checks local assets and verifies declared pixel font sizes are at least 13px. The interaction checks initialize JavaScript on all exported pages and exercise slider, search, wishlist, cart, coupons, delivery charges, gallery, frontend validation, CRUD and POS behavior.
-
-The design comparison used the original project backup and compared rendered DOM element structure, CSS classes and inline styles after JavaScript initialization. 54 of 55 original pages match exactly. The product listing's repeated cards now show the correct saved wishlist state because their invalid synthetic IDs were removed. All 64 CSS and image assets are byte-for-byte unchanged. No browser was connected, so screenshots, computed font sizes and physical viewport/overflow checks could not be verified. DOM tests do not substitute for those visual checks.
-
-The original demo limitations remain: checkout/payment/login/register do not contact a real service; several filter, report/export and toolbar controls are presentation-only; dashboard metrics are fixed snapshots. Browser edits do not modify Python fixtures or synchronize with the storefront, other browsers, or server-rendered dashboard detail snapshots. Direct detail URLs resolve Python seed records. The View buttons in browser CRUD tables populate the marked identity and amount fields from localStorage, including newly created browser-only records; ancillary timeline and analytics panels remain static demo snapshots. The original external Google Fonts and tracking-page image dependencies remain. Branded error handlers display with `DEBUG=False`; Django displays its development diagnostics with `DEBUG=True`.
-
-See [REFACTOR_REPORT.md](REFACTOR_REPORT.md) for the complete route and file-change inventory.
+`scripts/validate_static.py` belongs to the original database-free conversion and contains assertions that deliberately reject database usage. It is not the validator for the current database-backed phase. Use Django checks/tests and JavaScript syntax checks until that legacy validator is replaced.

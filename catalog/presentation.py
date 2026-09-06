@@ -68,43 +68,97 @@ def serialize_product(product):
     gallery_images = [i for i in images if i.role in {ProductImage.Role.GALLERY, ProductImage.Role.PRIMARY}]
     if not gallery_images and primary_image:
         gallery_images = [primary_image]
-    regular_price = default_variant.regular_price_override if default_variant and default_variant.regular_price_override is not None else product.regular_price
-    price = default_variant.price_override if default_variant and default_variant.price_override is not None else product.current_price
+    regular_price = (
+        default_variant.regular_price_override
+        if default_variant and default_variant.regular_price_override is not None
+        else product.regular_price
+    )
+    price = (
+        default_variant.price_override
+        if default_variant and default_variant.price_override is not None
+        else product.current_price
+    )
     stock = sum(v.stock_quantity for v in variants if v.is_active)
     image_url = _image_url(primary_image) or static("store/images/baseus-e16.webp")
     detail_image_url = _image_url(detail_image) or image_url
     gallery_urls = [_image_url(i) for i in gallery_images if _image_url(i)] or [image_url]
     return {
-        "pk": product.pk, "id": product.public_id, "name": product.name, "slug": product.slug,
-        "category": product.category.name, "brand": product.brand.name,
-        "price": _number(price), "regular_price": _number(regular_price), "stock": stock,
-        "variant": default_variant.name if default_variant else "Default", "sku": default_variant.sku if default_variant else "",
-        "badge": product.badge, "badge_class": product.badge_class or "blue",
-        "image_url": image_url, "image": image_url, "images": gallery_urls,
-        "detail_image": detail_image_url, "detail_image_url": detail_image_url,
-        "short_name": product.short_name or product.name, "subtitle": product.subtitle,
-        "description": product.description, "short_description": product.short_description,
+        "pk": product.pk,
+        "id": product.public_id,
+        "name": product.name,
+        "slug": product.slug,
+        "category": product.category.name,
+        "brand": product.brand.name,
+        "price": _number(price),
+        "regular_price": _number(regular_price),
+        "stock": stock,
+        "variant": default_variant.name if default_variant else "Default",
+        "sku": default_variant.sku if default_variant else "",
+        "barcode": default_variant.barcode if default_variant and default_variant.barcode else "",
+        "badge": product.badge,
+        "badge_class": product.badge_class or "blue",
+        "image_url": image_url,
+        "image": image_url,
+        "images": gallery_urls,
+        "detail_image": detail_image_url,
+        "detail_image_url": detail_image_url,
+        "short_name": product.short_name or product.name,
+        "subtitle": product.subtitle,
+        "description": product.description,
+        "short_description": product.short_description,
         "description_paragraphs": product.description_paragraphs or ([product.description] if product.description else []),
         "features": product.features or [],
         "specifications": [{"name": s.name, "value": s.value} for s in specs],
-        "variants": [{"name": v.name, "symbol": v.symbol, "sku": v.sku, "stock": v.stock_quantity} for v in variants if v.is_active],
+        "variants": [
+            {
+                "id": v.pk,
+                "name": v.name,
+                "symbol": v.symbol,
+                "sku": v.sku,
+                "barcode": v.barcode or "",
+                "price": _number(v.price_override if v.price_override is not None else product.current_price),
+                "regular_price": _number(
+                    v.regular_price_override if v.regular_price_override is not None else product.regular_price
+                ),
+                "stock": v.stock_quantity,
+                "is_default": v.is_default,
+            }
+            for v in variants
+            if v.is_active
+        ],
         "box_contents": product.box_contents or [],
         "review_score": str(product.review_score.normalize()) if product.review_score else "0",
-        "review_count": str(product.review_count), "rating": f"{product.review_score} ({product.review_count})",
-        "detail_badge": product.detail_badge or product.badge, "detail_regular_price": _number(product.regular_price),
-        "reviews": product.reviews or [], "questions": product.questions or [],
-        "status": product.get_status_display(), "is_featured": product.is_featured, "is_new_arrival": product.is_new_arrival,
-        "created_at": product.created_at, "updated_at": product.updated_at,
+        "review_count": str(product.review_count),
+        "rating": f"{product.review_score} ({product.review_count})",
+        "detail_badge": product.detail_badge or product.badge,
+        "detail_regular_price": _number(product.regular_price),
+        "reviews": product.reviews or [],
+        "questions": product.questions or [],
+        "status": product.get_status_display(),
+        "is_featured": product.is_featured,
+        "is_new_arrival": product.is_new_arrival,
+        "created_at": product.created_at,
+        "updated_at": product.updated_at,
     }
 
 
 def serialize_admin_product(product):
     data = serialize_product(product)
     return {
-        "id": product.pk, "public_id": product.public_id, "name": data["name"], "sku": data["sku"],
-        "category": data["category"], "brand": data["brand"], "price": data["price"],
-        "regular_price": data["regular_price"], "stock": data["stock"], "status": data["status"],
-        "image": data["image_url"], "slug": data["slug"], "created_at": product.created_at.isoformat(),
+        "id": product.pk,
+        "public_id": product.public_id,
+        "name": data["name"],
+        "sku": data["sku"],
+        "barcode": data["barcode"],
+        "category": data["category"],
+        "brand": data["brand"],
+        "price": data["price"],
+        "regular_price": data["regular_price"],
+        "stock": data["stock"],
+        "status": data["status"],
+        "image": data["image_url"],
+        "slug": data["slug"],
+        "created_at": product.created_at.isoformat(),
     }
 
 
@@ -112,11 +166,30 @@ def category_filters():
     rows = Category.objects.filter(is_active=True).annotate(
         product_count=Count("products", filter=Q(products__status=Product.Status.ACTIVE), distinct=True)
     ).order_by("sort_order", "name")
-    return [{"id": row.pk, "name": row.name, "slug": row.slug, "image_url": _category_image_url(row), "image": _category_image_url(row), "count": row.product_count} for row in rows]
+    return [
+        {
+            "id": row.pk,
+            "name": row.name,
+            "slug": row.slug,
+            "image_url": _category_image_url(row),
+            "image": _category_image_url(row),
+            "count": row.product_count,
+        }
+        for row in rows
+    ]
 
 
 def brand_filters():
     rows = Brand.objects.filter(is_active=True).annotate(
         product_count=Count("products", filter=Q(products__status=Product.Status.ACTIVE), distinct=True)
     ).order_by("sort_order", "name")
-    return [{"id": row.pk, "name": row.name, "slug": row.slug, "image_url": _brand_image_url(row), "count": row.product_count} for row in rows]
+    return [
+        {
+            "id": row.pk,
+            "name": row.name,
+            "slug": row.slug,
+            "image_url": _brand_image_url(row),
+            "count": row.product_count,
+        }
+        for row in rows
+    ]
