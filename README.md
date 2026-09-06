@@ -1,24 +1,24 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v1.0.7**
+**Current version: v1.0.8**
 
 TechBari started as a database-free Django template demo. The catalog phase is now backed by MySQL 8 while the remaining business modules continue to use the approved static/mock presentation until their database phases are implemented.
 
-## v1.0.5 — Working rich product description editor
+## v1.0.8 — Jodit product description editor
 
-The Add Product and Edit Product Full Description toolbar is now interactive. Paragraph/heading styles, bold, italic, underline and bulleted lists work in a contenteditable editor, formatting is synchronized back to the Django description field before submit, and stored rich description output is sanitized before storefront presentation.
-
-## v1.0.6 — Reliable rich editor loading
+The custom contenteditable Full Description editor has been replaced with Jodit 4.13.23 on catalog product forms. Add Product and Edit Product now use the same maintained WYSIWYG editor with paragraph styles, bold, italic, underline, unordered/ordered lists, undo/redo and clear formatting. The legacy custom toolbar/editor DOM is removed before Jodit initializes, the original Django description textarea remains the fallback if the CDN is unavailable, and editor content is synchronized back to the submitted description field.
 
 ## v1.0.7 — Native editable description surface
 
-The editor no longer inherits textarea resizing behavior, has a text cursor, and uses a new asset URL so browsers load the repaired editor immediately.
+The previous custom editor improved loading and browser-cache handling, but it has now been superseded by the Jodit integration in v1.0.8.
 
-The description editor now initializes whether the page is freshly loaded, restored from browser cache, or its dashboard context is incomplete. Its stylesheet and script use a new versioned URL so browsers fetch the working editor instead of an older cached script.
+## v1.0.5 — Working rich product description editor
+
+The initial custom Add/Edit Product Full Description toolbar added paragraph/heading styles, bold, italic, underline and bulleted lists with synchronized Django description values and sanitized storefront presentation.
 
 ## v1.0.4 — Unified Add/Edit Product design
 
-The Add Product page now uses the Edit Product page as the visual and structural standard. Both product forms share the same two-column layout, card hierarchy, field placement, image/status/shipping/SEO sections and responsive behavior. Product-form buttons also include a subtle slide/shine hover animation and smoother toggle motion, while respecting reduced-motion preferences.
+The Add Product page uses the Edit Product page as the visual and structural standard. Both product forms share the same two-column layout, card hierarchy, field placement, image/status/shipping/SEO sections and responsive behavior. Product-form buttons also include subtle slide/shine hover animation and smoother toggle motion, while respecting reduced-motion preferences.
 
 ## v1.0.3 — Add Product redesign
 
