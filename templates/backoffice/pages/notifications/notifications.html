@@ -1,0 +1,6 @@
+{% extends "backoffice/base.html" %}
+{% load static demo %}
+{% block title %}Notifications | TechBari Admin{% endblock %}
+{% block content %}
+<section class="page"><div class="page-head"><div><h1>Notifications</h1><p>Review operational alerts and activity.</p></div><div class="head-actions"><a class="btn" href="#" data-demo-alert="All notifications marked read."><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg> Mark All Read</a></div></div><div class="notification-list">{% for notification in notifications %}{% include "backoffice/components/notification.html" %}{% endfor %}</div></section>
+{% endblock %}

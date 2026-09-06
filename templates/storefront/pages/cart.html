@@ -1,0 +1,28 @@
+{% extends "storefront/base.html" %}
+{% load static demo %}
+{% block title %}Shopping Cart - TechBari{% endblock %}
+{% block body_attributes %}{% endblock %}
+{% block content %}
+<main class="page"><div class="container">
+{% include "storefront/includes/breadcrumbs/cart.html" %}
+<div style="display:flex;justify-content:space-between;align-items:end;gap:16px"><div><h1 class="page-title">Shopping Cart</h1><p class="page-subtitle"><span id="cartItemText">3 items</span> in your cart</p></div><a class="section-link" href="{% url 'storefront:products' %}">← Continue Shopping</a></div>
+<div class="cart-layout">
+  <div class="cart-box">
+    <table class="cart-table"><thead><tr><th>Product</th><th>Variant</th><th>Unit Price</th><th>Quantity</th><th>Subtotal</th><th>Action</th></tr></thead><tbody id="cartItemsBody"></tbody></table>
+    {% include "storefront/components/empty_state.html" with cart=True %}
+    <div class="cart-actions" id="cartActions"><a class="btn btn-soft" href="{% url 'storefront:products' %}">← Continue Shopping</a><button class="btn btn-outline clear-cart" id="clearCart"><i data-icon="trash"></i> Clear Cart</button></div>
+  </div>
+  <aside class="summary-box">
+    <h2>Order Summary</h2>
+    <div class="summary-line"><span>Subtotal (<span id="summaryItemCount">3</span> items)</span><strong data-cart-subtotal>৳ 12,670</strong></div>
+    <div class="summary-line discount-row" id="cartDiscountRow" hidden><span>Coupon Discount</span><strong class="text-green" id="cartDiscountAmount">- ৳ 0</strong></div>
+    <div class="summary-line total"><span>Grand Total</span><strong data-cart-grand>৳ 12,670</strong></div>
+    <div class="coupon"><input id="cartCouponInput" placeholder="Enter coupon code" autocomplete="off"><button id="cartCouponApply" class="btn btn-soft">Apply</button></div>
+    <div id="cartCouponFeedback" class="coupon-feedback"></div>
+    <a class="btn btn-primary" id="checkoutButton" style="width:100%;margin-top:4px" href="{% url 'storefront:checkout' %}"><i data-icon="lock"></i> Proceed to Checkout →</a>
+    <div class="secure-row"><div class="secure-mini"><i data-icon="truck"></i>Cash on Delivery</div><div class="secure-mini"><i data-icon="shield"></i>Secure Payment</div><div class="secure-mini"><i data-icon="package"></i>Easy Returns</div><div class="secure-mini"><i data-icon="headphones"></i>Support</div></div>
+  </aside>
+</div>
+<section class="section"><div class="section-head"><div><h2 class="section-title">You Might Also Like</h2><span class="muted">Products related to your cart items</span></div><a href="{% url 'storefront:products' %}" class="section-link">View All Products →</a></div><div id="recommendedGrid" class="products-grid">{% for product in recommended_products %}{% include "storefront/components/product_card.html" %}{% endfor %}</div></section>
+</div></main>
+{% endblock %}

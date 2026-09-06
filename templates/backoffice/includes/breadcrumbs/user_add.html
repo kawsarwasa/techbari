@@ -1,0 +1,3 @@
+{% extends "backoffice/components/breadcrumb.html" %}
+{% load static %}
+{% block breadcrumb_items %}<a href="{% url 'backoffice:users' %}">Users</a><span>›</span><span data-form-mode>Add New</span>{% endblock %}

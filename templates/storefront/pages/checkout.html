@@ -1,0 +1,25 @@
+{% extends "storefront/base.html" %}
+{% load static demo %}
+{% block title %}Checkout - TechBari{% endblock %}
+{% block body_attributes %}{% endblock %}
+{% block content %}
+<main class="page"><div class="container">
+<div style="display:flex;justify-content:space-between;gap:16px"><div><h1 class="page-title">Checkout</h1><p class="page-subtitle">Complete your order securely and easily</p></div>{% include "storefront/includes/breadcrumbs/checkout.html" %}</div>
+<div class="steps"><div class="step active"><div class="step-num">1</div><strong>Information</strong><span>Delivery & Payment</span></div><div class="step"><div class="step-num">2</div><strong>Review</strong><span>Check Your Order</span></div><div class="step"><div class="step-num">3</div><strong>Complete</strong><span>Order Placed</span></div></div>
+<div class="checkout-layout">
+<section class="form-card">
+<div class="form-section"><h3><i data-icon="user"></i> Customer Information</h3><div class="form-grid"><div class="field"><label>Full Name *</label><input placeholder="Enter your full name"></div><div class="field"><label>Phone Number *</label><input placeholder="01XXXXXXXXX"></div><div class="field full"><label>Email Address (Optional)</label><input placeholder="you@email.com"></div></div></div>
+<div class="form-section"><h3><i data-icon="map"></i> Shipping Address</h3><div class="form-grid"><div class="field"><label>Division *</label><select><option>Select Division</option><option>Dhaka</option><option>Chattogram</option></select></div><div class="field"><label>District *</label><select><option>Select District</option><option>Dhaka</option></select></div><div class="field"><label>Upazila / Thana *</label><select><option>Select Upazila</option></select></div><div class="field"><label>Address Line *</label><input placeholder="House no, Road no, Area name"></div><div class="field full"><label>Landmark (Optional)</label><input placeholder="e.g. Near school, mosque, shopping mall"></div></div></div>
+<div class="form-section"><h3><i data-icon="truck"></i> Delivery Option</h3><div class="option-grid"><label class="option active" data-delivery="inside" data-charge="60"><input type="radio" name="delivery" value="inside" checked><div><strong>Inside Dhaka</strong><br><span class="muted">Delivery in 1-2 days</span></div><b style="margin-left:auto">৳ 60</b></label><label class="option" data-delivery="outside" data-charge="120"><input type="radio" name="delivery" value="outside"><div><strong>Outside Dhaka</strong><br><span class="muted">Delivery in 2-4 days</span></div><b style="margin-left:auto">৳ 120</b></label></div></div>
+<div class="form-section"><h3><i data-icon="credit"></i> Payment Method</h3><div class="payment-grid"><label class="payment active"><input type="radio" name="pay" checked><span class="payment-logo cod">COD</span><br><strong>Cash on Delivery</strong><br><span class="muted">Pay when you receive</span></label><label class="payment"><input type="radio" name="pay"><span class="payment-logo bkash">bKash</span><br><strong>bKash</strong><br><span class="muted">Pay with bKash</span></label><label class="payment"><input type="radio" name="pay"><span class="payment-logo nagad">Nagad</span><br><strong>Nagad</strong><br><span class="muted">Pay with Nagad</span></label><label class="payment"><input type="radio" name="pay"><span class="payment-logo card">CARD</span><br><strong>Card Payment</strong><br><span class="muted">Visa, Mastercard, AMEX</span></label></div></div>
+<div class="field"><label>Order Note (Optional)</label><textarea placeholder="Any special instructions for your order?"></textarea></div>
+</section>
+<aside class="summary-box checkout-summary"><h2><span style="display:inline-flex;align-items:center;gap:8px"><i data-icon="cart" style="width:23px;height:23px;color:var(--blue)"></i> Order Summary</span> <span class="muted" style="float:right;font-weight:500"><span id="checkoutItemCount">3</span> items</span></h2><div id="checkoutItems"></div>
+<div class="coupon"><input id="checkoutCouponInput" placeholder="Enter coupon code" autocomplete="off"><button id="checkoutCouponApply" class="btn btn-primary">Apply</button></div><div id="checkoutCouponFeedback" class="coupon-feedback"></div>
+<div class="summary-line"><span>Subtotal (<span id="checkoutSummaryCount">3</span> items)</span><strong id="checkoutSubtotal">৳ 12,670</strong></div>
+<div class="summary-line discount-row" id="checkoutDiscountRow" hidden><span>Coupon Discount</span><strong class="text-green" id="checkoutDiscount">- ৳ 0</strong></div>
+<div class="summary-line"><span class="shipping-label" id="shippingLabel">Shipping Charge (Inside Dhaka)</span><strong id="shippingCharge" class="shipping-charge">৳ 60</strong></div>
+<div class="summary-line total"><span>Grand Total</span><strong id="checkoutGrand" class="grand-total">৳ 12,730</strong></div>
+<button class="btn btn-primary" id="placeOrder" style="width:100%"><i data-icon="lock"></i> Place Order →</button><p class="muted" style="text-align:center">By placing this order, you agree to our Terms & Conditions and Privacy Policy.</p></aside>
+</div></div></main>
+{% endblock %}

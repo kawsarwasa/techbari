@@ -1,0 +1,41 @@
+{% extends "backoffice/base.html" %}
+{% load static demo %}
+{% block title %}Products | TechBari Admin{% endblock %}
+{% block content %}
+
+<section class="page product-crud-page">
+  <div class="page-head product-list-head">
+    <div><h1>Products</h1><p>Manage your product catalog, update inventory, and grow your business.</p></div>
+    <div class="head-actions">
+      <button class="btn" type="button" data-demo-alert="Import preview is available in the production build."><svg viewBox="0 0 24 24" class="svg"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/></svg> Import Products</button>
+      <a class="btn btn-primary" href="{% url 'backoffice:product_add' %}"><svg viewBox="0 0 24 24" class="svg"><path d="M12 5v14M5 12h14"/></svg> Add Product</a>
+    </div>
+  </div>
+
+  <div class="cards product-kpis">
+    {% include "backoffice/components/stat_card.html" with stat=statistics.0 %}
+    {% include "backoffice/components/stat_card.html" with stat=statistics.1 %}
+    {% include "backoffice/components/stat_card.html" with stat=statistics.2 %}
+    {% include "backoffice/components/stat_card.html" with stat=statistics.3 %}
+  </div>
+
+  <div class="card product-list-card">
+    <div class="product-filterbar">
+      <label class="product-search"><svg viewBox="0 0 24 24" class="svg"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="productSearch" placeholder="Search products by name, SKU, or brand..."></label>
+      <select id="productCategoryFilter" class="control"><option value="">All Categories</option><option>Earbuds</option><option>Headphones</option><option>Speakers</option><option>Smartwatches</option><option>Power Banks</option><option>Chargers</option><option>Cables</option></select>
+      <select id="productStockFilter" class="control"><option value="">All Stock Status</option><option value="in">In Stock</option><option value="out">Out of Stock</option><option value="low">Low Stock</option></select>
+      <select id="productSort" class="control"><option value="newest">Sort by: Newest</option><option value="name">Name A–Z</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="stock">Stock: High to Low</option></select>
+    </div>
+    <div class="product-table-toolbar">
+      <div class="selection-tools"><label class="check-wrap"><input type="checkbox" id="selectAllProducts"><span></span></label><strong><span id="selectedProductCount">0</span> selected</strong><select class="control compact" id="productBulkAction"><option>Bulk Actions</option><option value="archive">Archive</option><option value="activate">Set Active</option><option value="draft">Set Draft</option><option value="delete">Delete</option></select></div>
+      <div class="product-pager-summary">Showing <strong id="productRange">1–10</strong> of <strong id="productTotal">248</strong> products <div class="mini-pages"><button type="button">‹</button><button class="active" type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button><button type="button">›</button></div></div>
+    </div>
+    <div class="table-scroll"><table class="data-table products-reference-table"><thead><tr><th class="check-col"><label class="check-wrap"><input type="checkbox" id="selectAllProductsHead"><span></span></label></th><th>#</th><th>Product</th><th>SKU</th><th>Category</th><th>Brand</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead><tbody id="productRows"></tbody></table></div>
+  </div>
+</section>
+
+{% include "backoffice/components/modal.html" %}
+
+{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-crud.css' %}">{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/product-crud.js' %}"></script>{% endblock %}

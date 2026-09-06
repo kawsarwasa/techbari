@@ -1,0 +1,7 @@
+{% extends "storefront/base.html" %}
+{% load static demo %}
+{% block title %}Wishlist - TechBari{% endblock %}
+{% block body_attributes %}{% endblock %}
+{% block content %}
+<main class="page"><div class="container"><section class="wishlist-banner"><div>{% include "storefront/includes/breadcrumbs/wishlist.html" %}<h1>My Wishlist</h1><p>Your saved products, all in one place.</p></div><div class="wishlist-heart">💙</div></section><section class="section"><div class="section-head"><h2 class="section-title">5 Saved Items</h2><select class="sort-select"><option>Recently Added</option><option>Price Low to High</option></select></div><div id="wishlistGrid" class="wishlist-grid"></div></section><section class="section"><div class="section-head"><div><h2 class="section-title">Recommended For You</h2><span class="muted">Based on your wishlist, here are some more products you might like.</span></div><a href="{% url 'storefront:products' %}" class="section-link">View All Products →</a></div><div id="recommendedGrid" class="recommend-grid">{% for product in recommended_products %}{% include "storefront/components/product_card.html" %}{% endfor %}</div></section></div></main>
+{% endblock %}

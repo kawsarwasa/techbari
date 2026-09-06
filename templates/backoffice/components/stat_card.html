@@ -1,0 +1,1 @@
+<div class="kpi"><div class="kpi-icon {{ stat.color }}">{% include stat.icon %}</div><div><div class="kpi-label">{{ stat.label }}</div><div class="kpi-value"{% if stat.hook %} data-product-kpi="{{ stat.hook }}"{% endif %}>{{ stat.value }}</div><span class="trend {{ stat.trend_class }}">{{ stat.trend }}</span><span class="trend-note">{{ stat.note }}</span></div></div>

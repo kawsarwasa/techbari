@@ -1,0 +1,299 @@
+{
+  "project": "TechBari",
+  "database": "none (django dummy backend)",
+  "static_data": true,
+  "storefront_pages": 9,
+  "dashboard_pages": 46,
+  "catalog_products": 15,
+  "routes": [
+    {
+      "name": "storefront:home",
+      "path": "/"
+    },
+    {
+      "name": "storefront:products",
+      "path": "/products/"
+    },
+    {
+      "name": "storefront:cart",
+      "path": "/cart/"
+    },
+    {
+      "name": "storefront:checkout",
+      "path": "/checkout/"
+    },
+    {
+      "name": "storefront:wishlist",
+      "path": "/wishlist/"
+    },
+    {
+      "name": "storefront:track_order",
+      "path": "/track-order/"
+    },
+    {
+      "name": "storefront:login",
+      "path": "/login/"
+    },
+    {
+      "name": "storefront:register",
+      "path": "/register/"
+    },
+    {
+      "name": "storefront:contact",
+      "path": "/contact/"
+    },
+    {
+      "name": "storefront:product_detail",
+      "path": "/product/<slug:slug>/"
+    },
+    {
+      "name": "storefront:product_by_id",
+      "path": "/product/id/<slug:product_id>/"
+    },
+    {
+      "name": "storefront:legacy_page",
+      "path": "/<slug:page>.html"
+    },
+    {
+      "name": "backoffice:accounts",
+      "path": "/dashboard/accounts/",
+      "template": "backoffice/pages/accounts/accounts.html"
+    },
+    {
+      "name": "backoffice:audit_log",
+      "path": "/dashboard/audit-log/",
+      "template": "backoffice/pages/audit/audit_log.html"
+    },
+    {
+      "name": "backoffice:brand_add",
+      "path": "/dashboard/brands/add/",
+      "template": "backoffice/pages/brands/brand_add.html"
+    },
+    {
+      "name": "backoffice:brands",
+      "path": "/dashboard/brands/",
+      "template": "backoffice/pages/brands/brands.html"
+    },
+    {
+      "name": "backoffice:categories",
+      "path": "/dashboard/categories/",
+      "template": "backoffice/pages/categories/categories.html"
+    },
+    {
+      "name": "backoffice:category_add",
+      "path": "/dashboard/categories/add/",
+      "template": "backoffice/pages/categories/category_add.html"
+    },
+    {
+      "name": "backoffice:coupon_add",
+      "path": "/dashboard/coupons/add/",
+      "template": "backoffice/pages/coupons/coupon_add.html"
+    },
+    {
+      "name": "backoffice:coupons",
+      "path": "/dashboard/coupons/",
+      "template": "backoffice/pages/coupons/coupons.html"
+    },
+    {
+      "name": "backoffice:customer_detail",
+      "path": "/dashboard/customers/detail/",
+      "template": "backoffice/pages/customers/customer_detail.html"
+    },
+    {
+      "name": "backoffice:customer_add",
+      "path": "/dashboard/customers/add/",
+      "template": "backoffice/pages/customers/customer_add.html"
+    },
+    {
+      "name": "backoffice:customers",
+      "path": "/dashboard/customers/",
+      "template": "backoffice/pages/customers/customers.html"
+    },
+    {
+      "name": "backoffice:dashboard",
+      "path": "/dashboard/",
+      "template": "backoffice/pages/dashboard.html"
+    },
+    {
+      "name": "backoffice:expense_add",
+      "path": "/dashboard/expenses/add/",
+      "template": "backoffice/pages/expenses/expense_add.html"
+    },
+    {
+      "name": "backoffice:expenses",
+      "path": "/dashboard/expenses/",
+      "template": "backoffice/pages/expenses/expenses.html"
+    },
+    {
+      "name": "backoffice:inventory",
+      "path": "/dashboard/inventory/",
+      "template": "backoffice/pages/inventory/inventory.html"
+    },
+    {
+      "name": "backoffice:marketing",
+      "path": "/dashboard/marketing/",
+      "template": "backoffice/pages/marketing/marketing.html"
+    },
+    {
+      "name": "backoffice:notifications",
+      "path": "/dashboard/notifications/",
+      "template": "backoffice/pages/notifications/notifications.html"
+    },
+    {
+      "name": "backoffice:order_detail",
+      "path": "/dashboard/orders/detail/",
+      "template": "backoffice/pages/orders/order_detail.html"
+    },
+    {
+      "name": "backoffice:order_add",
+      "path": "/dashboard/orders/add/",
+      "template": "backoffice/pages/orders/order_add.html"
+    },
+    {
+      "name": "backoffice:orders",
+      "path": "/dashboard/orders/",
+      "template": "backoffice/pages/orders/orders.html"
+    },
+    {
+      "name": "backoffice:payment_add",
+      "path": "/dashboard/payments/add/",
+      "template": "backoffice/pages/payments/payment_add.html"
+    },
+    {
+      "name": "backoffice:payments",
+      "path": "/dashboard/payments/",
+      "template": "backoffice/pages/payments/payments.html"
+    },
+    {
+      "name": "backoffice:pos",
+      "path": "/dashboard/pos/",
+      "template": "backoffice/pages/pos/pos.html"
+    },
+    {
+      "name": "backoffice:product_edit",
+      "path": "/dashboard/products/edit/",
+      "template": "backoffice/pages/products/product_edit.html"
+    },
+    {
+      "name": "backoffice:product_add",
+      "path": "/dashboard/products/add/",
+      "template": "backoffice/pages/products/product_add.html"
+    },
+    {
+      "name": "backoffice:products",
+      "path": "/dashboard/products/",
+      "template": "backoffice/pages/products/products.html"
+    },
+    {
+      "name": "backoffice:purchase_add",
+      "path": "/dashboard/purchases/add/",
+      "template": "backoffice/pages/purchases/purchase_add.html"
+    },
+    {
+      "name": "backoffice:purchases",
+      "path": "/dashboard/purchases/",
+      "template": "backoffice/pages/purchases/purchases.html"
+    },
+    {
+      "name": "backoffice:reports",
+      "path": "/dashboard/reports/",
+      "template": "backoffice/pages/reports/reports.html"
+    },
+    {
+      "name": "backoffice:return_add",
+      "path": "/dashboard/returns/add/",
+      "template": "backoffice/pages/returns/return_add.html"
+    },
+    {
+      "name": "backoffice:returns",
+      "path": "/dashboard/returns/",
+      "template": "backoffice/pages/returns/returns.html"
+    },
+    {
+      "name": "backoffice:serial_add",
+      "path": "/dashboard/serials/add/",
+      "template": "backoffice/pages/serials/serial_add.html"
+    },
+    {
+      "name": "backoffice:serials",
+      "path": "/dashboard/serials/",
+      "template": "backoffice/pages/serials/serials.html"
+    },
+    {
+      "name": "backoffice:settings",
+      "path": "/dashboard/settings/",
+      "template": "backoffice/pages/settings/settings.html"
+    },
+    {
+      "name": "backoffice:shipment_add",
+      "path": "/dashboard/shipping/add/",
+      "template": "backoffice/pages/shipping/shipment_add.html"
+    },
+    {
+      "name": "backoffice:shipping",
+      "path": "/dashboard/shipping/",
+      "template": "backoffice/pages/shipping/shipping.html"
+    },
+    {
+      "name": "backoffice:stock_adjustment",
+      "path": "/dashboard/stock-adjustment/",
+      "template": "backoffice/pages/inventory/stock_adjustment.html"
+    },
+    {
+      "name": "backoffice:stock_transfer",
+      "path": "/dashboard/stock-transfer/",
+      "template": "backoffice/pages/inventory/stock_transfer.html"
+    },
+    {
+      "name": "backoffice:supplier_add",
+      "path": "/dashboard/suppliers/add/",
+      "template": "backoffice/pages/suppliers/supplier_add.html"
+    },
+    {
+      "name": "backoffice:suppliers",
+      "path": "/dashboard/suppliers/",
+      "template": "backoffice/pages/suppliers/suppliers.html"
+    },
+    {
+      "name": "backoffice:user_add",
+      "path": "/dashboard/users/add/",
+      "template": "backoffice/pages/users/user_add.html"
+    },
+    {
+      "name": "backoffice:users",
+      "path": "/dashboard/users/",
+      "template": "backoffice/pages/users/users.html"
+    },
+    {
+      "name": "backoffice:warehouse_add",
+      "path": "/dashboard/warehouses/add/",
+      "template": "backoffice/pages/warehouses/warehouse_add.html"
+    },
+    {
+      "name": "backoffice:warehouses",
+      "path": "/dashboard/warehouses/",
+      "template": "backoffice/pages/warehouses/warehouses.html"
+    },
+    {
+      "name": "backoffice:warranty_add",
+      "path": "/dashboard/warranty/add/",
+      "template": "backoffice/pages/warranty/warranty_add.html"
+    },
+    {
+      "name": "backoffice:warranty",
+      "path": "/dashboard/warranty/",
+      "template": "backoffice/pages/warranty/warranty.html"
+    },
+    {
+      "name": "backoffice:legacy_page",
+      "path": "/dashboard/<slug:page>.html"
+    }
+  ],
+  "validation": {
+    "page_urls": 89,
+    "navigation_asset_targets": 166,
+    "unchanged_css_image_assets": 64,
+    "original_dom_matches": 54,
+    "original_pages_compared": 55
+  }
+}

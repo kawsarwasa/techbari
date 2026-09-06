@@ -1,0 +1,3 @@
+{% extends "backoffice/components/product_breadcrumb.html" %}
+{% load static %}
+{% block breadcrumb_items %}<a href="{% url 'backoffice:products' %}">⌂</a><span>›</span><a href="{% url 'backoffice:products' %}">Products</a><span>›</span><strong>Edit Product</strong>{% endblock %}
