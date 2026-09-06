@@ -1,8 +1,12 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v1.0.2**
+**Current version: v1.0.3**
 
 TechBari started as a database-free Django template demo. The catalog phase is now backed by MySQL 8 while the remaining business modules continue to use the approved static/mock presentation until their database phases are implemented.
+
+## v1.0.3 — Add Product redesign
+
+The Add Product dashboard page has been rebuilt to match the approved TechBari visual reference more closely. It now uses the reference-style Basic Information card, Category & Brand and Pricing cards, Inventory and Product Status cards, Product Images area, Specifications/SEO tabs, a sticky Publishing sidebar, responsive behavior, and the existing MySQL-backed product form fields and validation.
 
 ## v1.0.2 — Catalog dashboard redesign
 
