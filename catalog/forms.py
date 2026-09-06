@@ -248,8 +248,9 @@ class ProductForm(forms.ModelForm):
     def _save_default_variant(self, product):
         variants = list(product.variants.order_by("-is_default", "id"))
         variant = next((v for v in variants if v.is_default), variants[0] if variants else None)
-        if variant is None:
-            variant = ProductVariant(product=product, name="Default", is_default=True)
+        is_new = variant is None
+        if is_new:
+            variant = ProductVariant(product=product, name="Default", is_default=True, is_active=True)
         elif not variant.is_default:
             product.variants.update(is_default=False)
             variant.is_default = True
@@ -257,7 +258,6 @@ class ProductForm(forms.ModelForm):
         variant.barcode = self.cleaned_data.get("barcode") or None
         variant.stock_quantity = self.cleaned_data["stock_quantity"]
         variant.low_stock_alert = self.cleaned_data["low_stock_alert"]
-        variant.is_active = True
         variant.save()
 
     def save(self, commit=True):

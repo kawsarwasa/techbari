@@ -75,9 +75,7 @@ def _replace_stat_values(stats, rows):
 
 
 def _product_statistics(context):
-    stock_qs = Product.objects.annotate(
-        total_stock=Coalesce(Sum("variants__stock_quantity"), Value(0), output_field=IntegerField())
-    )
+    stock_qs = Product.objects.annotate(total_stock=Coalesce(Sum("variants__stock_quantity"), Value(0), output_field=IntegerField()))
     rows = [
         {"label": "Total Products", "value": str(Product.objects.count()), "trend": "Live", "trend_class": "up"},
         {"label": "Active Products", "value": str(Product.objects.filter(status=Product.Status.ACTIVE).count()), "trend": "Live", "trend_class": "up"},
@@ -95,8 +93,7 @@ def products(request):
         if action in {"delete", "archive"} and product_id:
             product = get_object_or_404(Product, pk=product_id)
             if action == "delete":
-                product.delete()
-                return redirect(reverse("backoffice:products") + "?notice=deleted")
+                product.delete(); return redirect(reverse("backoffice:products") + "?notice=deleted")
             product.status = Product.Status.ARCHIVED
             product.save(update_fields=["status", "updated_at"])
             return redirect(reverse("backoffice:products") + "?notice=archived")
@@ -107,7 +104,6 @@ def products(request):
             elif action == "bulk_activate": qs.update(status=Product.Status.ACTIVE)
             elif action == "bulk_draft": qs.update(status=Product.Status.DRAFT)
             return redirect("backoffice:products")
-
     context = _base_context("products", request)
     rows = [serialize_admin_product(product) for product in catalog_queryset(include_inactive=True)]
     context["products"] = rows
@@ -118,23 +114,15 @@ def products(request):
 
 
 def _posted_specs(request, fallback):
-    if request.method != "POST":
-        return fallback
-    names = request.POST.getlist("spec_name")
-    values = request.POST.getlist("spec_value")
+    if request.method != "POST": return fallback
+    names, values = request.POST.getlist("spec_name"), request.POST.getlist("spec_value")
     rows = [{"name": name, "value": value} for name, value in zip(names, values) if name or value]
     return rows or fallback
 
 
 def _product_form_context(page_name, request, form, product=None):
     context = _base_context(page_name, request)
-    context.update(
-        form=form,
-        product_obj=product,
-        is_edit=bool(product),
-        specifications=_posted_specs(request, [{"name": s.name, "value": s.value} for s in product.specifications.all()] if product else DEFAULT_SPECS),
-        product_images=serialize_product(product)["images"] if product else [],
-    )
+    context.update(form=form, product_obj=product, is_edit=bool(product), specifications=_posted_specs(request, [{"name": s.name, "value": s.value} for s in product.specifications.all()] if product else DEFAULT_SPECS), product_images=serialize_product(product)["images"] if product else [])
     return context
 
 
@@ -159,8 +147,7 @@ def product_edit(request):
         image_files = request.FILES.getlist("images")
         try:
             validate_product_images(image_files)
-            if product.images.count() + len(image_files) > 8:
-                raise ValidationError("A product can have a maximum of 8 images in total.")
+            if product.images.count() + len(image_files) > 8: raise ValidationError("A product can have a maximum of 8 images in total.")
         except ValidationError as exc: form.add_error(None, exc)
         if form.is_valid():
             save_product_bundle(form, image_files, request.POST.getlist("spec_name"), request.POST.getlist("spec_value"))
@@ -180,7 +167,7 @@ def categories(request):
     context["categories"] = rows
     active = sum(1 for row in rows if row["status"] == "Active")
     parent_count = sum(1 for row in queryset if row.parent_id is None)
-    context["statistics"] = _replace_stat_values(context["statistics"], [{"label": "Total Categories", "value": str(len(rows)), "trend": "Live"}, {"label": "Active Categories", "value": str(active), "trend": "Live"}, {"label": "Top-level Categories", "value": str(parent_count), "trend": "Live"}, {"label": "Inactive Categories", "value": str(len(rows) - active), "trend": "Live"}])
+    context["statistics"] = _replace_stat_values(context["statistics"], [{"label": "Total Categories", "value": str(len(rows)), "trend": "Live"}, {"label": "Active Categories", "value": str(active), "trend": "Live"}, {"label": "Top-level Categories", "value": str(parent_count), "trend": "Live"}, {"label": "Inactive Categories", "value": str(len(rows)-active), "trend": "Live"}])
     return render(request, "backoffice/pages/categories/categories.html", context)
 
 
@@ -204,9 +191,8 @@ def brands(request):
     queryset = Brand.objects.annotate(product_count=Count("products")).order_by("sort_order", "name")
     rows = [{"id": row.pk, "name": row.name, "slug": row.slug, "products": row.product_count, "featured": "Yes" if row.is_featured else "No", "status": "Active" if row.is_active else "Inactive"} for row in queryset]
     context["brands"] = rows
-    active = sum(1 for row in rows if row["status"] == "Active")
-    featured = sum(1 for row in rows if row["featured"] == "Yes")
-    context["statistics"] = _replace_stat_values(context["statistics"], [{"label": "Total Brands", "value": str(len(rows)), "trend": "Live"}, {"label": "Active Brands", "value": str(active), "trend": "Live"}, {"label": "Featured Brands", "value": str(featured), "trend": "Live"}, {"label": "Inactive Brands", "value": str(len(rows) - active), "trend": "Live"}])
+    active = sum(1 for row in rows if row["status"] == "Active"); featured = sum(1 for row in rows if row["featured"] == "Yes")
+    context["statistics"] = _replace_stat_values(context["statistics"], [{"label": "Total Brands", "value": str(len(rows)), "trend": "Live"}, {"label": "Active Brands", "value": str(active), "trend": "Live"}, {"label": "Featured Brands", "value": str(featured), "trend": "Live"}, {"label": "Inactive Brands", "value": str(len(rows)-active), "trend": "Live"}])
     return render(request, "backoffice/pages/brands/brands.html", context)
 
 
@@ -237,7 +223,7 @@ def variants(request):
         was_default = variant.is_default
         variant.delete()
         if was_default:
-            replacement = product.variants.order_by("id").first()
+            replacement = product.variants.filter(is_active=True).order_by("id").first() or product.variants.order_by("id").first()
             if replacement:
                 product.variants.update(is_default=False)
                 replacement.is_default = True
@@ -264,8 +250,9 @@ def variant_form(request):
             if variant.is_default: product.variants.exclude(pk=variant.pk).update(is_default=False)
             variant.save()
             if not product.variants.filter(is_default=True).exists():
-                variant.is_default = True
-                variant.save(update_fields=["is_default", "updated_at"])
+                replacement = product.variants.filter(is_active=True).order_by("id").first() or variant
+                replacement.is_default = True
+                replacement.save(update_fields=["is_default", "updated_at"])
         return redirect(reverse("backoffice:catalog_variants") + f"?product={variant.product_id}&notice=saved")
     context = _catalog_management_context(request); context.update(form=form, is_edit=bool(instance), variant_obj=instance, product_filter=product_id)
     return render(request, "backoffice/pages/catalog/variant_form.html", context)
