@@ -7,7 +7,10 @@
   <title>{% block title %}TechBari Admin{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'admin/css/admin.css' %}">
   {% block extra_css %}{% endblock %}
-  {% if active_section == 'products' %}<link rel="stylesheet" href="{% static 'admin/css/catalog-v102.css' %}">{% endif %}
+  {% if active_section == 'products' %}
+  <link rel="stylesheet" href="{% static 'admin/css/catalog-v102.css' %}">
+  <link rel="stylesheet" href="{% static 'admin/css/catalog-v102-polish.css' %}">
+  {% endif %}
 </head>
 <body{% if active_section == 'products' %} class="catalog-theme"{% endif %}>
   <div class="admin-shell">
