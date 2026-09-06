@@ -4,9 +4,149 @@
 {% block content %}
 <section class="page product-form-page" data-product-form-page="edit" data-catalog-db="true">
   {% include "backoffice/includes/breadcrumbs/product_edit.html" %}
-  <div class="page-head product-form-head"><div><h1>Edit Product</h1><p>Update product, default SKU, pricing, media, specifications and SEO.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:catalog_variants' %}?product={{ product_obj.id }}">Variants / SKUs</a><a class="btn" href="{% url 'backoffice:catalog_media' %}?product={{ product_obj.id }}">Media</a><a class="btn" href="{% url 'backoffice:catalog_specifications' %}?product={{ product_obj.id }}">Specifications</a><a class="btn" href="{% url 'storefront:product_detail' slug=product_obj.slug %}" target="_blank" rel="noopener">◉ Preview</a><a class="btn" href="{% url 'backoffice:products' %}">Cancel</a><button class="btn btn-primary" type="submit" form="productEditForm">▣ Update Product</button></div></div>
-  {% if form.errors %}<div class="soft-note" style="margin-bottom:14px"><strong>Please fix the form errors below.</strong> {{ form.non_field_errors }}</div>{% endif %}
-  <form id="productEditForm" class="product-edit-layout" method="post" enctype="multipart/form-data" data-catalog-product-form="edit">{% csrf_token %}<div class="product-edit-left"><section class="form-card"><h2><span class="section-icon blue">▤</span> Basic Information</h2><div class="field-grid two"><label>Product Name <em>*</em>{{ form.name }}{{ form.name.errors }}</label><label>URL Slug{{ form.slug }}{{ form.slug.errors }}</label></div><div class="field-grid two"><label>Category <em>*</em>{{ form.category }}</label><label>Brand <em>*</em>{{ form.brand }}</label></div><label>Short Description{{ form.short_description }}</label><label data-rich-field>Full Description<div class="rich-toolbar"><select><option>Paragraph</option></select><button type="button"><b>B</b></button><button type="button"><i>I</i></button><button type="button"><u>U</u></button><button type="button">≡</button></div><div class="rich-area rich-editor-v105" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Full product description" data-rich-editor data-placeholder="Write the full product description..."></div><textarea name="description" class="rich-area rich-source-hidden" rows="7">{{ form.description.value|default_if_none:'' }}</textarea></label><div class="field-grid two"><label>Display Name{{ form.short_name }}</label><label>Subtitle{{ form.subtitle }}</label></div></section><section class="form-card"><div class="section-title-line"><h2><span class="section-icon purple">▱</span> Default Variant / SKU</h2><a class="btn small" href="{% url 'backoffice:catalog_variants' %}?product={{ product_obj.id }}">Manage All Variants</a></div><div class="field-grid four"><label>Default SKU <em>*</em>{{ form.sku }}{{ form.sku.errors }}</label><label>Barcode{{ form.barcode }}{{ form.barcode.errors }}</label><label>Stock Quantity <em>*</em>{{ form.stock_quantity }}</label><label>Low Stock Alert{{ form.low_stock_alert }}</label></div><div class="soft-note">Editing this section changes only the default variant. Other variants are preserved and managed from Variants / SKUs.</div></section><section class="form-card"><h2><span class="section-icon blue">◆</span> Product Pricing</h2><div class="field-grid two"><label>Regular Price <em>*</em><div class="money-input"><span>৳</span>{{ form.regular_price }}</div></label><label>Sale Price<div class="money-input"><span>৳</span>{{ form.sale_price }}</div></label></div><small>Individual variants can override both prices from the Variants / SKUs manager.</small></section><section class="form-card"><div class="section-title-line"><h2><span class="section-icon blue">▤</span> Product Specifications</h2><a class="btn small" href="{% url 'backoffice:catalog_specifications' %}?product={{ product_obj.id }}">Open Specification Manager</a></div><div class="spec-list" id="editSpecList">{% for specification in specifications %}<div><input name="spec_name" value="{{ specification.name }}" placeholder="Specification"><input name="spec_value" value="{{ specification.value }}" placeholder="Value"><button type="button" data-remove-spec>×</button></div>{% endfor %}</div><button class="btn small" type="button" id="editAddSpecBtn">＋ Add Specification</button></section></div><div class="product-edit-right"><section class="form-card"><div class="section-title-line"><h2><span class="section-icon blue">▣</span> Product Images</h2><a class="btn small" href="{% url 'backoffice:catalog_media' %}?product={{ product_obj.id }}">Manage Media</a></div><div class="edit-image-gallery">{% if product_images %}<div class="edit-main-image"><span>Main Image</span><div><img id="editMainProductImage" src="{{ product_images.0 }}" alt="{{ product_obj.name }}"><b>✓</b></div></div><div class="edit-thumbs">{% for image in product_images %}<button type="button" data-edit-image="{{ image }}"><img src="{{ image }}" alt="{{ product_obj.name }}"></button>{% endfor %}</div>{% else %}<div class="empty-state">No product images yet.</div>{% endif %}</div><label class="edit-upload-box">☁ <span><strong>Click to add images</strong><br><small>JPG, PNG, WebP — maximum 2MB each</small></span><input type="file" name="images" accept="image/jpeg,image/png,image/webp" multiple hidden id="productImageInput"></label><div class="image-strip" id="productImageStrip"></div></section><section class="form-card"><h2><span class="section-icon blue">⚙</span> Product Status</h2><label>Product Status{{ form.status }}</label><div class="status-toggle-row"><span class="status-star">★</span><div><strong>Featured Product</strong><small>Show in featured sections</small></div><label class="switch">{{ form.is_featured }}<span></span></label></div><div class="status-toggle-row"><span class="status-cube">◇</span><div><strong>New Arrival</strong><small>Mark as new arrival</small></div><label class="switch">{{ form.is_new_arrival }}<span></span></label></div></section><section class="form-card"><h2><span class="section-icon blue">🚚</span> Shipping Information</h2><div class="field-grid two"><label>Weight (kg){{ form.weight }}</label><label>Shipping Class{{ form.shipping_class }}</label></div><label>Warranty{{ form.warranty }}</label></section><section class="form-card"><h2><span class="section-icon blue">⌕</span> SEO Information</h2><label>Meta Title{{ form.meta_title }}</label><label>Meta Description{{ form.meta_description }}</label><div class="field-grid two"><label>Badge{{ form.badge }}</label><label>Detail Badge{{ form.detail_badge }}</label></div></section><section class="form-card metadata-card"><h2><span class="section-icon blue">◷</span> Product Metadata</h2><div class="metadata-grid"><div><span>Created Date</span><strong>{{ product_obj.created_at|date:"M d, Y" }}</strong></div><div><span>Last Updated</span><strong>{{ product_obj.updated_at|date:"M d, Y" }}</strong></div><div><span>Product Status</span><strong class="meta-active">{{ product_obj.get_status_display }}</strong></div></div></section></div></form>
+
+  <div class="page-head product-form-head">
+    <div>
+      <h1>Edit Product</h1>
+      <p>Update product, default SKU, pricing, media, specifications and SEO.</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn" href="{% url 'backoffice:catalog_variants' %}?product={{ product_obj.id }}">Variants / SKUs</a>
+      <a class="btn" href="{% url 'backoffice:catalog_media' %}?product={{ product_obj.id }}">Media</a>
+      <a class="btn" href="{% url 'backoffice:catalog_specifications' %}?product={{ product_obj.id }}">Specifications</a>
+      <a class="btn" href="{% url 'storefront:product_detail' slug=product_obj.slug %}" target="_blank" rel="noopener">◉ Preview</a>
+      <a class="btn" href="{% url 'backoffice:products' %}">Cancel</a>
+      <button class="btn btn-primary" type="submit" form="productEditForm">▣ Update Product</button>
+    </div>
+  </div>
+
+  {% if form.errors %}
+  <div class="soft-note" style="margin-bottom:14px"><strong>Please fix the form errors below.</strong> {{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <form id="productEditForm" class="product-edit-layout" method="post" enctype="multipart/form-data" data-catalog-product-form="edit">
+    {% csrf_token %}
+
+    <div class="product-edit-left">
+      <section class="form-card">
+        <h2><span class="section-icon blue">▤</span> Basic Information</h2>
+        <div class="field-grid two">
+          <label>Product Name <em>*</em>{{ form.name }}{{ form.name.errors }}</label>
+          <label>URL Slug{{ form.slug }}{{ form.slug.errors }}</label>
+        </div>
+        <div class="field-grid two">
+          <label>Category <em>*</em>{{ form.category }}</label>
+          <label>Brand <em>*</em>{{ form.brand }}</label>
+        </div>
+        <label>Short Description{{ form.short_description }}</label>
+        <div class="product-description-field">
+          <label>Full Description</label>
+          {% include "backoffice/components/product_description_editor.html" %}
+        </div>
+        <div class="field-grid two">
+          <label>Display Name{{ form.short_name }}</label>
+          <label>Subtitle{{ form.subtitle }}</label>
+        </div>
+      </section>
+
+      <section class="form-card">
+        <div class="section-title-line">
+          <h2><span class="section-icon purple">▱</span> Default Variant / SKU</h2>
+          <a class="btn small" href="{% url 'backoffice:catalog_variants' %}?product={{ product_obj.id }}">Manage All Variants</a>
+        </div>
+        <div class="field-grid four">
+          <label>Default SKU <em>*</em>{{ form.sku }}{{ form.sku.errors }}</label>
+          <label>Barcode{{ form.barcode }}{{ form.barcode.errors }}</label>
+          <label>Stock Quantity <em>*</em>{{ form.stock_quantity }}</label>
+          <label>Low Stock Alert{{ form.low_stock_alert }}</label>
+        </div>
+        <div class="soft-note">Editing this section changes only the default variant. Other variants are preserved and managed from Variants / SKUs.</div>
+      </section>
+
+      <section class="form-card">
+        <h2><span class="section-icon blue">◆</span> Product Pricing</h2>
+        <div class="field-grid two">
+          <label>Regular Price <em>*</em><div class="money-input"><span>৳</span>{{ form.regular_price }}</div></label>
+          <label>Sale Price<div class="money-input"><span>৳</span>{{ form.sale_price }}</div></label>
+        </div>
+        <small>Individual variants can override both prices from the Variants / SKUs manager.</small>
+      </section>
+
+      <section class="form-card">
+        <div class="section-title-line">
+          <h2><span class="section-icon blue">▤</span> Product Specifications</h2>
+          <a class="btn small" href="{% url 'backoffice:catalog_specifications' %}?product={{ product_obj.id }}">Open Specification Manager</a>
+        </div>
+        <div class="spec-list" id="editSpecList">
+          {% for specification in specifications %}
+          <div><input name="spec_name" value="{{ specification.name }}" placeholder="Specification"><input name="spec_value" value="{{ specification.value }}" placeholder="Value"><button type="button" data-remove-spec>×</button></div>
+          {% endfor %}
+        </div>
+        <button class="btn small" type="button" id="editAddSpecBtn">＋ Add Specification</button>
+      </section>
+    </div>
+
+    <div class="product-edit-right">
+      <section class="form-card">
+        <div class="section-title-line">
+          <h2><span class="section-icon blue">▣</span> Product Images</h2>
+          <a class="btn small" href="{% url 'backoffice:catalog_media' %}?product={{ product_obj.id }}">Manage Media</a>
+        </div>
+        <div class="edit-image-gallery">
+          {% if product_images %}
+          <div class="edit-main-image">
+            <span>Main Image</span>
+            <div><img id="editMainProductImage" src="{{ product_images.0 }}" alt="{{ product_obj.name }}"><b>✓</b></div>
+          </div>
+          <div class="edit-thumbs">
+            {% for image in product_images %}
+            <button type="button" data-edit-image="{{ image }}"><img src="{{ image }}" alt="{{ product_obj.name }}"></button>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="empty-state">No product images yet.</div>
+          {% endif %}
+        </div>
+        <label class="edit-upload-box">☁ <span><strong>Click to add images</strong><br><small>JPG, PNG, WebP — maximum 2MB each</small></span><input type="file" name="images" accept="image/jpeg,image/png,image/webp" multiple hidden id="productImageInput"></label>
+        <div class="image-strip" id="productImageStrip"></div>
+      </section>
+
+      <section class="form-card">
+        <h2><span class="section-icon blue">⚙</span> Product Status</h2>
+        <label>Product Status{{ form.status }}</label>
+        <div class="status-toggle-row"><span class="status-star">★</span><div><strong>Featured Product</strong><small>Show in featured sections</small></div><label class="switch">{{ form.is_featured }}<span></span></label></div>
+        <div class="status-toggle-row"><span class="status-cube">◇</span><div><strong>New Arrival</strong><small>Mark as new arrival</small></div><label class="switch">{{ form.is_new_arrival }}<span></span></label></div>
+      </section>
+
+      <section class="form-card">
+        <h2><span class="section-icon blue">🚚</span> Shipping Information</h2>
+        <div class="field-grid two">
+          <label>Weight (kg){{ form.weight }}</label>
+          <label>Shipping Class{{ form.shipping_class }}</label>
+        </div>
+        <label>Warranty{{ form.warranty }}</label>
+      </section>
+
+      <section class="form-card">
+        <h2><span class="section-icon blue">⌕</span> SEO Information</h2>
+        <label>Meta Title{{ form.meta_title }}</label>
+        <label>Meta Description{{ form.meta_description }}</label>
+        <div class="field-grid two">
+          <label>Badge{{ form.badge }}</label>
+          <label>Detail Badge{{ form.detail_badge }}</label>
+        </div>
+      </section>
+
+      <section class="form-card metadata-card">
+        <h2><span class="section-icon blue">◷</span> Product Metadata</h2>
+        <div class="metadata-grid">
+          <div><span>Created Date</span><strong>{{ product_obj.created_at|date:"M d, Y" }}</strong></div>
+          <div><span>Last Updated</span><strong>{{ product_obj.updated_at|date:"M d, Y" }}</strong></div>
+          <div><span>Product Status</span><strong class="meta-active">{{ product_obj.get_status_display }}</strong></div>
+        </div>
+      </section>
+    </div>
+  </form>
 </section>
 {% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-crud.css' %}"><link rel="stylesheet" href="{% static 'admin/css/product-form-v104.css' %}">{% endblock %}
