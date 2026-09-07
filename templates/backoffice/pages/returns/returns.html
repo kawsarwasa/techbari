@@ -1,7 +1,40 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
+{% load demo %}
 {% block title %}Returns & Refunds | TechBari Admin{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Returns & Refunds</h1><p>Manage returns, exchanges and refunds.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:return_add' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add Return</a><a class="btn" href="{% url 'backoffice:warranty' %}">Warranty / RMA</a></div></div><div class="cards kpi-grid-4">{% include "backoffice/components/stat_card.html" with stat=statistics.0 %}{% include "backoffice/components/stat_card.html" with stat=statistics.1 %}{% include "backoffice/components/stat_card.html" with stat=statistics.2 %}{% include "backoffice/components/stat_card.html" with stat=statistics.3 %}</div><div class="filters-card"><div class="filter-row"><input class="control search" data-table-search="#ReturnsTable" placeholder="Search returns..."><select class="control"><option>All Status</option><option>Active</option><option>Inactive</option></select><span class="filter-spacer"></span><button class="btn" data-export-table="#ReturnsTable"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/></svg> Export CSV</button></div></div>
-    <div class="card orders-table-card"><div class="table-scroll"><table class="data-table" id="ReturnsTable" data-crud-table="returns"><thead><tr><th>#</th><th>Return ID</th><th>Order ID</th><th>Customer</th><th>Item</th><th>Reason</th><th>Refund</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>{% for record in returns %}{% include "backoffice/components/record_row.html" with entity="returns" columns=table_columns.returns %}{% endfor %}</tbody></table></div><div class="table-footer"><span data-table-count></span>{% include "backoffice/components/table_pagination.html" %}</div></div></section>
+<section class="page">
+  <div class="page-head">
+    <div><h1>Returns & Refunds</h1><p>Process sold-item returns, inventory disposition, order credits and payment-ledger refunds.</p></div>
+    <div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:return_add' %}">+ Add Return</a><a class="btn" href="{% url 'backoffice:warranty' %}">Warranty / RMA</a></div>
+  </div>
+  {% if returns_notice %}<div class="soft-note" style="margin-bottom:14px">{{ returns_notice }}</div>{% endif %}
+  {% if returns_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ returns_error }}</div>{% endif %}
+  <div class="cards kpi-grid-4">
+    {% for stat in return_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}
+  </div>
+  <form class="filters-card" method="get">
+    <div class="filter-row">
+      <input class="control search" name="q" value="{{ return_query }}" placeholder="Return, order, customer, SKU...">
+      <select class="control" name="status"><option value="">All Status</option>{% for value,label in return_status_choices %}<option value="{{ value }}"{% if return_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <select class="control" name="source"><option value="">All Sources</option>{% for value,label in return_source_choices %}<option value="{{ value }}"{% if return_source == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <button class="btn" type="submit">Filter</button><a class="btn" href="{% url 'backoffice:returns' %}">Reset</a>
+    </div>
+  </form>
+  <div class="card orders-table-card">
+    <div class="table-scroll"><table class="data-table"><thead><tr><th>Return</th><th>Order</th><th>Customer</th><th>Items</th><th>Credit</th><th>Cash Refund</th><th>Source</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
+      {% for row in return_rows %}<tr>
+        <td><strong>{{ row.return_no }}</strong></td>
+        <td><a href="{% url 'backoffice:order_detail_id' row.order_id %}">{{ row.order.order_number }}</a></td>
+        <td>{{ row.customer_name }}<br><small>{{ row.order.customer_phone }}</small></td>
+        <td>{{ row.item_count }}</td>
+        <td>{{ row.credit_total|money }}</td>
+        <td>{{ row.refunded_total|money }}</td>
+        <td>{{ row.get_source_display }}</td>
+        <td><span class="badge">{{ row.get_status_display }}</span></td>
+        <td>{{ row.requested_date }}</td>
+        <td><a class="btn" href="{% url 'backoffice:return_detail' row.id %}">Open</a></td>
+      </tr>{% empty %}<tr><td colspan="10">No returns found.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</section>
 {% endblock %}
