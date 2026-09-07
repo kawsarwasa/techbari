@@ -3,7 +3,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from accounting.expense_posting import post_expense
-from accounting.models import JournalEntry
+from accounting.models import Account, JournalEntry
 from accounting.services import AccountingError, reverse_journal
 
 from .models import Expense, ExpenseEvent
@@ -116,7 +116,7 @@ def cancel_expense(*, expense, note="", actor="Dashboard"):
 
 
 @transaction.atomic
-def pay_expense(*, expense, payment_method, payment_reference="", payment_date=None, note="", actor="Dashboard"):
+def pay_expense(*, expense, payment_method, payment_account, payment_reference="", payment_date=None, note="", actor="Dashboard"):
     expense = Expense.objects.select_for_update().select_related("category__account").get(pk=expense.pk)
     if expense.status != Expense.Status.APPROVED:
         raise ExpenseError("Only Approved expenses can be paid.")
@@ -124,6 +124,12 @@ def pay_expense(*, expense, payment_method, payment_reference="", payment_date=N
     valid_methods = {value for value, _ in Expense.Method.choices}
     if payment_method not in valid_methods:
         raise ExpenseError("Select a valid expense payment method.")
+    try:
+        payment_account = Account.objects.get(pk=getattr(payment_account, "pk", payment_account))
+    except (Account.DoesNotExist, TypeError, ValueError) as exc:
+        raise ExpenseError("Select a valid payment account.") from exc
+    if payment_account.account_type != Account.Type.ASSET or not payment_account.is_active or not payment_account.allow_manual_entries:
+        raise ExpenseError("Select an active cash/bank/payment Asset account.")
     payment_reference = str(payment_reference or "").strip()
     if payment_method != Expense.Method.CASH and not payment_reference:
         raise ExpenseError("Non-cash expense payments require a transaction/reference number.")
@@ -134,6 +140,7 @@ def pay_expense(*, expense, payment_method, payment_reference="", payment_date=N
 
     payment_date = payment_date or timezone.localdate()
     expense.payment_method = payment_method
+    expense.payment_account = payment_account
     expense.payment_reference = payment_reference
     expense.payment_date = payment_date
     expense.paid_by = actor
@@ -149,6 +156,7 @@ def pay_expense(*, expense, payment_method, payment_reference="", payment_date=N
 
     expense.save(update_fields=[
         "payment_method",
+        "payment_account",
         "payment_reference",
         "payment_date",
         "paid_by",
@@ -161,7 +169,7 @@ def pay_expense(*, expense, payment_method, payment_reference="", payment_date=N
         ExpenseEvent.Event.PAID,
         previous_status=old,
         new_status=expense.status,
-        note=note or f"Paid via {expense.get_payment_method_display()}; journal {journal.entry_no}.",
+        note=note or f"Paid via {expense.get_payment_method_display()} from {payment_account.code} {payment_account.name}; journal {journal.entry_no}.",
         actor=actor,
     )
     return expense
