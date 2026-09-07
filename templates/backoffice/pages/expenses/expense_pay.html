@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static demo %}
 {% block title %}Pay {{ expense.expense_no }} | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/expense-v210.css' %}?v=2.1.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/expense-v210.css' %}?v=2.1.1">{% endblock %}
 {% block content %}
 <section class="page">
   <div class="page-head"><div><h1>Pay Expense</h1><p>{{ expense.expense_no }} · {{ expense.description }}</p></div><a class="btn" href="{% url 'backoffice:expense_detail' expense.id %}">Cancel</a></div>
@@ -12,6 +12,7 @@
       <div class="section-head"><h3>Payment Information</h3></div>
       <div class="expense-form-grid">
         <label class="field"><span>Payment Method</span>{{ payment_form.payment_method }}{% for e in payment_form.payment_method.errors %}<small class="expense-error">{{ e }}</small>{% endfor %}</label>
+        <label class="field"><span>Payment Account</span>{{ payment_form.payment_account }}{% for e in payment_form.payment_account.errors %}<small class="expense-error">{{ e }}</small>{% endfor %}<small>{{ payment_form.payment_account.help_text }}</small></label>
         <label class="field"><span>Payment Date</span>{{ payment_form.payment_date }}{% for e in payment_form.payment_date.errors %}<small class="expense-error">{{ e }}</small>{% endfor %}</label>
         <label class="field wide"><span>Transaction / Reference</span>{{ payment_form.payment_reference }}{% for e in payment_form.payment_reference.errors %}<small class="expense-error">{{ e }}</small>{% endfor %}<small>Required for Bank, Card, bKash, Nagad and Other.</small></label>
         <label class="field wide"><span>Payment Note</span>{{ payment_form.note }}</label>
@@ -23,7 +24,7 @@
       <div class="expense-summary" style="margin-top:12px">
         <div class="expense-summary-row"><span>Expense</span><strong>{{ expense.amount|money }}</strong></div>
         <div class="expense-summary-row"><span>Debit</span><strong>{{ expense.category.account.code }} · {{ expense.category.account.name }}</strong></div>
-        <div class="expense-summary-row"><span>Credit</span><strong>Selected Cash / Bank / Payment Asset</strong></div>
+        <div class="expense-summary-row"><span>Credit</span><strong>Exact selected payment Asset account</strong></div>
       </div>
       <div class="expense-note">The expense is marked Paid only if the balanced Accounting journal posts successfully. A closed Accounting period blocks the payment atomically.</div>
     </aside>
