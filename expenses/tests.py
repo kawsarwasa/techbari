@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -25,6 +26,9 @@ from .services import (
 class ExpenseBase(TestCase):
     def setUp(self):
         self.category = ExpenseCategory.objects.get(code="OFFICE")
+        self.cash_account = Account.objects.get(code="1000")
+        self.bank_account = Account.objects.get(code="1010")
+        self.bkash_account = Account.objects.get(code="1030")
 
     def make_expense(self, *, amount="150.00", status=Expense.Status.DRAFT, description="Printer paper"):
         expense = Expense(
@@ -48,8 +52,10 @@ class ExpenseBase(TestCase):
 class ExpenseModelServiceTests(ExpenseBase):
     def test_default_categories_and_expense_accounts_are_seeded(self):
         codes = set(ExpenseCategory.objects.values_list("code", flat=True))
-        self.assertTrue({"RENT", "UTIL", "MKT", "OFFICE", "COMMS", "TRAVEL", "REPAIR", "BANKFEE", "PRO", "STAFF", "OTHER"}.issubset(codes))
+        self.assertTrue({"RENT", "UTIL", "MKT", "OFFICE", "COMMS", "TRAVEL", "REPAIR", "BANKFEE", "PRO", "STAFF", "SALARY", "COURIER", "OTHER"}.issubset(codes))
         self.assertEqual(Account.objects.get(code="6230").account_type, Account.Type.EXPENSE)
+        self.assertEqual(Account.objects.get(code="6300").account_type, Account.Type.EXPENSE)
+        self.assertEqual(ExpenseCategory.objects.get(code="COURIER").account.code, "6100")
 
     def test_category_must_map_to_expense_account(self):
         category = ExpenseCategory(code="BAD", name="Bad Mapping", account=Account.objects.get(code="1000"))
@@ -79,9 +85,16 @@ class ExpenseModelServiceTests(ExpenseBase):
 
     def test_approved_cash_payment_posts_balanced_accounting_journal(self):
         expense = self.make_expense(status=Expense.Status.APPROVED, amount="250.00")
-        pay_expense(expense=expense, payment_method="cash", payment_date=date(2026, 9, 7), actor="Cashier")
+        pay_expense(
+            expense=expense,
+            payment_method="cash",
+            payment_account=self.cash_account,
+            payment_date=date(2026, 9, 7),
+            actor="Cashier",
+        )
         expense.refresh_from_db()
         self.assertEqual(expense.status, Expense.Status.PAID)
+        self.assertEqual(expense.payment_account, self.cash_account)
         journal = JournalEntry.objects.get(source_key=expense.accounting_source_key)
         self.assertEqual(journal.source_type, JournalEntry.SourceType.EXPENSE)
         self.assertEqual(journal.total_debit, Decimal("250.00"))
@@ -91,16 +104,42 @@ class ExpenseModelServiceTests(ExpenseBase):
         self.assertEqual(lines["1000"], (Decimal("0.00"), Decimal("250.00")))
         self.assertEqual(accounting_summary()["expenses"], Decimal("250.00"))
 
-    def test_non_cash_payment_requires_reference_and_uses_method_asset(self):
+    def test_non_cash_payment_requires_reference_and_uses_selected_asset_account(self):
         expense = self.make_expense(status=Expense.Status.APPROVED)
         with self.assertRaises(ExpenseError):
-            pay_expense(expense=expense, payment_method="bkash", payment_date=date(2026, 9, 7), actor="Cashier")
+            pay_expense(
+                expense=expense,
+                payment_method="bkash",
+                payment_account=self.bkash_account,
+                payment_date=date(2026, 9, 7),
+                actor="Cashier",
+            )
         expense.refresh_from_db()
         self.assertEqual(expense.status, Expense.Status.APPROVED)
-        pay_expense(expense=expense, payment_method="bkash", payment_reference="BK-EXP-1", payment_date=date(2026, 9, 7), actor="Cashier")
+        pay_expense(
+            expense=expense,
+            payment_method="bkash",
+            payment_account=self.bkash_account,
+            payment_reference="BK-EXP-1",
+            payment_date=date(2026, 9, 7),
+            actor="Cashier",
+        )
         journal = JournalEntry.objects.get(source_key=expense.accounting_source_key)
         bkash_line = journal.lines.get(account__code="1030")
         self.assertEqual(bkash_line.credit, Decimal("150.00"))
+
+    def test_payment_account_must_be_active_manual_asset(self):
+        expense = self.make_expense(status=Expense.Status.APPROVED)
+        with self.assertRaises(ExpenseError):
+            pay_expense(
+                expense=expense,
+                payment_method="cash",
+                payment_account=Account.objects.get(code="1200"),
+                payment_date=date(2026, 9, 7),
+                actor="Cashier",
+            )
+        expense.refresh_from_db()
+        self.assertEqual(expense.status, Expense.Status.APPROVED)
 
     def test_payment_is_blocked_in_closed_accounting_period_atomically(self):
         expense = self.make_expense(status=Expense.Status.APPROVED)
@@ -113,14 +152,26 @@ class ExpenseModelServiceTests(ExpenseBase):
             closed_by="Finance",
         )
         with self.assertRaises(ExpenseError):
-            pay_expense(expense=expense, payment_method="cash", payment_date=date(2026, 9, 7), actor="Cashier")
+            pay_expense(
+                expense=expense,
+                payment_method="cash",
+                payment_account=self.cash_account,
+                payment_date=date(2026, 9, 7),
+                actor="Cashier",
+            )
         expense.refresh_from_db()
         self.assertEqual(expense.status, Expense.Status.APPROVED)
         self.assertFalse(JournalEntry.objects.filter(source_key=expense.accounting_source_key).exists())
 
     def test_paid_expense_void_creates_reversal_without_deleting_history(self):
         expense = self.make_expense(status=Expense.Status.APPROVED, amount="90.00")
-        pay_expense(expense=expense, payment_method="cash", payment_date=date(2026, 9, 7), actor="Cashier")
+        pay_expense(
+            expense=expense,
+            payment_method="cash",
+            payment_account=self.cash_account,
+            payment_date=date(2026, 9, 7),
+            actor="Cashier",
+        )
         journal = JournalEntry.objects.get(source_key=expense.accounting_source_key)
         void_paid_expense(expense=expense, reason="Duplicate receipt", reversal_date=date(2026, 9, 7), actor="Finance")
         expense.refresh_from_db()
@@ -152,6 +203,7 @@ class ExpenseDashboardTests(ExpenseBase):
         self.assertEqual(self.client.get(reverse("backoffice:expense_add")).status_code, 200)
 
     def test_dashboard_create_submit_approve_and_pay(self):
+        attachment = SimpleUploadedFile("receipt.pdf", b"%PDF-1.4 test receipt", content_type="application/pdf")
         response = self.client.post(reverse("backoffice:expense_add"), {
             "expense_date": "2026-09-07",
             "category": self.category.pk,
@@ -162,15 +214,18 @@ class ExpenseDashboardTests(ExpenseBase):
             "receipt_no": "INV-DASH-1",
             "notes": "Created from dashboard",
             "action": "submit",
+            "attachment": attachment,
         })
         self.assertEqual(response.status_code, 302)
         expense = Expense.objects.get(description="Dashboard Expense")
         self.assertEqual(expense.status, Expense.Status.PENDING)
+        self.assertTrue(bool(expense.attachment))
         self.assertEqual(self.client.post(reverse("backoffice:expense_approve", args=[expense.pk]), {"note": "Approved"}).status_code, 302)
         expense.refresh_from_db()
         self.assertEqual(expense.status, Expense.Status.APPROVED)
         response = self.client.post(reverse("backoffice:expense_pay", args=[expense.pk]), {
             "payment_method": "bank",
+            "payment_account": self.bank_account.pk,
             "payment_reference": "BANK-EXP-1",
             "payment_date": "2026-09-07",
             "note": "Paid",
@@ -178,7 +233,22 @@ class ExpenseDashboardTests(ExpenseBase):
         self.assertEqual(response.status_code, 302)
         expense.refresh_from_db()
         self.assertEqual(expense.status, Expense.Status.PAID)
+        self.assertEqual(expense.payment_account, self.bank_account)
         self.assertTrue(JournalEntry.objects.filter(source_key=expense.accounting_source_key).exists())
+
+    def test_dashboard_rejects_unsupported_attachment(self):
+        attachment = SimpleUploadedFile("receipt.exe", b"not allowed", content_type="application/octet-stream")
+        response = self.client.post(reverse("backoffice:expense_add"), {
+            "expense_date": "2026-09-07",
+            "category": self.category.pk,
+            "description": "Bad Attachment",
+            "amount": "50.00",
+            "attachment": attachment,
+            "action": "draft",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Attachment must be PDF, JPG, JPEG, PNG or WebP.")
+        self.assertFalse(Expense.objects.filter(description="Bad Attachment").exists())
 
     def test_dashboard_can_create_custom_category_and_filter_expenses(self):
         account = Account.objects.get(code="6280")
