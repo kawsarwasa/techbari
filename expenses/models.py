@@ -70,9 +70,17 @@ class Expense(models.Model):
     amount = models.DecimalField(max_digits=18, decimal_places=2)
     preferred_payment_method = models.CharField(max_length=20, choices=Method.choices, blank=True)
     payment_method = models.CharField(max_length=20, choices=Method.choices, blank=True)
+    payment_account = models.ForeignKey(
+        "accounting.Account",
+        on_delete=models.PROTECT,
+        related_name="expense_payments",
+        null=True,
+        blank=True,
+    )
     payment_reference = models.CharField(max_length=160, blank=True)
     payment_date = models.DateField(null=True, blank=True)
     receipt_no = models.CharField(max_length=120, blank=True)
+    attachment = models.FileField(upload_to="expenses/attachments/%Y/%m/", blank=True)
     notes = models.TextField(blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
     requested_by = models.CharField(max_length=160, blank=True)
@@ -90,6 +98,7 @@ class Expense(models.Model):
             models.Index(fields=("status", "expense_date"), name="expense_status_date_idx"),
             models.Index(fields=("category", "expense_date"), name="expense_cat_date_idx"),
             models.Index(fields=("payment_method", "expense_date"), name="expense_method_date_idx"),
+            models.Index(fields=("payment_account", "payment_date"), name="expense_payacct_date_idx"),
         ]
         constraints = [models.CheckConstraint(condition=models.Q(amount__gt=0), name="expense_amount_positive")]
 
@@ -98,9 +107,18 @@ class Expense(models.Model):
             raise ValidationError({"amount": "Expense amount must be greater than zero."})
         if self.category_id and not self.category.is_active and not self.pk:
             raise ValidationError({"category": "Select an active expense category."})
+        if self.payment_account_id:
+            if self.payment_account.account_type != "asset":
+                raise ValidationError({"payment_account": "Expense payments must use an Asset payment account."})
+            if not self.payment_account.is_active:
+                raise ValidationError({"payment_account": "Inactive payment accounts cannot be used."})
+            if not self.payment_account.allow_manual_entries:
+                raise ValidationError({"payment_account": "Select a cash/bank/payment Asset account, not a controlled operational asset."})
         if self.status == self.Status.PAID:
             if not self.payment_method:
                 raise ValidationError({"payment_method": "Paid expenses require a payment method."})
+            if not self.payment_account_id:
+                raise ValidationError({"payment_account": "Paid expenses require a payment account."})
             if not self.payment_date:
                 raise ValidationError({"payment_date": "Paid expenses require a payment date."})
             if self.payment_method != self.Method.CASH and not self.payment_reference.strip():
