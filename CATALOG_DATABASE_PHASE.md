@@ -19,9 +19,11 @@ The catalog is MySQL-backed and the dashboard exposes CRUD workflows for the cat
 - Edit
 - Delete when unused
 - Parent category
+- Circular-parent protection
 - Active/inactive
 - Sort order
 - Image upload (JPG/PNG/WebP, max 2MB)
+- Replaced/deleted upload cleanup
 
 ### Brand
 - List
@@ -32,6 +34,7 @@ The catalog is MySQL-backed and the dashboard exposes CRUD workflows for the cat
 - Active/inactive
 - Sort order
 - Logo upload (JPG/PNG/WebP, max 2MB)
+- Replaced/deleted upload cleanup
 
 ### Product
 - List/search/filter/sort
@@ -48,6 +51,8 @@ The catalog is MySQL-backed and the dashboard exposes CRUD workflows for the cat
 - SEO title, meta description and slug
 - Initial multi-image upload
 - Initial specification editing
+- New products start with no fake/demo specifications
+- Safe rich product description plus plain short summary
 
 ### Variants / SKUs
 Route: `/dashboard/variants/`
@@ -65,6 +70,8 @@ Route: `/dashboard/variants/`
 - Low-stock alert
 - Active/inactive
 - Default variant management
+- Storefront uses active database variants for price, stock, SKU and barcode
+- Cart/checkout use the selected database variant rather than hardcoded color names
 
 ### Product Media
 Route: `/dashboard/product-media/`
@@ -79,6 +86,8 @@ Route: `/dashboard/product-media/`
 - Delete
 - Maximum 8 images per product
 - JPG/PNG/WebP, max 2MB each
+- Primary image reassignment after deletion
+- Uploaded file cleanup on replacement, image deletion, product deletion and bulk product deletion
 
 ### Specifications
 Route: `/dashboard/specifications/`
@@ -89,18 +98,28 @@ Route: `/dashboard/specifications/`
 - Delete
 - Sort order
 - Case-insensitive duplicate-name validation per product
+- Add Product starts blank and saves only user-entered specifications
 
-## Migration
+## Storefront catalog QA
 
-After pulling this phase:
+The storefront catalog is backed by active database products/categories/brands. Product detail renders the dedicated short description in the summary and sanitized rich HTML in the Description tab. Heading 2/3, paragraphs, bold, italic, underline, ordered/unordered lists and blockquotes are retained by the allow-list sanitizer. Executable/embed content and attributes are removed.
+
+The All Products page supports client-side catalog search plus category, brand, price, availability and sort controls. Product detail variant selection updates displayed price, regular price, stock, SKU and barcode, and selected variant data is carried into cart/checkout calculations.
+
+## Automated QA
+
+Run:
 
 ```powershell
-python manage.py migrate
 python manage.py check
 python manage.py test catalog
 ```
 
-Migration `catalog.0002_catalog_crud_expansion` adds variant barcodes, catalog indexes and changes `Product.slug` to 255 characters to avoid the MySQL unique-character-field warning.
+The catalog test suite covers product form/default-variant behavior, SKU/barcode uniqueness, variant validation, category circular-parent protection, brand flags, image validation, rich-text sanitization, storefront serialization, active catalog visibility, product create/edit/archive/delete, protected category/brand deletion, last-variant protection/default reassignment, primary-image reassignment, storefront rich-description/specification rendering and uploaded media cleanup after product deletion.
+
+## Migration
+
+No new database migration is required for v1.0.10. Migration `catalog.0002_catalog_crud_expansion` remains the latest catalog schema migration; it adds variant barcodes, catalog indexes and changes `Product.slug` to 255 characters to avoid the MySQL unique-character-field warning.
 
 ## Seed behavior
 
