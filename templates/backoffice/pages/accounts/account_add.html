@@ -1,0 +1,17 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Add Account | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Add Account</h1><p>Create a non-system General Ledger account.</p></div><a class="btn" href="{% url 'backoffice:chart_accounts' %}">Back to Chart</a></div>
+  {% if accounting_error %}<div class="acct-error">{{ accounting_error }}</div>{% endif %}
+  {% include "backoffice/pages/accounts/_subnav.html" with accounting_tab="chart" %}
+  <form method="post" class="acct-form-card">{% csrf_token %}
+    <div class="acct-form-grid">
+      {% for field in account_form %}<div class="field {% if field.name == 'description' %}wide{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="acct-error">{{ field.errors|striptags }}</div>{% endif %}{% if field.help_text %}<div class="acct-help">{{ field.help_text }}</div>{% endif %}</div>{% endfor %}
+    </div>
+    <div class="acct-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Save Account</button><a class="btn" href="{% url 'backoffice:chart_accounts' %}">Cancel</a></div>
+  </form>
+</section>
+{% endblock %}
