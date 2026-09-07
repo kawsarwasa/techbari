@@ -1,7 +1,55 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
+{% load static %}
 {% block title %}Warranty / RMA | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/serial-v120.css' %}?v=1.2.0">{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Warranty / RMA</h1><p>Track warranty claims, inspections, repairs and replacements.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:warranty_add' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add Warranty</a></div></div><div class="cards kpi-grid-4">{% include "backoffice/components/stat_card.html" with stat=statistics.0 %}{% include "backoffice/components/stat_card.html" with stat=statistics.1 %}{% include "backoffice/components/stat_card.html" with stat=statistics.2 %}{% include "backoffice/components/stat_card.html" with stat=statistics.3 %}</div><div class="filters-card"><div class="filter-row"><input class="control search" data-table-search="#WarrantyTable" placeholder="Search warranty..."><select class="control"><option>All Status</option><option>Active</option><option>Inactive</option></select><span class="filter-spacer"></span><button class="btn" data-export-table="#WarrantyTable"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/></svg> Export CSV</button></div></div>
-    <div class="card orders-table-card"><div class="table-scroll"><table class="data-table" id="WarrantyTable" data-crud-table="warranty"><thead><tr><th>#</th><th>Claim No</th><th>Customer</th><th>Product</th><th>Serial / IMEI</th><th>Issue</th><th>Resolution</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>{% for record in warranty %}{% include "backoffice/components/record_row.html" with entity="warranty" columns=table_columns.warranty %}{% endfor %}</tbody></table></div><div class="table-footer"><span data-table-count></span>{% include "backoffice/components/table_pagination.html" %}</div></div></section>
+<section class="page">
+  <div class="page-head">
+    <div><h1>Warranty / RMA</h1><p>Track claims against the exact Serial / IMEI unit, including service, resolution and replacement history.</p></div>
+    <div class="head-actions"><a class="btn" href="{% url 'backoffice:serials' %}">Serial / IMEI</a><a class="btn btn-primary" href="{% url 'backoffice:warranty_add' %}">＋ Add Warranty Claim</a></div>
+  </div>
+  {% if serial_notice %}<div class="serial-notice">✓ {{ serial_notice }}</div>{% endif %}
+
+  <div class="cards kpi-grid-4">
+    {% for stat in warranty_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}
+  </div>
+
+  <form method="get" class="filters-card">
+    <div class="serial-filters">
+      <input class="control search" type="search" name="q" value="{{ warranty_query }}" placeholder="Search claim, customer, Serial, IMEI, SKU...">
+      <select class="control" name="status">
+        <option value="">All Statuses</option>
+        {% for value,label in warranty_status_choices %}<option value="{{ value }}"{% if warranty_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <button class="btn" type="submit">Filter</button>
+      <a class="btn" href="{% url 'backoffice:warranty' %}">Reset</a>
+    </div>
+  </form>
+
+  <div class="card orders-table-card">
+    <div class="table-scroll">
+      <table class="data-table" id="WarrantyTable">
+        <thead><tr><th>#</th><th>Claim No</th><th>Customer</th><th>Product / SKU</th><th>Serial / IMEI</th><th>Issue</th><th>Warranty</th><th>Status</th><th>Claim Date</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for claim in warranty_claims %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td><strong>{{ claim.claim_no }}</strong>{% if claim.order_reference %}<br><span class="muted">{{ claim.order_reference }}</span>{% endif %}</td>
+            <td>{{ claim.customer_name|default:"—" }}{% if claim.customer_phone %}<br><span class="muted">{{ claim.customer_phone }}</span>{% endif %}</td>
+            <td><strong>{{ claim.unit.variant.product.name }}</strong><br><span class="muted">{{ claim.unit.variant.sku }}</span></td>
+            <td>{{ claim.unit.display_identifier }}</td>
+            <td>{{ claim.issue|truncatechars:80 }}</td>
+            <td>{% if claim.within_unit_warranty %}<span class="serial-warranty-active">In Warranty</span>{% else %}<span class="serial-warranty-expired">Not Covered / Unknown</span>{% endif %}</td>
+            <td><span class="serial-status {{ claim.status }}">{{ claim.get_status_display }}</span></td>
+            <td>{{ claim.claim_date }}</td>
+            <td><a class="btn small" href="{% url 'backoffice:warranty_add' %}?id={{ claim.id }}">View / Edit</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="10"><div class="serial-empty">No warranty claims found.</div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 {% endblock %}
