@@ -2,7 +2,6 @@ from decimal import Decimal
 from uuid import uuid4
 
 from django.db import models
-from django.db.models import Sum
 from django.utils import timezone
 
 
@@ -101,8 +100,7 @@ class Customer(models.Model):
         manager = getattr(self, "sales_orders", None)
         if manager is None:
             return Decimal("0.00")
-        total = manager.filter(status="completed").aggregate(total=Sum("grand_total"))["total"]
-        return total or Decimal("0.00")
+        return sum((order.payable_total for order in manager.filter(status="completed")), Decimal("0.00"))
 
     @property
     def due_balance(self):
