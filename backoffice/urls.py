@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import catalog_views, views
+from . import catalog_views, inventory_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
@@ -14,7 +14,12 @@ catalog_patterns = [
     path("specifications/form/", catalog_views.specification_form, name="catalog_specification_form"),
 ]
 
-urlpatterns = catalog_patterns + [
+inventory_patterns = [
+    path("inventory/movements/", inventory_views.movements, name="inventory_movements"),
+    path("inventory/low-stock/", inventory_views.low_stock, name="inventory_low_stock"),
+]
+
+urlpatterns = catalog_patterns + inventory_patterns + [
     path(info["path"], views.page, {"page_name": name}, name=name)
     for name, info in PAGES.items()
 ]
