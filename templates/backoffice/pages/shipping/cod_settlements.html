@@ -1,0 +1,12 @@
+{% extends "backoffice/base.html" %}
+{% load demo %}
+{% block title %}COD Settlements | TechBari Admin{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>COD Settlements</h1><p>Reconcile courier-collected COD into the central Payment ledger.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:shipping' %}">Shipping</a><a class="btn btn-primary" href="{% url 'backoffice:cod_settlement_add' %}">+ Post COD Settlement</a></div></div>
+  {% if shipping_notice %}<div class="soft-note" style="margin-bottom:14px">{{ shipping_notice }}</div>{% endif %}
+  <div class="card orders-table-card"><div class="table-scroll"><table class="data-table"><thead><tr><th>Settlement</th><th>Date</th><th>Courier</th><th>Gross COD</th><th>Courier Deduction</th><th>Net Received</th><th>Method</th><th>Reference</th><th>Action</th></tr></thead><tbody>
+    {% for settlement in settlement_rows %}<tr><td><strong>{{ settlement.settlement_no }}</strong><br><small>{{ settlement.items.count }} shipment{% if settlement.items.count != 1 %}s{% endif %}</small></td><td>{{ settlement.settlement_date }}</td><td>{{ settlement.courier.name }}</td><td>{{ settlement.gross_amount|money }}</td><td>{{ settlement.courier_deduction|money }}</td><td>{{ settlement.net_received|money }}</td><td>{{ settlement.get_payment_method_display }}</td><td>{{ settlement.reference|default:"—" }}</td><td><a class="btn" href="{% url 'backoffice:cod_settlement_detail' settlement.id %}">Open</a></td></tr>{% empty %}<tr><td colspan="9">No COD settlements have been posted.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+</section>
+{% endblock %}
