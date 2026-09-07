@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static demo %}
 {% block title %}{{ expense.expense_no }} | Expenses{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/expense-v210.css' %}?v=2.1.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/expense-v210.css' %}?v=2.1.1">{% endblock %}
 {% block content %}
 <section class="page">
   <div class="page-head">
@@ -21,8 +21,10 @@
         <div class="expense-summary-row"><span>Payee / Vendor</span><strong>{{ expense.payee|default:"—" }}</strong></div>
         <div class="expense-summary-row"><span>Description</span><strong>{{ expense.description }}</strong></div>
         <div class="expense-summary-row"><span>Receipt / Invoice</span><strong>{{ expense.receipt_no|default:"—" }}</strong></div>
+        <div class="expense-summary-row"><span>Attachment</span><strong>{% if expense.attachment %}<a href="{{ expense.attachment.url }}" target="_blank" rel="noopener">View attachment</a>{% else %}—{% endif %}</strong></div>
         <div class="expense-summary-row"><span>Amount</span><strong>{{ expense.amount|money }}</strong></div>
         <div class="expense-summary-row"><span>Payment Method</span><strong>{% if expense.payment_method %}{{ expense.get_payment_method_display }}{% else %}—{% endif %}</strong></div>
+        <div class="expense-summary-row"><span>Payment Account</span><strong>{% if expense.payment_account %}{{ expense.payment_account.code }} · {{ expense.payment_account.name }}{% else %}—{% endif %}</strong></div>
         <div class="expense-summary-row"><span>Payment Reference</span><strong>{{ expense.payment_reference|default:"—" }}</strong></div>
         <div class="expense-summary-row"><span>Payment Date</span><strong>{{ expense.payment_date|default:"—" }}</strong></div>
         <div class="expense-summary-row"><span>Requested By</span><strong>{{ expense.requested_by|default:"—" }}</strong></div>
