@@ -1,6 +1,25 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
-{% block title %}Orders Management | TechBari Admin{% endblock %}
+{% load demo %}
+{% block title %}Sales Orders | TechBari Admin{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Orders Management</h1><p>View, track and manage all orders from your store.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:order_add' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> New Order</a></div></div><div class="cards kpi-grid-4">{% include "backoffice/components/stat_card.html" with stat=statistics.0 %}{% include "backoffice/components/stat_card.html" with stat=statistics.1 %}{% include "backoffice/components/stat_card.html" with stat=statistics.2 %}{% include "backoffice/components/stat_card.html" with stat=statistics.3 %}</div><div class="filters-card"><div class="filter-row"><input class="control search" data-table-search="#ordersTable" placeholder="Search by order ID, customer, phone or product..."><select class="control"><option>All Payment Methods</option><option>bKash</option><option>Nagad</option><option>COD</option></select><select class="control"><option>All Status</option><option>Pending</option><option>Processing</option><option>Delivered</option></select><span class="filter-spacer"></span><button class="btn" data-export-table="#ordersTable">Export CSV</button></div></div><div class="card orders-table-card"><div class="table-scroll"><table class="data-table" id="ordersTable" data-crud-table="orders"><thead><tr><th>#</th><th>Order ID</th><th>Customer</th><th>Items</th><th>Amount</th><th>Payment</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>{% for record in orders %}{% include "backoffice/components/record_row.html" with entity="orders" columns=table_columns.orders %}{% endfor %}</tbody></table></div></div></section>
+<section class="page">
+  <div class="page-head"><div><h1>Sales Orders</h1><p>Online/manual sales, stock reservations, payment status and order history.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:order_add' %}">+ New Order</a></div></div>
+  {% if sales_notice %}<div class="soft-note" style="margin-bottom:14px">{{ sales_notice }}</div>{% endif %}{% if sales_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ sales_error }}</div>{% endif %}
+  <div class="cards kpi-grid-4">{% for stat in order_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}</div>
+  <form class="filters-card" method="get"><div class="filter-row">
+    <input class="control search" name="q" value="{{ order_query }}" placeholder="Order, customer, phone, SKU or product...">
+    <select class="control" name="status"><option value="">All Status</option>{% for value,label in order_status_choices %}<option value="{{ value }}"{% if order_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select class="control" name="payment"><option value="">All Payments</option>{% for value,label in order_payment_choices %}<option value="{{ value }}"{% if order_payment == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select class="control" name="customer"><option value="">All Customers</option>{% for customer in order_customers %}<option value="{{ customer.id }}"{% if order_customer == customer.id|stringformat:'s' %} selected{% endif %}>{{ customer.name }}</option>{% endfor %}</select>
+    <button class="btn" type="submit">Filter</button><a class="btn" href="{% url 'backoffice:orders' %}">Reset</a>
+  </div></form>
+  <div class="card orders-table-card"><div class="table-scroll"><table class="data-table"><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Paid</th><th>Due</th><th>Payment</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>
+  {% for order in order_rows %}<tr>
+    <td><a href="{% url 'backoffice:order_detail_id' order.id %}"><strong>{{ order.order_number }}</strong></a><br><small>{{ order.get_channel_display }} • {{ order.warehouse.code }}</small></td>
+    <td>{{ order.customer_name }}<br><small>{{ order.customer_phone }}</small></td>
+    <td>{{ order.item_count }}</td><td>{{ order.grand_total|money }}</td><td>{{ order.amount_paid|money }}</td><td>{{ order.outstanding_amount|money }}</td><td>{{ order.get_payment_status_display }}</td><td>{{ order.get_status_display }}</td><td>{{ order.order_date }}</td>
+    <td><div class="head-actions"><a class="btn btn-sm" href="{% url 'backoffice:order_detail_id' order.id %}">View</a>{% if order.status == 'draft' or order.status == 'pending' %}<a class="btn btn-sm" href="{% url 'backoffice:order_add' %}?id={{ order.id }}">Edit</a>{% endif %}</div></td>
+  </tr>{% empty %}<tr><td colspan="10">No sales orders found.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+</section>
 {% endblock %}
