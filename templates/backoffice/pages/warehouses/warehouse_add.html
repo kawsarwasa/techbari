@@ -1,6 +1,20 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
-{% block title %}Warehouse Form | TechBari Admin{% endblock %}
+{% load static %}
+{% block title %}{% if is_edit %}Edit{% else %}Add{% endif %} Warehouse | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/inventory-v110.css' %}">{% endblock %}
 {% block content %}
-<section class="page">{% include "backoffice/includes/breadcrumbs/warehouse_add.html" %}<div class="page-head"><div><h1>Warehouse Form</h1><p>Create or update a warehouse or store stock location.</p></div>{% include "backoffice/components/form_actions.html" with cancel_route="backoffice:warehouses" %}</div><form id="crudForm" class="form-layout" data-crud-form="warehouses" data-list-url="{% url 'backoffice:warehouses' %}"><div class="card form-card"><div class="section-head"><h3><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg> Basic Information</h3></div><div class="form-grid"><label class="field"><span>Warehouse Name</span><input class="control" type="text" name="name" placeholder="Enter warehouse name" required></label><label class="field"><span>Code</span><input class="control" type="text" name="code" placeholder="Enter code" required></label><label class="field"><span>Branch</span><select class="control" name="branch" required>{% for option in form_options.branch %}<option{% if option.has_value %} value="{{ option.value }}"{% endif %}{% if option.selected %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label><label class="field"><span>Stock Units</span><input class="control" type="number" min="0" step="0.01" name="units" placeholder="0" required></label><label class="field"><span>Stock Value</span><input class="control" type="number" min="0" step="0.01" name="value" placeholder="0" required></label><label class="field"><span>Address</span><textarea class="control textarea" name="address" rows="4" placeholder="Enter address">{{ form_data.address }}</textarea></label></div></div><aside class="card form-side"><div class="section-head"><h3><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg> Publishing</h3></div><div class="info-body"><label class="field"><span>Status</span><select class="control" name="status">{% for option in form_options.status %}<option{% if option.has_value %} value="{{ option.value }}"{% endif %}{% if option.selected %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label><div class="soft-note">This is a static CRUD demo. Data is stored in your browser using localStorage.</div></div></aside></form></section>
+<section class="page">
+  <div class="page-head"><div><h1>{% if is_edit %}Edit Warehouse{% else %}Add Warehouse{% endif %}</h1><p>Create a real stock location for Inventory Phase 1.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:warehouses' %}">Cancel</a><button class="btn btn-primary" type="submit" form="warehouseForm">Save Warehouse</button></div></div>
+  {% if form.errors %}<div class="inventory-error">Please correct the form errors below. {{ form.non_field_errors }}</div>{% endif %}
+  <form id="warehouseForm" method="post" class="card form-card">{% csrf_token %}
+    <div class="inventory-form-grid">
+      <label class="field"><span>Warehouse Name</span>{{ form.name }}{{ form.name.errors }}</label>
+      <label class="field"><span>Code</span>{{ form.code }}{{ form.code.errors }}<small class="inventory-help">Short unique code, e.g. MAIN, SHOP01.</small></label>
+      <label class="field full"><span>Address</span>{{ form.address }}{{ form.address.errors }}</label>
+      <label class="field"><span>{{ form.is_active }} Active Warehouse</span>{{ form.is_active.errors }}</label>
+      <label class="field"><span>{{ form.is_default }} Default Warehouse</span>{{ form.is_default.errors }}<small class="inventory-help">New catalog stock opens in the default warehouse.</small></label>
+    </div>
+    <div class="head-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Save Warehouse</button></div>
+  </form>
+</section>
 {% endblock %}
