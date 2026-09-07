@@ -2,6 +2,7 @@ from pathlib import Path
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils.html import strip_tags
 from django.utils.text import slugify
 from PIL import Image, UnidentifiedImageError
 
@@ -28,7 +29,6 @@ def _unique_value(model, field, base, instance_pk=None, max_length=80):
 def validate_catalog_image(upload):
     if not upload:
         return upload
-    # Existing FieldFile values do not need re-validation; only new browser uploads do.
     if not hasattr(upload, "content_type"):
         return upload
     if upload.size > MAX_PRODUCT_IMAGE_BYTES:
@@ -265,10 +265,11 @@ class ProductForm(forms.ModelForm):
         self._ensure_public_id(product)
         if not product.short_name:
             product.short_name = product.name
+        plain_description = " ".join(strip_tags(product.description or "").split())
         if not product.short_description:
-            product.short_description = product.description[:300]
-        if not product.description_paragraphs and product.description:
-            product.description_paragraphs = [product.description]
+            product.short_description = plain_description[:300]
+        if not product.description_paragraphs and plain_description:
+            product.description_paragraphs = [plain_description]
         if not product.detail_badge:
             product.detail_badge = product.badge
         if commit:
