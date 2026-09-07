@@ -1,28 +1,36 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v1.9.0**
+**Current version: v1.10.0**
 
-TechBari is being converted phase-by-phase from a static Django template demo into a MySQL 8-backed commerce system. Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS, Payment and Shipping / Courier are now connected to the real business data flow.
+TechBari is being converted phase-by-phase from a static Django template demo into a MySQL 8-backed commerce system. Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS, Payment, Shipping / Courier and Returns / Refunds are now connected to the real business data flow.
+
+## v1.10.0 — Returns / Refunds System
+
+Completed / Sold Sales Orders can now enter a controlled Requested → Approved → Received → Completed return lifecycle. Return lines are tied to the original Sales Order Item / Variant / SKU and are protected from duplicate or excess return quantity and excess line credit.
+
+Return completion is atomic across Inventory, Serial/IMEI and Payment. Only `Return to Sellable Stock` lines create Inventory `RETURN_IN`; damaged, warranty, scrap and no-stock dispositions do not inflate sellable stock. Serialized returns process the exact sold Serial/IMEI unit through the existing unit lifecycle.
+
+Sales Orders now carry `return_credit_amount` and derive `payable_total`. A return credit first reduces the order receivable; actual cash/payment refund is created only when the customer is overpaid after that credit. Refunds reuse the v1.8 Payment ledger and can allocate across multiple original Sale Payment transactions.
+
+Courier-returned parcels are deliberately not auto-restocked by Shipping. They must be inspected and completed through Returns. CRM `total_spent` and customer due are return-credit aware.
+
+See `RETURNS_REFUNDS_PHASE.md`.
 
 ## v1.9.0 — Shipping / Courier System
 
-Shipping is now a real database-backed fulfillment workflow. Confirmed/Processing non-POS Sales Orders can be assigned to one courier shipment with provider, tracking, parcel, fee, COD and delivery state.
+Shipping is a real database-backed fulfillment workflow. Confirmed/Processing non-POS Sales Orders can be assigned to one courier shipment with provider, tracking, parcel, fee, COD and delivery state.
 
-Inventory remains owned by the Sales + Inventory engines: creating a shipment does not deduct stock; moving a parcel to courier handover completes the Sales Order and issues its reserved inventory through the existing Sales service. Returned courier parcels do not silently re-add stock because that belongs to the next Returns/Refunds phase.
+Inventory remains owned by the Sales + Inventory engines: creating a shipment does not deduct stock; moving a parcel to courier handover completes the Sales Order and issues its reserved inventory through the existing Sales service. Returned courier parcels do not silently re-add stock; v1.10.0 Returns performs the inspection/restock step.
 
 Courier COD is tracked as Expected / Collected / Settled / Unsettled. Delivered COD may be reconciled through courier settlement batches; each settlement creates and reconciles transaction-level Sale Payments in the existing Payment ledger while keeping courier deduction/net-receipt data for later Accounting.
-
-Courier profiles are configurable and API readiness is stored, but no live third-party booking/tracking success is faked without real credentials and verified responses.
 
 See `SHIPPING_COURIER_PHASE.md`.
 
 ## v1.8.0 — Payment System
 
-TechBari now has a central transaction-level Payment ledger for Sales, POS and Supplier payments. It supports Cash, Bank Transfer, Card, bKash, Nagad and Other methods, multiple/partial Sales payments, refunds, full unreconciled reversals, reconciliation status and immutable payment audit events.
+TechBari has a central transaction-level Payment ledger for Sales, POS and Supplier payments. It supports Cash, Bank Transfer, Card, bKash, Nagad and Other methods, multiple/partial Sales payments, refunds, full unreconciled reversals, reconciliation status and immutable payment audit events.
 
-Existing SalesOrder paid amounts and existing Supplier PurchasePayment rows are imported during migration so historical payment data is preserved. New POS/order paid-amount writes are compatibility-synchronized into the Payment ledger, and new Supplier payments are mirrored automatically as Money Out.
-
-Payment Method configuration controls Dashboard/POS/storefront readiness, provider code, merchant label and test mode. Storefront bKash/Nagad/Card gateway success is not faked without real merchant credentials/callback verification; current COD checkout remains operational.
+Existing SalesOrder paid amounts and existing Supplier PurchasePayment rows are imported during migration so historical payment data is preserved. POS/order paid-amount writes are compatibility-synchronized into the Payment ledger, and Supplier payments are mirrored as Money Out.
 
 See `PAYMENT_SYSTEM_PHASE.md`.
 
@@ -85,10 +93,10 @@ Unit-level tracking, Warehouse + SKU linkage, inventory-aware lifecycle, immutab
 Supplier CRUD, Purchase Orders, receiving, Inventory `PURCHASE_IN`, optional Serial/IMEI registration, supplier payments and returns.
 
 ### Customer / CRM
-Customer CRUD, Retail/Wholesale/VIP groups, customer source/address, credit/opening due, purchase history and derived customer metrics.
+Customer CRUD, Retail/Wholesale/VIP groups, customer source/address, credit/opening due, purchase history and return-aware derived customer metrics.
 
 ### Sales Order
-Database-backed Sales Orders and items, Online / Manual / POS channels, real SKU lines, lifecycle/status history, inventory reservation/deduction and customer linkage.
+Database-backed Sales Orders and items, Online / Manual / POS channels, real SKU lines, lifecycle/status history, inventory reservation/deduction, customer linkage and return-credit-adjusted payable balance.
 
 ### Storefront Checkout
 Real GET/POST checkout, server-authoritative pricing/stock/coupon/shipping, CRM find/create, Inventory reservation, signed idempotency and signed public confirmation.
@@ -112,10 +120,10 @@ Routes: `/dashboard/pos/`, `/dashboard/pos/action/`, `/dashboard/pos/held/<id>/`
 - Partial and multiple Sales payments
 - Cash / Bank / Card / bKash / Nagad / Other methods
 - Refund and unreconciled full reversal
+- Return-credit-aware Sales payable limit
 - Reconciliation / dispute state
 - Immutable payment audit trail
 - Payment method configuration
-- Existing payment data import during migration
 
 Routes: `/dashboard/payments/`, `/dashboard/payments/add/`, `/dashboard/payments/methods/`, `/dashboard/payments/<id>/`.
 
@@ -133,6 +141,22 @@ Routes: `/dashboard/payments/`, `/dashboard/payments/add/`, `/dashboard/payments
 - Immutable shipment event audit trail
 
 Routes: `/dashboard/shipping/`, `/dashboard/shipping/add/`, `/dashboard/shipping/providers/`, `/dashboard/shipping/<id>/`, `/dashboard/shipping/cod-settlements/`.
+
+### Returns / Refunds
+- Completed-sale return requests
+- Requested / Approved / Received / Completed lifecycle
+- Customer / Courier / POS / Manual return sources
+- Original Sales Order Item / Variant / SKU linkage
+- Return quantity and line-credit protection
+- Condition and stock disposition
+- Non-serialized Inventory `RETURN_IN`
+- Exact Serial/IMEI return lifecycle
+- Order return credit and payable-total adjustment
+- Partial-payment-aware refund calculation
+- Multiple-payment refund allocation through Payment ledger
+- Immutable return audit trail
+
+Routes: `/dashboard/returns/`, `/dashboard/returns/add/`, `/dashboard/returns/<id>/`.
 
 ## Local setup
 
@@ -158,11 +182,11 @@ Apply migrations and verify:
 ```powershell
 python manage.py migrate
 python manage.py check
-python manage.py test catalog inventory serial_tracking purchasing customers sales payments shipping storefront
+python manage.py test catalog inventory serial_tracking purchasing customers sales payments shipping returns storefront
 python manage.py runserver
 ```
 
-Upgrading from v1.8.0 to v1.9.0 applies `shipping.0001_initial`. Existing Sales, Inventory, Payment and Purchase data are preserved. No seed command is required.
+Upgrading from v1.9.0 to v1.10.0 applies `sales.0003_salesorder_return_credit_amount` and `returns.0001_initial`. Existing Catalog, Inventory, Serial/IMEI, Purchase, Customer, Sales, Payment and Shipping data are preserved. No seed command is required.
 
 ## Architecture direction
 
@@ -170,4 +194,4 @@ TechBari follows:
 
 **One Product Database + One Inventory Engine + One Sales Engine + One Accounting Ledger.**
 
-The next recommended roadmap phase is **v1.10.x — Returns / Refunds**, followed by Accounting, Reports, Marketing, Roles/Permissions, CMS, Customer Account, Integrations and Production QA.
+The next recommended roadmap phase is **v2.0.x — Accounting**, followed by Expense, Reports, Marketing, Analytics, Roles/Permissions, CMS, Customer Account, Integrations and Production QA.
