@@ -1,0 +1,16 @@
+{% extends "backoffice/base.html" %}
+{% load static demo %}
+{% block title %}Trial Balance | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Trial Balance</h1><p>Ending debit and credit balances across every active General Ledger account.</p></div></div>
+  {% include "backoffice/pages/accounts/_subnav.html" with accounting_tab="trial" %}
+  <form method="get" class="acct-toolbar"><div class="field"><label>As of</label><input class="control" type="date" name="as_of" value="{{ trial_as_of|date:'Y-m-d' }}"></div><button class="btn" type="submit">Apply</button><a class="btn" href="{% url 'backoffice:trial_balance' %}">Current</a></form>
+  <div class="acct-note"><strong class="{% if trial_balanced %}acct-balance-ok{% else %}acct-balance-bad{% endif %}">{% if trial_balanced %}Trial Balance is balanced.{% else %}Trial Balance is not balanced — review journals immediately.{% endif %}</strong> Total Debit: {{ trial_debit|money }} · Total Credit: {{ trial_credit|money }}</div>
+  <div class="card card-pad"><div class="table-scroll"><table class="acct-table"><thead><tr><th>Code</th><th>Account</th><th>Type</th><th class="num">Debit Activity</th><th class="num">Credit Activity</th><th class="num">Ending Debit</th><th class="num">Ending Credit</th></tr></thead><tbody>
+    {% for row in trial_rows %}<tr><td class="acct-code">{{ row.account.code }}</td><td>{{ row.account.name }}</td><td>{{ row.account.get_account_type_display }}</td><td class="num">{{ row.debit_activity|money }}</td><td class="num">{{ row.credit_activity|money }}</td><td class="num">{{ row.debit|money }}</td><td class="num">{{ row.credit|money }}</td></tr>{% empty %}<tr><td colspan="7" class="acct-empty">No active accounts.</td></tr>{% endfor %}
+    <tr><th colspan="5">Total</th><th class="num">{{ trial_debit|money }}</th><th class="num">{{ trial_credit|money }}</th></tr>
+  </tbody></table></div></div>
+</section>
+{% endblock %}
