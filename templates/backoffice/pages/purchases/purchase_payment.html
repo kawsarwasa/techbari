@@ -1,0 +1,34 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Supplier Payment {{ purchase.po_number }} | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/purchasing-v130.css' %}?v=1.3.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Record Supplier Payment</h1><p>{{ purchase.po_number }} · {{ purchase.supplier.name }}</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:purchase_detail' purchase.id %}">Back to Purchase</a></div></div>
+  {% if purchase_form_error %}<div class="purchase-error">{{ purchase_form_error }}</div>{% endif %}
+  {% if form.non_field_errors %}<div class="purchase-error">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="purchase-grid">
+    <form method="post" class="card purchase-panel">{% csrf_token %}
+      <div class="section-head"><h3>Payment Details</h3></div>
+      <div class="purchase-form-grid">
+        <label class="field"><span>Amount</span>{{ form.amount }}{{ form.amount.errors }}</label>
+        <label class="field"><span>Method</span>{{ form.method }}{{ form.method.errors }}</label>
+        <label class="field"><span>Payment Date</span>{{ form.payment_date }}{{ form.payment_date.errors }}</label>
+        <label class="field"><span>Reference / Transaction ID</span>{{ form.reference }}{{ form.reference.errors }}</label>
+        <label class="field wide"><span>Note</span>{{ form.note }}{{ form.note.errors }}</label>
+      </div>
+      <div class="purchase-actions" style="margin-top:16px"><a class="btn" href="{% url 'backoffice:purchase_detail' purchase.id %}">Cancel</a><button class="btn btn-primary" type="submit">Record Payment</button></div>
+    </form>
+    <aside class="card purchase-panel">
+      <div class="section-head"><h3>Balance</h3></div>
+      <div class="purchase-summary">
+        <div><span>Grand Total</span><strong>৳ {{ purchase.grand_total|floatformat:2 }}</strong></div>
+        <div><span>Paid</span><strong>৳ {{ purchase.paid_amount|floatformat:2 }}</strong></div>
+        <div><span>Purchase Returns</span><strong>৳ {{ purchase.returned_amount|floatformat:2 }}</strong></div>
+        <div class="grand"><span>Outstanding</span><strong>৳ {{ purchase.outstanding_amount|floatformat:2 }}</strong></div>
+      </div>
+      <p class="muted" style="margin-top:12px">This records the operational supplier payment for Purchase/Payables reporting. The later Accounting phase will post these records into the general ledger automatically.</p>
+    </aside>
+  </div>
+</section>
+{% endblock %}
