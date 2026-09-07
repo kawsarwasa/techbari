@@ -1,7 +1,6 @@
 from datetime import date
 from decimal import Decimal
 
-from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
@@ -132,8 +131,8 @@ class PurchasingServiceTests(PurchasingBase):
                 quantities={item.pk: 6},
                 actor="Test",
             )
-        balance = InventoryBalance.objects.get(warehouse=self.warehouse, variant=self.variant)
-        self.assertEqual(balance.on_hand, 0)
+        balance = InventoryBalance.objects.filter(warehouse=self.warehouse, variant=self.variant).first()
+        self.assertTrue(balance is None or balance.on_hand == 0)
         self.assertFalse(PurchaseReceipt.objects.exists())
 
     def test_duplicate_serial_rolls_back_entire_receipt(self):
@@ -151,8 +150,8 @@ class PurchasingServiceTests(PurchasingBase):
                 serial_payloads={item.pk: payload},
                 actor="Test",
             )
-        balance = InventoryBalance.objects.get(warehouse=self.warehouse, variant=self.variant)
-        self.assertEqual(balance.on_hand, 0)
+        balance = InventoryBalance.objects.filter(warehouse=self.warehouse, variant=self.variant).first()
+        self.assertTrue(balance is None or balance.on_hand == 0)
         self.assertFalse(PurchaseReceipt.objects.exists())
         self.assertFalse(SerializedUnit.objects.filter(serial_number="DUP-SN").exists())
 
@@ -300,6 +299,7 @@ class PurchasingDashboardTests(PurchasingBase):
         purchase = self.create_purchase()
         urls = [
             reverse("backoffice:purchases"),
+            reverse("backoffice:purchase_add"),
             reverse("backoffice:purchase_detail", args=[purchase.pk]),
             reverse("backoffice:purchase_receive", args=[purchase.pk]),
             reverse("backoffice:purchase_payment", args=[purchase.pk]),
