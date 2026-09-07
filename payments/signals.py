@@ -32,7 +32,13 @@ def mirror_legacy_sales_paid_amount(sender, instance, raw=False, **kwargs):
     happens, mirror only the delta into the transaction ledger. Native v1.8 payment writes
     already have matching ledger totals, so this receiver becomes a no-op.
     """
+    update_fields = kwargs.get("update_fields")
     if raw or not instance.pk or not _payment_table_ready():
+        return
+    # Native Payment services also save auxiliary SalesOrder fields such as payment method
+    # and reference before synchronizing the paid amount. Those saves must not be mistaken
+    # for legacy amount changes, otherwise a freshly captured payment could be auto-refunded.
+    if update_fields is not None and "amount_paid" not in update_fields:
         return
 
     from .models import PaymentMethodConfig, PaymentTransaction
