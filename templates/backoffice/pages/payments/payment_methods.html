@@ -1,0 +1,28 @@
+{% extends "backoffice/base.html" %}
+{% block title %}Payment Methods | TechBari Admin{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Payment Methods</h1><p>Configure internal payment availability. Merchant secrets are intentionally not stored here.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:payments' %}">Back to Payments</a></div></div>
+  {% if payment_notice %}<div class="soft-note" style="margin-bottom:14px">{{ payment_notice }}</div>{% endif %}{% if payment_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ payment_error }}</div>{% endif %}
+  <div class="soft-note" style="margin-bottom:16px">Dashboard/POS can capture verified manual payments now. Storefront provider switches are configuration-only until real merchant API credentials/callback verification are added; no fake online payment success is generated.</div>
+  <div class="cards">
+    {% for method in payment_methods %}<form method="post" class="card form-card" style="margin-bottom:16px">{% csrf_token %}<input type="hidden" name="method_id" value="{{ method.id }}">
+      <div class="section-head"><h3>{{ method.get_method_display }}</h3></div>
+      <div class="form-grid">
+        <label class="field"><span>Display Name</span><input class="control" name="display_name" value="{{ method.display_name }}" required></label>
+        <label class="field"><span>Provider Code</span><input class="control" name="provider_code" value="{{ method.provider_code }}" placeholder="manual / gateway code"></label>
+        <label class="field"><span>Merchant Label</span><input class="control" name="merchant_label" value="{{ method.merchant_label }}"></label>
+        <label class="field"><span>Instructions</span><textarea class="control" name="instructions" rows="3">{{ method.instructions }}</textarea></label>
+      </div>
+      <div class="filter-row" style="margin-top:12px;gap:18px;flex-wrap:wrap">
+        <label><input type="checkbox" name="is_active"{% if method.is_active %} checked{% endif %}> Active</label>
+        <label><input type="checkbox" name="allow_dashboard"{% if method.allow_dashboard %} checked{% endif %}> Dashboard</label>
+        <label><input type="checkbox" name="allow_pos"{% if method.allow_pos %} checked{% endif %}> POS</label>
+        <label><input type="checkbox" name="allow_storefront"{% if method.allow_storefront %} checked{% endif %}> Storefront-ready</label>
+        <label><input type="checkbox" name="is_test_mode"{% if method.is_test_mode %} checked{% endif %}> Test Mode</label>
+      </div>
+      <div style="margin-top:12px"><button class="btn btn-primary" type="submit">Save {{ method.get_method_display }}</button></div>
+    </form>{% endfor %}
+  </div>
+</section>
+{% endblock %}
