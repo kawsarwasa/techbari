@@ -1,8 +1,18 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v1.1.0**
+**Current version: v1.2.0**
 
-TechBari is being converted phase-by-phase from a static Django template demo into a MySQL 8-backed commerce system. Catalog and Inventory Phase 1 are database-backed; the remaining business modules continue to use the approved presentation until their own database phases are implemented.
+TechBari is being converted phase-by-phase from a static Django template demo into a MySQL 8-backed commerce system. Catalog, Inventory Phase 1 and Serial / IMEI / Warranty tracking are database-backed; the remaining business modules continue to use the approved presentation until their own database phases are implemented.
+
+## v1.2.0 — Serial / IMEI / Warranty Tracking
+
+This phase adds unit-level tracking for electronics. Every tracked physical unit can be linked to a Product Variant/SKU and Warehouse with Serial Number, IMEI 1/2, lifecycle status, purchase source, sale reference, customer reference and warranty dates. Serial/IMEI identifiers are validated and unique; IMEI values require 15 digits.
+
+Lifecycle changes are integrated with the shared Inventory Engine. Available, Reserved, Sold, Returned, Damaged, Warranty Service and Scrapped transitions post the required stock/reservation movements instead of silently changing a status field. Warehouse changes for stock-bearing serialized units post real Inventory transfers, including reservation release/reapply for reserved units. An immutable SerializedUnitEvent history records registration, transfers, status changes and warranty activity.
+
+Warranty/RMA claims are linked to the exact serialized unit. Claims support Open, In Service, Resolved, Replaced and Rejected states, customer/order references, service notes, resolution history and same-SKU replacement units. Normal claim closure restores the unit's pre-claim lifecycle state; a replacement sells the selected replacement unit through Inventory and marks the original unit as Scrapped.
+
+See `SERIAL_IMEI_WARRANTY_PHASE.md` for schema, workflows, routes, validations and service behavior.
 
 ## v1.1.0 — Inventory Phase 1
 
@@ -69,7 +79,27 @@ Inventory routes:
 - `/dashboard/inventory/movements/`
 - `/dashboard/inventory/low-stock/`
 
-See `CATALOG_DATABASE_PHASE.md` and `INVENTORY_PHASE1.md` for detailed coverage.
+### Serial / IMEI / Warranty
+
+- Serialized physical units by Variant/SKU
+- Unique Serial Number / IMEI 1 / IMEI 2
+- Warehouse location
+- Available / Reserved / Sold / Returned / Damaged / Warranty Service / Scrapped lifecycle
+- Inventory-aware unit transfers and status changes
+- Purchase / supplier references ready for Purchase integration
+- Sales / customer references ready for Sales and CRM integration
+- Warranty start/end and supplier warranty reference
+- Immutable unit event history
+- Warranty / RMA claims and replacement tracking
+
+Serial/Warranty routes:
+
+- `/dashboard/serials/`
+- `/dashboard/serials/add/`
+- `/dashboard/warranty/`
+- `/dashboard/warranty/add/`
+
+See `CATALOG_DATABASE_PHASE.md`, `INVENTORY_PHASE1.md` and `SERIAL_IMEI_WARRANTY_PHASE.md` for detailed coverage.
 
 ## Local setup
 
@@ -95,11 +125,11 @@ Apply migrations and verify:
 ```powershell
 python manage.py migrate
 python manage.py check
-python manage.py test catalog inventory
+python manage.py test catalog inventory serial_tracking
 python manage.py runserver
 ```
 
-For an existing v1.0.10 database, `python manage.py migrate` automatically imports current variant stock into the default warehouse. Do not reseed just to initialize Inventory.
+For an existing v1.1.0 database, `python manage.py migrate` creates the Serial / IMEI / Warranty tables without changing existing catalog or inventory quantities. Do not reseed just to initialize this phase.
 
 For a fresh demo database, you may run `python manage.py seed_catalog` after migrations. New variants automatically receive inventory balances.
 
@@ -108,6 +138,8 @@ Open:
 - Storefront: `http://127.0.0.1:8000/`
 - Dashboard: `http://127.0.0.1:8000/dashboard/`
 - Inventory: `http://127.0.0.1:8000/dashboard/inventory/`
+- Serial / IMEI: `http://127.0.0.1:8000/dashboard/serials/`
+- Warranty / RMA: `http://127.0.0.1:8000/dashboard/warranty/`
 
 ## Image rules
 
@@ -123,4 +155,4 @@ TechBari follows the long-term principle:
 
 **One Product Database + One Inventory Engine + One Sales Engine + One Accounting Ledger.**
 
-The next recommended database phase is Serial / IMEI / Warranty tracking, followed by Purchase/Supplier, Customer/CRM and the shared Sales Order engine.
+The next recommended database phase is Supplier + Purchase, followed by Customer/CRM and the shared Sales Order engine.
