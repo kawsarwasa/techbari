@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import catalog_views, inventory_views, purchase_views, views
+from . import catalog_views, customer_views, inventory_views, purchase_views, sales_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
@@ -29,7 +29,24 @@ purchase_patterns = [
     path("purchases/<int:purchase_id>/delete/", purchase_views.purchase_delete, name="purchase_delete"),
 ]
 
-urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + [
+customer_patterns = [
+    path("customers/groups/", customer_views.customer_groups, name="customer_groups"),
+    path("customers/groups/<int:group_id>/delete/", customer_views.customer_group_delete, name="customer_group_delete"),
+    path("customers/<int:customer_id>/", customer_views.customer_detail, name="customer_detail_id"),
+    path("customers/<int:customer_id>/delete/", customer_views.customer_delete, name="customer_delete"),
+]
+
+sales_patterns = [
+    path("orders/<int:order_id>/", sales_views.order_detail, name="order_detail_id"),
+    path("orders/<int:order_id>/confirm/", sales_views.order_confirm, name="order_confirm"),
+    path("orders/<int:order_id>/process/", sales_views.order_process, name="order_process"),
+    path("orders/<int:order_id>/complete/", sales_views.order_complete, name="order_complete"),
+    path("orders/<int:order_id>/cancel/", sales_views.order_cancel, name="order_cancel"),
+    path("orders/<int:order_id>/payment/", sales_views.order_payment, name="order_payment"),
+    path("orders/<int:order_id>/delete/", sales_views.order_delete, name="order_delete"),
+]
+
+urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + [
     path(info["path"], views.page, {"page_name": name}, name=name)
     for name, info in PAGES.items()
 ]
