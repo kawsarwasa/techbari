@@ -1,0 +1,14 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Low Stock | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/inventory-v110.css' %}">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Low Stock & Out of Stock</h1><p>Warehouse/SKU balances at or below their reorder threshold.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:inventory' %}">Inventory</a><a class="btn btn-primary" href="{% url 'backoffice:stock_adjustment' %}">＋ Stock Adjustment</a></div></div>
+  <div class="card orders-table-card"><div class="table-scroll"><table class="data-table"><thead><tr><th>#</th><th>Product / Variant</th><th>SKU</th><th>Warehouse</th><th>On Hand</th><th>Reserved</th><th>Available</th><th>Alert At</th><th>Status</th></tr></thead><tbody>
+  {% for balance in low_stock_rows %}
+    <tr><td>{{ forloop.counter }}</td><td><strong>{{ balance.variant.product.name }}</strong><br><span class="muted">{{ balance.variant.name }}</span></td><td>{{ balance.variant.sku }}</td><td>{{ balance.warehouse.name }}</td><td>{{ balance.on_hand }}</td><td>{{ balance.reserved_quantity }}</td><td><strong>{{ balance.available_quantity }}</strong></td><td>{{ balance.low_stock_threshold }}</td><td>{% if balance.available_quantity == 0 %}<span class="inventory-status out">Out</span>{% else %}<span class="inventory-status low">Low</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="9"><div class="empty-state">No low-stock balances. Inventory levels are healthy.</div></td></tr>{% endfor %}
+  </tbody></table></div></div>
+</section>
+{% endblock %}
