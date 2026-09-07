@@ -241,11 +241,17 @@ class CODSettlement(models.Model):
         ]
 
     def clean(self):
-        if self.courier_deduction > self.gross_amount:
+        # Gross/net values are calculated by the settlement service, so ModelForm header
+        # validation may legitimately call clean() before those service-owned values exist.
+        if self.gross_amount is None:
+            return
+        deduction = self.courier_deduction or ZERO
+        if deduction > self.gross_amount:
             raise ValidationError({"courier_deduction": "Courier deduction cannot exceed gross COD."})
-        expected_net = self.gross_amount - self.courier_deduction
-        if self.net_received != expected_net:
-            raise ValidationError({"net_received": "Net received must equal gross COD minus courier deduction."})
+        if self.net_received is not None:
+            expected_net = self.gross_amount - deduction
+            if self.net_received != expected_net:
+                raise ValidationError({"net_received": "Net received must equal gross COD minus courier deduction."})
 
     def __str__(self):
         return self.settlement_no
