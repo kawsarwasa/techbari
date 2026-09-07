@@ -35,6 +35,13 @@ class SalesOrder(models.Model):
         MANUAL = "manual", "Manual Order"
         POS = "pos", "POS"
 
+    class PaymentMethod(models.TextChoices):
+        CASH = "cash", "Cash"
+        CARD = "card", "Card"
+        BKASH = "bkash", "bKash"
+        NAGAD = "nagad", "Nagad"
+        OTHER = "other", "Other"
+
     order_number = models.CharField(max_length=50, unique=True, default=make_order_number)
     customer = models.ForeignKey(
         Customer,
@@ -47,6 +54,10 @@ class SalesOrder(models.Model):
     channel = models.CharField(max_length=20, choices=Channel.choices, default=Channel.ONLINE)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.UNPAID)
+    payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices, blank=True)
+    payment_reference = models.CharField(max_length=120, blank=True)
+    tendered_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    change_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     order_date = models.DateField(default=timezone.localdate)
 
     shipping_name = models.CharField(max_length=180, blank=True)
