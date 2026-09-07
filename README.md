@@ -1,30 +1,36 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v1.7.0**
+**Current version: v1.8.0**
 
-TechBari is being converted phase-by-phase from a static Django template demo into a MySQL 8-backed commerce system. Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout and POS are now connected to the real business data flow.
+TechBari is being converted phase-by-phase from a static Django template demo into a MySQL 8-backed commerce system. Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS and Payment are now connected to the real business data flow.
+
+## v1.8.0 — Payment System
+
+TechBari now has a central transaction-level Payment ledger for Sales, POS and Supplier payments. It supports Cash, Bank Transfer, Card, bKash, Nagad and Other methods, multiple/partial Sales payments, refunds, full unreconciled reversals, reconciliation status and immutable payment audit events.
+
+Existing SalesOrder paid amounts and existing Supplier PurchasePayment rows are imported during migration so historical payment data is preserved. New POS/order paid-amount writes are compatibility-synchronized into the Payment ledger, and new Supplier payments are mirrored automatically as Money Out.
+
+Payment Method configuration controls Dashboard/POS/storefront readiness, provider code, merchant label and test mode. Storefront bKash/Nagad/Card gateway success is not faked without real merchant credentials/callback verification; current COD checkout remains operational.
+
+See `PAYMENT_SYSTEM_PHASE.md`.
 
 ## v1.7.0 — POS System
 
-The `/dashboard/pos/` screen is now a real database-backed counter-sales system instead of a localStorage demo. POS searches real Product Variants by product name, SKU, barcode, brand and category; stock shown is warehouse-aware and comes from `InventoryBalance.available_quantity`.
+The `/dashboard/pos/` screen is a real database-backed counter-sales system. It searches real Product Variants by product name, SKU, barcode, brand and category; stock shown is warehouse-aware and comes from `InventoryBalance.available_quantity`.
 
-Counter sales reuse the same Sales Order + Inventory engines used by the storefront. Walk-in sales or CRM customers are supported, fixed/percentage discounts are validated against real server prices, and held carts are stored as Draft POS Sales Orders without reserving stock. A resumed sale revalidates current stock before completion.
-
-Cash, Card, bKash and Nagad tender snapshots are supported. Cash can calculate change; non-cash methods require a payment reference. Completing a sale atomically creates/updates the POS Sales Order, reserves stock, records payment, confirms the order and completes/sells it through the existing Inventory Engine. Printable receipts are available.
+Counter sales reuse the same Sales Order + Inventory engines used by the storefront. Walk-in/CRM customers, discounts, hold/resume, Cash/Card/bKash/Nagad tender snapshots and printable receipts are supported.
 
 See `POS_SYSTEM_PHASE.md`.
 
 ## v1.6.0 — Storefront Checkout Backend
 
-The public `/checkout/` page creates real database-backed Online Sales Orders. Checkout validates Bangladesh customer/contact and delivery data, finds or creates the CRM customer, reloads real Variant/SKU rows from MySQL, recalculates price/discount/shipping on the server and creates a Pending Sales Order through the shared Sales Engine.
-
-Pending checkout orders reserve stock in the default online warehouse. Insufficient stock rolls the full transaction back, and repeated submission of the same signed checkout token does not reserve stock twice. The public confirmation page is protected by a signed order token.
+The public `/checkout/` page creates real database-backed Online Sales Orders with CRM customer find/create, server-authoritative pricing/stock/coupon/shipping, Inventory reservation, signed idempotency and signed confirmation.
 
 See `CHECKOUT_BACKEND_PHASE.md`.
 
 ## v1.5.0 — Customer CRM + Sales Order Engine
 
-Customer profiles are real database records with customer number, unique phone/email handling, groups, source, address, credit/opening due, notes and active/inactive state. Sales Orders use real Catalog Variant/SKU rows and the shared Inventory Engine with Draft / Pending / Confirmed / Processing / Completed / Cancelled lifecycle.
+Customer profiles are real database records with group/source/address/credit/history metrics. Sales Orders use real Catalog Variant/SKU rows and the shared Inventory Engine with Draft / Pending / Confirmed / Processing / Completed / Cancelled lifecycle.
 
 See `CRM_SALES_PHASE.md`.
 
@@ -70,7 +76,7 @@ Supplier CRUD, Purchase Orders, receiving, Inventory `PURCHASE_IN`, optional Ser
 Customer CRUD, Retail/Wholesale/VIP groups, customer source/address, credit/opening due, purchase history and derived customer metrics.
 
 ### Sales Order
-Database-backed Sales Orders and items, Online / Manual / POS channels, real SKU lines, lifecycle/status history, inventory reservation/deduction, payment status and customer linkage.
+Database-backed Sales Orders and items, Online / Manual / POS channels, real SKU lines, lifecycle/status history, inventory reservation/deduction and customer linkage.
 
 ### Storefront Checkout
 Real GET/POST checkout, server-authoritative pricing/stock/coupon/shipping, CRM find/create, Inventory reservation, signed idempotency and signed public confirmation.
@@ -83,16 +89,23 @@ Real GET/POST checkout, server-authoritative pricing/stock/coupon/shipping, CRM 
 - Hold / resume Draft POS orders
 - Cash / Card / bKash / Nagad tender snapshots
 - Cash change calculation
-- Server-side stock and price validation
 - Atomic completion through Sales + Inventory
 - Printable receipt
 
-Routes:
-- `/dashboard/pos/`
-- `/dashboard/pos/action/`
-- `/dashboard/pos/held/<id>/`
-- `/dashboard/pos/receipt/<id>/`
-- `/dashboard/orders/`
+Routes: `/dashboard/pos/`, `/dashboard/pos/action/`, `/dashboard/pos/held/<id>/`, `/dashboard/pos/receipt/<id>/`.
+
+### Payment
+- Central Money In / Money Out ledger
+- Sale payments and Supplier payment mirrors
+- Partial and multiple Sales payments
+- Cash / Bank / Card / bKash / Nagad / Other methods
+- Refund and unreconciled full reversal
+- Reconciliation / dispute state
+- Immutable payment audit trail
+- Payment method configuration
+- Existing payment data import during migration
+
+Routes: `/dashboard/payments/`, `/dashboard/payments/add/`, `/dashboard/payments/methods/`, `/dashboard/payments/<id>/`.
 
 ## Local setup
 
@@ -118,11 +131,11 @@ Apply migrations and verify:
 ```powershell
 python manage.py migrate
 python manage.py check
-python manage.py test catalog inventory serial_tracking purchasing customers sales storefront
+python manage.py test catalog inventory serial_tracking purchasing customers sales payments storefront
 python manage.py runserver
 ```
 
-Upgrading from v1.6.0 to v1.7.0 applies `sales.0002_pos_tender_fields`. Existing orders and business data are preserved.
+Upgrading from v1.7.0 to v1.8.0 applies the new `payments` migrations and preserves existing Sales/POS/Supplier payment data. No seed command is required.
 
 ## Architecture direction
 
@@ -130,4 +143,4 @@ TechBari follows:
 
 **One Product Database + One Inventory Engine + One Sales Engine + One Accounting Ledger.**
 
-The next recommended roadmap phase is **v1.8.x — Payment System**, followed by Shipping/Courier, Returns/Refunds, Accounting, Reports, Marketing, Roles/Permissions, CMS, Customer Account, Integrations and Production QA.
+The next recommended roadmap phase is **v1.9.x — Shipping / Courier**, followed by Returns/Refunds, Accounting, Reports, Marketing, Roles/Permissions, CMS, Customer Account, Integrations and Production QA.
