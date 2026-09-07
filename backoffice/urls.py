@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import catalog_views, customer_views, inventory_views, pos_views, purchase_views, sales_views, views
+from . import catalog_views, customer_views, inventory_views, payment_views, pos_views, purchase_views, sales_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
@@ -53,9 +53,19 @@ pos_patterns = [
     path("pos/receipt/<int:order_id>/", pos_views.pos_receipt, name="pos_receipt"),
 ]
 
-urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + [
+payment_patterns = [
+    path("payments/", payment_views.payments, name="payments"),
+    path("payments/add/", payment_views.payment_add, name="payment_add"),
+    path("payments/methods/", payment_views.payment_methods, name="payment_methods"),
+    path("payments/<int:payment_id>/", payment_views.payment_detail, name="payment_detail"),
+    path("payments/<int:payment_id>/refund/", payment_views.payment_refund, name="payment_refund"),
+    path("payments/<int:payment_id>/reverse/", payment_views.payment_reverse, name="payment_reverse"),
+    path("payments/<int:payment_id>/reconcile/", payment_views.payment_reconcile, name="payment_reconcile"),
+]
+
+urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + [
     path(info["path"], views.page, {"page_name": name}, name=name)
     for name, info in PAGES.items()
-    if name != "pos"
+    if name not in {"pos", "payments", "payment_add"}
 ]
 urlpatterns += [path("<slug:page>.html", views.legacy_page, name="legacy_page")]
