@@ -1,0 +1,15 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Accounting Periods | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Accounting Periods</h1><p>Control when General Ledger postings are allowed. Closed periods reject new or reversal journals dated inside the period.</p></div></div>
+  {% if accounting_notice %}<div class="acct-success">{{ accounting_notice }}</div>{% endif %}{% if accounting_error %}<div class="acct-error">{{ accounting_error }}</div>{% endif %}
+  {% include "backoffice/pages/accounts/_subnav.html" with accounting_tab="periods" %}
+  <div class="acct-grid">
+    <div class="card card-pad"><h3>Periods</h3><div class="table-scroll"><table class="acct-table"><thead><tr><th>Name</th><th>Start</th><th>End</th><th>Status</th><th>Closed By</th><th>Action</th></tr></thead><tbody>{% for row in period_rows %}<tr><td><strong>{{ row.name }}</strong></td><td>{{ row.start_date }}</td><td>{{ row.end_date }}</td><td><span class="acct-badge {{ row.status }}">{{ row.get_status_display }}</span></td><td>{{ row.closed_by|default:"—" }}{% if row.closed_at %}<div class="acct-help">{{ row.closed_at }}</div>{% endif %}</td><td><form method="post" action="{% url 'backoffice:accounting_period_toggle' row.id %}">{% csrf_token %}<button class="btn" type="submit">{% if row.status == 'open' %}Close Period{% else %}Reopen Period{% endif %}</button></form></td></tr>{% empty %}<tr><td colspan="6" class="acct-empty">No accounting periods configured. Without a closed period, journals may be posted on any valid date.</td></tr>{% endfor %}</tbody></table></div></div>
+    <form method="post" class="acct-form-card">{% csrf_token %}<h3>Create Period</h3><div class="acct-form-grid">{% for field in period_form %}<div class="field {% if field.name == 'name' %}wide{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="acct-error">{{ field.errors|striptags }}</div>{% endif %}</div>{% endfor %}</div><div class="acct-note">Periods cannot overlap. Closing a period blocks future postings with an entry date inside that range.</div><button class="btn btn-primary" type="submit">Create Open Period</button></form>
+  </div>
+</section>
+{% endblock %}
