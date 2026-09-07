@@ -5,6 +5,14 @@ from django import forms
 from .models import Customer, CustomerGroup
 
 
+def _style_fields(form):
+    for field in form.fields.values():
+        if isinstance(field.widget, forms.CheckboxInput):
+            field.widget.attrs.setdefault("class", "checkbox")
+        else:
+            field.widget.attrs.setdefault("class", "control")
+
+
 class CustomerForm(forms.ModelForm):
     class Meta:
         model = Customer
@@ -27,6 +35,10 @@ class CustomerForm(forms.ModelForm):
             "address": forms.Textarea(attrs={"rows": 3}),
             "notes": forms.Textarea(attrs={"rows": 4}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style_fields(self)
 
     def clean_phone(self):
         phone = (self.cleaned_data.get("phone") or "").strip()
@@ -68,6 +80,10 @@ class CustomerGroupForm(forms.ModelForm):
         model = CustomerGroup
         fields = ["name", "code", "discount_percent", "is_active", "notes"]
         widgets = {"notes": forms.Textarea(attrs={"rows": 3})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _style_fields(self)
 
     def clean_code(self):
         code = (self.cleaned_data.get("code") or "").strip().upper()
