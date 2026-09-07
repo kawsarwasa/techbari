@@ -1,6 +1,59 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
-{% block title %}Warranty Form | TechBari Admin{% endblock %}
+{% load static %}
+{% block title %}{% if is_edit %}Warranty Claim{% else %}Add Warranty Claim{% endif %} | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/serial-v120.css' %}?v=1.2.0">{% endblock %}
 {% block content %}
-<section class="page">{% include "backoffice/includes/breadcrumbs/warranty_add.html" %}<div class="page-head"><div><h1>Warranty Form</h1><p>Create or update a warranty / service claim.</p></div>{% include "backoffice/components/form_actions.html" with cancel_route="backoffice:warranty" %}</div><form id="crudForm" class="form-layout" data-crud-form="warranty" data-list-url="{% url 'backoffice:warranty' %}"><div class="card form-card"><div class="section-head"><h3><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg> Basic Information</h3></div><div class="form-grid"><label class="field"><span>Claim No</span><input class="control" type="text" name="claim" placeholder="Enter claim no" required></label><label class="field"><span>Customer</span><input class="control" type="text" name="customer" placeholder="Enter customer" required></label><label class="field"><span>Product</span><input class="control" type="text" name="product" placeholder="Enter product" required></label><label class="field"><span>Serial / IMEI</span><input class="control" type="text" name="serial" placeholder="Enter serial / imei" required></label><label class="field"><span>Issue</span><textarea class="control textarea" name="issue" rows="4" placeholder="Enter issue">{{ form_data.issue }}</textarea></label><label class="field"><span>Resolution</span><select class="control" name="resolution" required>{% for option in form_options.resolution %}<option{% if option.has_value %} value="{{ option.value }}"{% endif %}{% if option.selected %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label><label class="field"><span>Claim Date</span><input class="control" type="date" name="date" required></label></div></div><aside class="card form-side"><div class="section-head"><h3><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg> Publishing</h3></div><div class="info-body"><label class="field"><span>Status</span><select class="control" name="status">{% for option in form_options.status %}<option{% if option.has_value %} value="{{ option.value }}"{% endif %}{% if option.selected %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label><div class="soft-note">This is a static CRUD demo. Data is stored in your browser using localStorage.</div></div></aside></form></section>
+<section class="page">
+  {% include "backoffice/includes/breadcrumbs/warranty_add.html" %}
+  <div class="page-head">
+    <div><h1>{% if is_edit %}Warranty Claim Details{% else %}Add Warranty Claim{% endif %}</h1><p>Link service and replacement activity to the exact Serial / IMEI unit.</p></div>
+    <div class="head-actions"><a class="btn" href="{% url 'backoffice:warranty' %}">Back to Warranty</a>{% if claim_obj %}<a class="btn" href="{% url 'backoffice:serial_add' %}?id={{ claim_obj.unit.id }}">View Unit</a>{% endif %}</div>
+  </div>
+  {% if serial_notice %}<div class="serial-notice">✓ {{ serial_notice }}</div>{% endif %}
+  {% if form.non_field_errors %}<div class="serial-error">{{ form.non_field_errors }}</div>{% endif %}
+
+  <form method="post" class="form-layout">
+    {% csrf_token %}{% if is_edit %}<input type="hidden" name="claim_id" value="{{ claim_obj.id }}">{% endif %}
+    <div class="card form-card">
+      <div class="section-head"><h3>Claim Information</h3></div>
+      <div class="serial-form-grid">
+        <label class="field"><span>Claim No</span>{{ form.claim_no }}{{ form.claim_no.errors }}</label>
+        <label class="field"><span>Serialized Unit</span>{{ form.unit }}{{ form.unit.errors }}</label>
+        <label class="field"><span>Customer Name</span>{{ form.customer_name }}{{ form.customer_name.errors }}</label>
+        <label class="field"><span>Customer Phone</span>{{ form.customer_phone }}{{ form.customer_phone.errors }}</label>
+        <label class="field"><span>Order / Sales Reference</span>{{ form.order_reference }}{{ form.order_reference.errors }}</label>
+        <label class="field"><span>Claim Date</span>{{ form.claim_date }}{{ form.claim_date.errors }}</label>
+        <label class="field wide"><span>Issue</span>{{ form.issue }}{{ form.issue.errors }}</label>
+      </div>
+
+      <div class="section-head serial-section"><h3>Service & Resolution</h3></div>
+      <div class="serial-form-grid">
+        <label class="field"><span>Status</span>{{ form.status }}{{ form.status.errors }}</label>
+        <label class="field"><span>Service Reference</span>{{ form.service_reference }}{{ form.service_reference.errors }}</label>
+        <label class="field"><span>Replacement Unit</span>{{ form.replacement_unit }}{{ form.replacement_unit.errors }}<small class="serial-help">Required only when status is Replaced. The replacement must use the same SKU.</small></label>
+        <label class="field"><span>Resolved Date</span>{{ form.resolved_at }}{{ form.resolved_at.errors }}</label>
+        <label class="field wide"><span>Resolution</span>{{ form.resolution }}{{ form.resolution.errors }}</label>
+        <label class="field wide"><span>Notes</span>{{ form.notes }}{{ form.notes.errors }}</label>
+      </div>
+    </div>
+
+    <aside class="card form-side">
+      <div class="section-head"><h3>Warranty Workflow</h3></div>
+      <div class="info-body">
+        {% if claim_obj %}
+          <div class="serial-unit-meta">
+            <div><small>Claim</small><strong>{{ claim_obj.claim_no }}</strong></div>
+            <div><small>Status</small><strong>{{ claim_obj.get_status_display }}</strong></div>
+            <div><small>Unit</small><strong>{{ claim_obj.unit.display_identifier }}</strong></div>
+            <div><small>SKU</small><strong>{{ claim_obj.unit.variant.sku }}</strong></div>
+          </div>
+          <div class="soft-note" style="margin-top:12px">Original unit status before this claim: <strong>{{ claim_obj.unit_status_before_claim|default:"Unknown" }}</strong>. Closing a normal claim restores that lifecycle status; replacement scraps the original and sells the selected replacement unit through Inventory.</div>
+        {% else %}
+          <div class="soft-note">Opening a claim moves the unit to <strong>Warranty Service</strong>. Inventory adjustments are posted automatically when the previous unit status represents warehouse stock.</div>
+        {% endif %}
+        <div class="serial-form-actions"><a class="btn" href="{% url 'backoffice:warranty' %}">Cancel</a><button class="btn btn-primary" type="submit">{% if is_edit %}Save Claim{% else %}Open Claim{% endif %}</button></div>
+      </div>
+    </aside>
+  </form>
+</section>
 {% endblock %}
