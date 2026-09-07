@@ -1,8 +1,20 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v1.3.0**
+**Current version: v1.5.0**
 
-TechBari is being converted phase-by-phase from a static Django template demo into a MySQL 8-backed commerce system. Catalog, Inventory, Serial / IMEI / Warranty and Supplier / Purchase are database-backed; remaining business modules keep the approved presentation until their own database phases are implemented.
+TechBari is being converted phase-by-phase from a static Django template demo into a MySQL 8-backed commerce system. Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM and Sales Order are now database-backed; remaining business modules keep the approved presentation until their own database phases are implemented.
+
+## v1.5.0 — Customer CRM + Sales Order Engine
+
+This phase implements the roadmap v1.4.x Customer / CRM foundation and v1.5.x Sales Order Engine together.
+
+Customer profiles are now real database records with customer number, unique phone/email handling, groups, source, address, credit/opening due, notes and active/inactive state. Retail, Wholesale and VIP groups are created by migration. Order count, completed order count, total spent, due balance, first/last purchase and repeat-customer status are derived from real sales data instead of being typed manually.
+
+Sales Orders use real Catalog Variant/SKU rows and the shared Inventory Engine. Draft orders do not reserve stock; Pending, Confirmed and Processing orders hold warehouse stock reservations; Completed / Sold orders issue the reserved stock atomically; Cancelled orders release unsold reservations. Overselling is blocked and Sales never writes `ProductVariant.stock_quantity` directly.
+
+Order-level payment state supports Unpaid / Partial / Paid, and immutable order history records creation, updates, status changes, payment changes and stock reservation events.
+
+See `CRM_SALES_PHASE.md` for schema, lifecycle, routes, inventory behavior and deployment notes.
 
 ## v1.3.0 — Supplier + Purchase
 
@@ -117,6 +129,50 @@ Routes:
 - `/dashboard/purchases/<id>/payment/`
 - `/dashboard/purchases/<id>/return/`
 
+### Customer / CRM
+
+- Customer CRUD with history-aware delete protection
+- Retail / Wholesale / VIP groups
+- Customer source and contact/address details
+- Credit limit / opening due / notes
+- Derived order count and completed-order count
+- Derived total spent and due balance
+- First / last purchase
+- Repeat-customer tracking after 2+ completed orders
+- Customer purchase history
+
+Routes:
+
+- `/dashboard/customers/`
+- `/dashboard/customers/add/`
+- `/dashboard/customers/<id>/`
+- `/dashboard/customers/groups/`
+
+### Sales Order
+
+- Real database-backed Sales Orders and Order Items
+- Customer-linked and guest orders
+- Online / Manual / POS-ready channels
+- Real Catalog Variant/SKU order lines
+- Draft / Pending / Confirmed / Processing / Completed / Cancelled lifecycle
+- Warehouse stock reservation
+- Atomic inventory deduction on Completed / Sold
+- Reservation release on cancellation
+- Unpaid / Partial / Paid order-level payment state
+- Immutable Sales Order history
+- Customer CRM metrics derived from Sales Orders
+
+Routes:
+
+- `/dashboard/orders/`
+- `/dashboard/orders/add/`
+- `/dashboard/orders/<id>/`
+- `/dashboard/orders/<id>/confirm/`
+- `/dashboard/orders/<id>/process/`
+- `/dashboard/orders/<id>/complete/`
+- `/dashboard/orders/<id>/cancel/`
+- `/dashboard/orders/<id>/payment/`
+
 ## Local setup
 
 ```powershell
@@ -141,11 +197,11 @@ Apply migrations and verify:
 ```powershell
 python manage.py migrate
 python manage.py check
-python manage.py test catalog inventory serial_tracking purchasing
+python manage.py test catalog inventory serial_tracking purchasing customers sales
 python manage.py runserver
 ```
 
-Upgrading from v1.2.0 only creates the purchasing schema and the Serialized Unit supplier-return status migration. Existing Catalog, Inventory, Serial/IMEI and Warranty data are preserved. Do not reseed just to initialize purchasing.
+Upgrading from v1.3.0 creates the Customer / CRM and Sales Order schemas. Existing Catalog, Inventory, Serial/IMEI, Warranty, Supplier and Purchase data are preserved. No seed command is required for CRM; the standard Customer Groups are created by migration.
 
 For a fresh demo database, `python manage.py seed_catalog` remains optional after migrations.
 
@@ -155,4 +211,4 @@ TechBari follows:
 
 **One Product Database + One Inventory Engine + One Sales Engine + One Accounting Ledger.**
 
-The next recommended database phase is **Customer / CRM**, followed by Sales Order, Checkout and POS.
+The next recommended database phase is **Storefront Checkout → Sales Order integration (v1.6.x)**. POS can then reuse the same Sales + Inventory foundation, followed by dedicated Payment, Shipping, Returns / Refunds and Accounting phases.
