@@ -1,0 +1,40 @@
+{% extends "backoffice/base.html" %}
+{% block title %}Courier Providers | TechBari Admin{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Courier Providers</h1><p>Configure courier partners, COD capability, default fee and future API readiness.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:shipping' %}">Shipping</a><a class="btn" href="{% url 'backoffice:courier_providers' %}">New Provider</a></div></div>
+  {% if shipping_notice %}<div class="soft-note" style="margin-bottom:14px">{{ shipping_notice }}</div>{% endif %}
+  {% if shipping_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ shipping_error }}</div>{% endif %}
+  <div class="detail-grid-top">
+    <div class="card orders-table-card">
+      <div class="section-head"><h3>Configured Couriers</h3></div>
+      <div class="table-scroll"><table class="data-table"><thead><tr><th>Courier</th><th>Contact</th><th>COD</th><th>Default Fee</th><th>API</th><th>Status</th><th>Action</th></tr></thead><tbody>
+        {% for courier in courier_rows %}<tr><td><strong>{{ courier.name }}</strong><br><small>{{ courier.code }}</small></td><td>{{ courier.contact_person|default:"—" }}<br><small>{{ courier.phone|default:"" }}</small></td><td>{% if courier.supports_cod %}Yes{% else %}No{% endif %}</td><td>৳ {{ courier.default_courier_fee }}</td><td>{% if courier.api_enabled %}Enabled{% if courier.is_test_mode %} / Test{% endif %}{% else %}Manual{% endif %}</td><td>{% if courier.is_active %}Active{% else %}Inactive{% endif %}</td><td><a class="btn" href="{% url 'backoffice:courier_providers' %}?id={{ courier.id }}">Edit</a></td></tr>{% empty %}<tr><td colspan="7">No courier providers configured.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    <div class="card info-card">
+      <div class="section-head"><h3>{% if courier_edit %}Edit {{ courier_edit.name }}{% else %}Add Courier Provider{% endif %}</h3></div>
+      <div class="info-body">
+        {% if courier_form.non_field_errors %}<div class="soft-note" style="color:#c42b2b">{{ courier_form.non_field_errors }}</div>{% endif %}
+        <form method="post">{% csrf_token %}{% if courier_edit %}<input type="hidden" name="provider_id" value="{{ courier_edit.id }}">{% endif %}
+          <label class="field"><span>Code</span>{{ courier_form.code }}{{ courier_form.code.errors }}</label>
+          <label class="field"><span>Name</span>{{ courier_form.name }}{{ courier_form.name.errors }}</label>
+          <label class="field"><span>Contact Person</span>{{ courier_form.contact_person }}</label>
+          <label class="field"><span>Phone</span>{{ courier_form.phone }}</label>
+          <label class="field"><span>Email</span>{{ courier_form.email }}</label>
+          <label class="field"><span>Website</span>{{ courier_form.website }}</label>
+          <label class="field"><span>Tracking URL Template</span>{{ courier_form.tracking_url_template }}{{ courier_form.tracking_url_template.errors }}<small>Use <code>{tracking_id}</code> where the courier tracking number should appear.</small></label>
+          <label class="field"><span>Default Courier Fee</span>{{ courier_form.default_courier_fee }}</label>
+          <label style="display:block;margin:10px 0">{{ courier_form.supports_cod }} Supports COD</label>
+          <label style="display:block;margin:10px 0">{{ courier_form.is_active }} Active</label>
+          <label style="display:block;margin:10px 0">{{ courier_form.api_enabled }} API Enabled</label>
+          <label style="display:block;margin:10px 0">{{ courier_form.is_test_mode }} Test Mode</label>
+          <label class="field"><span>Notes</span>{{ courier_form.notes }}</label>
+          <div class="soft-note" style="margin:12px 0">API Enabled is configuration metadata only in v1.9.0. No third-party courier success is faked without real credentials and verified provider responses.</div>
+          <button class="btn btn-primary" type="submit">Save Courier</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
