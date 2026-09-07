@@ -1,0 +1,45 @@
+{% extends "backoffice/base.html" %}
+{% load demo %}
+{% block title %}Post COD Settlement | TechBari Admin{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Post COD Settlement</h1><p>Apply courier remittance to delivered COD shipments and reconcile the generated sale payments.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:cod_settlements' %}">COD Settlements</a></div></div>
+  {% if form.non_field_errors %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ form.non_field_errors }}</div>{% endif %}
+  <form method="post">{% csrf_token %}
+    <div class="detail-grid-top">
+      <div class="card form-card">
+        <div class="section-head"><h3>Settlement Header</h3></div>
+        <div class="form-grid">
+          <label class="field"><span>Courier</span>{{ form.courier }}{{ form.courier.errors }}</label>
+          <label class="field"><span>Settlement Date</span>{{ form.settlement_date }}{{ form.settlement_date.errors }}</label>
+          <label class="field"><span>Payment Method</span>{{ form.payment_method }}{{ form.payment_method.errors }}</label>
+          <label class="field"><span>Bank / Wallet / Settlement Reference</span>{{ form.reference }}{{ form.reference.errors }}</label>
+          <label class="field"><span>Courier Deduction / Fee</span>{{ form.courier_deduction }}{{ form.courier_deduction.errors }}</label>
+        </div>
+        <label class="field" style="margin-top:14px"><span>Notes</span>{{ form.note }}</label>
+      </div>
+      <aside class="card info-card"><div class="section-head"><h3>How this posts</h3></div><div class="info-body"><p>Select shipments from one courier only. Each selected amount creates a Sale Payment for that order and immediately marks that transaction Reconciled under this courier settlement.</p><div class="soft-note">Gross COD is used for customer payment settlement. Courier deduction is stored separately so the later Accounting module can post the fee/expense correctly. Net received = Gross COD − Courier Deduction.</div></div></aside>
+    </div>
+
+    <div class="card orders-table-card" style="margin-top:16px">
+      <div class="section-head"><h3>Delivered COD Shipments Awaiting Settlement</h3></div>
+      <div class="table-scroll"><table class="data-table"><thead><tr><th>Select</th><th>Shipment</th><th>Order</th><th>Courier</th><th>Customer</th><th>Collected</th><th>Already Settled</th><th>Unsettled</th><th>Apply Amount</th></tr></thead><tbody>
+        {% for shipment in eligible_cod_shipments %}
+        <tr>
+          <td><input type="checkbox" name="shipment_id" value="{{ shipment.id }}"></td>
+          <td><a href="{% url 'backoffice:shipment_detail' shipment.id %}">{{ shipment.shipment_no }}</a></td>
+          <td><a href="{% url 'backoffice:order_detail_id' shipment.order.id %}">{{ shipment.order.order_number }}</a><br><small>Due {{ shipment.order.outstanding_amount|money }}</small></td>
+          <td>{{ shipment.courier.name }}</td>
+          <td>{{ shipment.customer_name }}</td>
+          <td>{{ shipment.cod_collected|money }}</td>
+          <td>{{ shipment.cod_settled|money }}</td>
+          <td><strong>{{ shipment.unsettled_cod|money }}</strong></td>
+          <td><input class="control" type="number" min="0.01" step="0.01" name="amount_{{ shipment.id }}" value="{{ shipment.unsettled_cod }}"></td>
+        </tr>
+        {% empty %}<tr><td colspan="9">There are no delivered COD shipments with unsettled customer due.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    <div style="margin-top:16px"><button class="btn btn-primary" type="submit">Post & Reconcile COD Settlement</button></div>
+  </form>
+</section>
+{% endblock %}
