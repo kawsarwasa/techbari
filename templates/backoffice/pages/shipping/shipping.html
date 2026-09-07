@@ -1,7 +1,52 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
-{% block title %}Shipping & Courier Management | TechBari Admin{% endblock %}
+{% load demo %}
+{% block title %}Shipping & Courier | TechBari Admin{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Shipping & Courier Management</h1><p>Manage shipments, tracking and courier partners.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:shipment_add' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add Shipping</a></div></div><div class="cards kpi-grid-4">{% include "backoffice/components/stat_card.html" with stat=statistics.0 %}{% include "backoffice/components/stat_card.html" with stat=statistics.1 %}{% include "backoffice/components/stat_card.html" with stat=statistics.2 %}{% include "backoffice/components/stat_card.html" with stat=statistics.3 %}</div><div class="filters-card"><div class="filter-row"><input class="control search" data-table-search="#ShippingTable" placeholder="Search shipping..."><select class="control"><option>All Status</option><option>Active</option><option>Inactive</option></select><span class="filter-spacer"></span><button class="btn" data-export-table="#ShippingTable"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/></svg> Export CSV</button></div></div>
-    <div class="card orders-table-card"><div class="table-scroll"><table class="data-table" id="ShippingTable" data-crud-table="shipping"><thead><tr><th>#</th><th>Shipment</th><th>Order</th><th>Customer</th><th>Courier</th><th>Tracking ID</th><th>COD Amount</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>{% for record in shipping %}{% include "backoffice/components/record_row.html" with entity="shipping" columns=table_columns.shipping %}{% endfor %}</tbody></table></div><div class="table-footer"><span data-table-count></span>{% include "backoffice/components/table_pagination.html" %}</div></div></section>
+<section class="page">
+  <div class="page-head">
+    <div><h1>Shipping & Courier</h1><p>Real shipment tracking, courier handover, delivery status and COD receivables.</p></div>
+    <div class="head-actions">
+      <a class="btn" href="{% url 'backoffice:courier_providers' %}">Courier Providers</a>
+      <a class="btn" href="{% url 'backoffice:cod_settlements' %}">COD Settlements</a>
+      <a class="btn btn-primary" href="{% url 'backoffice:shipment_add' %}">+ Create Shipment</a>
+    </div>
+  </div>
+  {% if shipping_notice %}<div class="soft-note" style="margin-bottom:14px">{{ shipping_notice }}</div>{% endif %}
+  {% if shipping_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ shipping_error }}</div>{% endif %}
+
+  <div class="cards kpi-grid-4">
+    {% for stat in shipping_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}
+  </div>
+
+  <form class="filters-card" method="get">
+    <div class="filter-row">
+      <input class="control search" name="q" value="{{ shipping_query }}" placeholder="Shipment, order, customer, phone, tracking...">
+      <select class="control" name="status"><option value="">All shipment status</option>{% for value,label in shipment_status_choices %}<option value="{{ value }}"{% if shipping_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <select class="control" name="courier"><option value="">All couriers</option>{% for courier in shipping_couriers %}<option value="{{ courier.id }}"{% if shipping_courier == courier.id|stringformat:'s' %} selected{% endif %}>{{ courier.name }}</option>{% endfor %}</select>
+      <select class="control" name="cod_status"><option value="">All COD status</option>{% for value,label in shipment_cod_choices %}<option value="{{ value }}"{% if shipping_cod_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <button class="btn btn-primary" type="submit">Filter</button>
+      <a class="btn" href="{% url 'backoffice:shipping' %}">Reset</a>
+    </div>
+  </form>
+
+  <div class="card orders-table-card">
+    <div class="table-scroll"><table class="data-table" id="ShippingTable">
+      <thead><tr><th>Shipment</th><th>Order / Customer</th><th>Courier</th><th>Tracking</th><th>COD</th><th>Status</th><th>Ship Date</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for shipment in shipment_rows %}
+        <tr>
+          <td><strong>{{ shipment.shipment_no }}</strong><br><small>{{ shipment.parcel_count }} parcel{% if shipment.parcel_count != 1 %}s{% endif %} • {{ shipment.weight_kg }} kg</small></td>
+          <td><a href="{% url 'backoffice:order_detail_id' shipment.order.id %}"><strong>{{ shipment.order.order_number }}</strong></a><br><small>{{ shipment.customer_name }} • {{ shipment.order.customer_phone }}</small></td>
+          <td>{{ shipment.courier.name }}<br><small>{{ shipment.courier.code }}</small></td>
+          <td>{% if shipment.tracking_id %}<strong>{{ shipment.tracking_id }}</strong>{% if shipment.tracking_url %}<br><a href="{{ shipment.tracking_url }}" target="_blank" rel="noopener">Track externally</a>{% endif %}{% else %}<span>—</span>{% endif %}</td>
+          <td><strong>{{ shipment.cod_expected|money }}</strong><br><small>Collected {{ shipment.cod_collected|money }} • Settled {{ shipment.cod_settled|money }}<br>{{ shipment.get_cod_status_display }}</small></td>
+          <td><span class="badge">{{ shipment.get_status_display }}</span></td>
+          <td>{{ shipment.shipment_date }}</td>
+          <td><a class="btn" href="{% url 'backoffice:shipment_detail' shipment.id %}">Open</a></td>
+        </tr>
+        {% empty %}<tr><td colspan="8">No shipments match the current filter.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</section>
 {% endblock %}
