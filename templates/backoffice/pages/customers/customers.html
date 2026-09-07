@@ -1,7 +1,45 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
+{% load demo %}
 {% block title %}Customers | TechBari Admin{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Customers</h1><p>Manage customer profiles, purchase history and credit.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:customer_add' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add Customer</a></div></div><div class="cards kpi-grid-4">{% include "backoffice/components/stat_card.html" with stat=statistics.0 %}{% include "backoffice/components/stat_card.html" with stat=statistics.1 %}{% include "backoffice/components/stat_card.html" with stat=statistics.2 %}{% include "backoffice/components/stat_card.html" with stat=statistics.3 %}</div><div class="filters-card"><div class="filter-row"><input class="control search" data-table-search="#CustomersTable" placeholder="Search customers..."><select class="control"><option>All Status</option><option>Active</option><option>Inactive</option></select><span class="filter-spacer"></span><button class="btn" data-export-table="#CustomersTable"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/></svg> Export CSV</button></div></div>
-    <div class="card orders-table-card"><div class="table-scroll"><table class="data-table" id="CustomersTable" data-crud-table="customers"><thead><tr><th>#</th><th>Customer</th><th>Phone</th><th>Email</th><th>Orders</th><th>Total Spent</th><th>Group</th><th>Status</th><th>Actions</th></tr></thead><tbody>{% for record in customers %}{% include "backoffice/components/record_row.html" with entity="customers" columns=table_columns.customers %}{% endfor %}</tbody></table></div><div class="table-footer"><span data-table-count></span>{% include "backoffice/components/table_pagination.html" %}</div></div></section>
+<section class="page">
+  <div class="page-head">
+    <div><h1>Customers</h1><p>Database-backed CRM with purchase history, due and repeat-customer tracking.</p></div>
+    <div class="head-actions">
+      <a class="btn" href="{% url 'backoffice:customer_groups' %}">Customer Groups</a>
+      <a class="btn btn-primary" href="{% url 'backoffice:customer_add' %}">+ Add Customer</a>
+    </div>
+  </div>
+  {% if crm_notice %}<div class="soft-note" style="margin-bottom:14px">{{ crm_notice }}</div>{% endif %}
+  {% if crm_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ crm_error }}</div>{% endif %}
+  <div class="cards kpi-grid-4">
+    {% for stat in customer_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}
+  </div>
+  <form class="filters-card" method="get">
+    <div class="filter-row">
+      <input class="control search" name="q" value="{{ customer_query }}" placeholder="Search no, name, phone or email...">
+      <select class="control" name="status"><option value="">All Status</option><option value="active"{% if customer_status == 'active' %} selected{% endif %}>Active</option><option value="inactive"{% if customer_status == 'inactive' %} selected{% endif %}>Inactive</option></select>
+      <select class="control" name="group"><option value="">All Groups</option>{% for group in customer_groups %}<option value="{{ group.id }}"{% if customer_group == group.id|stringformat:'s' %} selected{% endif %}>{{ group.name }}</option>{% endfor %}</select>
+      <select class="control" name="source"><option value="">All Sources</option>{% for value,label in customer_source_choices %}<option value="{{ value }}"{% if customer_source == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <button class="btn" type="submit">Filter</button>
+      <a class="btn" href="{% url 'backoffice:customers' %}">Reset</a>
+    </div>
+  </form>
+  <div class="card orders-table-card">
+    <div class="table-scroll"><table class="data-table"><thead><tr><th>Customer</th><th>Phone / Email</th><th>Group</th><th>Source</th><th>Orders</th><th>Total Spent</th><th>Due</th><th>Repeat</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+    {% for customer in customer_rows %}<tr>
+      <td><a href="{% url 'backoffice:customer_detail_id' customer.id %}"><strong>{{ customer.name }}</strong></a><br><small>{{ customer.customer_no }}</small></td>
+      <td>{{ customer.phone }}{% if customer.email %}<br><small>{{ customer.email }}</small>{% endif %}</td>
+      <td>{{ customer.group.name|default:"—" }}</td>
+      <td>{{ customer.get_source_display }}</td>
+      <td>{{ customer.order_count }}</td>
+      <td>{{ customer.total_spent|money }}</td>
+      <td>{{ customer.due_balance|money }}</td>
+      <td>{% if customer.repeat_customer %}<span class="status green">Repeat</span>{% else %}<span class="status">New</span>{% endif %}</td>
+      <td>{% if customer.is_active %}<span class="status green">Active</span>{% else %}<span class="status red">Inactive</span>{% endif %}</td>
+      <td><div class="head-actions"><a class="btn btn-sm" href="{% url 'backoffice:customer_add' %}?id={{ customer.id }}">Edit</a><form method="post" action="{% url 'backoffice:customer_delete' customer.id %}" onsubmit="return confirm('Delete this customer?');">{% csrf_token %}<button class="btn btn-sm" type="submit">Delete</button></form></div></td>
+    </tr>{% empty %}<tr><td colspan="10">No customers found.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</section>
 {% endblock %}
