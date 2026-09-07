@@ -1,0 +1,23 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Manual Journal | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Manual Journal</h1><p>Post a balanced manual double-entry journal. Closed accounting periods cannot accept new postings.</p></div><a class="btn" href="{% url 'backoffice:journals' %}">Back to Journals</a></div>
+  {% if accounting_error %}<div class="acct-error">{{ accounting_error }}</div>{% endif %}
+  {% include "backoffice/pages/accounts/_subnav.html" with accounting_tab="journals" %}
+  <form method="post" class="acct-form-card">{% csrf_token %}
+    <div class="acct-form-grid">
+      <div class="field"><label for="{{ journal_form.entry_date.id_for_label }}">Entry Date</label>{{ journal_form.entry_date }}{% if journal_form.entry_date.errors %}<div class="acct-error">{{ journal_form.entry_date.errors|striptags }}</div>{% endif %}</div>
+      <div class="field"><label for="{{ journal_form.source_reference.id_for_label }}">Reference</label>{{ journal_form.source_reference }}{% if journal_form.source_reference.errors %}<div class="acct-error">{{ journal_form.source_reference.errors|striptags }}</div>{% endif %}</div>
+      <div class="field wide"><label for="{{ journal_form.description.id_for_label }}">Description</label>{{ journal_form.description }}{% if journal_form.description.errors %}<div class="acct-error">{{ journal_form.description.errors|striptags }}</div>{% endif %}</div>
+    </div>
+    <div class="acct-note">Every line must contain either a debit or a credit. Total debit must exactly equal total credit before the journal can be posted.</div>
+    <div class="table-scroll"><table class="acct-table acct-line-table"><thead><tr><th>Account</th><th class="num">Debit</th><th class="num">Credit</th><th>Memo</th></tr></thead><tbody>
+      {% for i in "123456" %}<tr><td><select class="control" name="account_id"><option value="">Select account</option>{% for account in journal_accounts %}<option value="{{ account.id }}">{{ account.code }} — {{ account.name }}</option>{% endfor %}</select></td><td><input class="control" type="number" step="0.01" min="0" name="debit" placeholder="0.00"></td><td><input class="control" type="number" step="0.01" min="0" name="credit" placeholder="0.00"></td><td><input class="control memo" name="memo" placeholder="Optional line memo"></td></tr>{% endfor %}
+    </tbody></table></div>
+    <div class="acct-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Post Balanced Journal</button><a class="btn" href="{% url 'backoffice:journals' %}">Cancel</a></div>
+  </form>
+</section>
+{% endblock %}
