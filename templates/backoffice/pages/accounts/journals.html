@@ -1,0 +1,22 @@
+{% extends "backoffice/base.html" %}
+{% load static demo %}
+{% block title %}Journal Entries | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Journal Entries</h1><p>Immutable double-entry postings from business modules and approved manual journals.</p></div><a class="btn btn-primary" href="{% url 'backoffice:journal_add' %}">+ Manual Journal</a></div>
+  {% if accounting_notice %}<div class="acct-success">{{ accounting_notice }}</div>{% endif %}{% if accounting_error %}<div class="acct-error">{{ accounting_error }}</div>{% endif %}
+  {% include "backoffice/pages/accounts/_subnav.html" with accounting_tab="journals" %}
+  <form method="get" class="acct-toolbar">
+    <div class="field search"><label>Search</label><input class="control" name="q" value="{{ journal_query }}" placeholder="Entry, reference, description"></div>
+    <div class="field"><label>Source</label><select class="control" name="source"><option value="">All sources</option>{% for value,label in journal_source_choices %}<option value="{{ value }}" {% if journal_source == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Status</label><select class="control" name="status"><option value="">All statuses</option>{% for value,label in journal_status_choices %}<option value="{{ value }}" {% if journal_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="field"><label>From</label><input class="control" type="date" name="from" value="{{ journal_date_from|date:'Y-m-d' }}"></div>
+    <div class="field"><label>To</label><input class="control" type="date" name="to" value="{{ journal_date_to|date:'Y-m-d' }}"></div>
+    <button class="btn" type="submit">Filter</button><a class="btn" href="{% url 'backoffice:journals' %}">Reset</a>
+  </form>
+  <div class="card card-pad"><div class="table-scroll"><table class="acct-table"><thead><tr><th>Date</th><th>Entry</th><th>Source</th><th>Reference</th><th>Description</th><th>Status</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead><tbody>
+    {% for row in journal_rows %}<tr><td>{{ row.entry_date }}</td><td><a class="acct-code" href="{% url 'backoffice:journal_detail' row.id %}">{{ row.entry_no }}</a></td><td>{{ row.get_source_type_display }}</td><td>{{ row.source_reference|default:"—" }}</td><td>{{ row.description|truncatechars:70 }}</td><td><span class="acct-badge {{ row.status }}">{{ row.get_status_display }}</span></td><td class="num">{{ row.total_debit|money }}</td><td class="num">{{ row.total_credit|money }}</td></tr>{% empty %}<tr><td colspan="8" class="acct-empty">No journal entries found.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+</section>
+{% endblock %}
