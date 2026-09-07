@@ -19,39 +19,50 @@ _ALLOWED_TAGS = {
     "blockquote",
 }
 _VOID_TAGS = {"br"}
+_DROP_CONTENT_TAGS = {"script", "style", "iframe", "object", "embed"}
 
 
 class _RichTextSanitizer(HTMLParser):
-    """Very small allow-list sanitizer for the catalog description editor.
-
-    The editor intentionally supports formatting tags only. Attributes are removed,
-    which prevents script/event/style injection while preserving basic formatting.
-    """
+    """Allow formatting-only HTML and discard executable/embedded content."""
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.parts = []
+        self.drop_depth = 0
 
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
+        if tag in _DROP_CONTENT_TAGS:
+            self.drop_depth += 1
+            return
+        if self.drop_depth:
+            return
         if tag in _ALLOWED_TAGS:
             self.parts.append(f"<{tag}>")
 
     def handle_startendtag(self, tag, attrs):
         tag = tag.lower()
+        if self.drop_depth or tag in _DROP_CONTENT_TAGS:
+            return
         if tag in _ALLOWED_TAGS:
             self.parts.append(f"<{tag}>")
 
     def handle_endtag(self, tag):
         tag = tag.lower()
+        if tag in _DROP_CONTENT_TAGS:
+            if self.drop_depth:
+                self.drop_depth -= 1
+            return
+        if self.drop_depth:
+            return
         if tag in _ALLOWED_TAGS and tag not in _VOID_TAGS:
             self.parts.append(f"</{tag}>")
 
     def handle_data(self, data):
-        self.parts.append(escape(data))
+        if not self.drop_depth:
+            self.parts.append(escape(data))
 
     def handle_comment(self, data):
-        # Comments are intentionally discarded.
         return
 
 
@@ -65,12 +76,7 @@ def sanitize_rich_html(value):
 
 
 def inline_rich_html(value):
-    """Return safe rich HTML that can live inside the legacy paragraph wrapper.
-
-    The storefront currently wraps each description block in a <p>. Convert block
-    tags produced by the editor into inline-safe equivalents while keeping bold,
-    italic, underline, line breaks and list readability.
-    """
+    """Legacy inline-safe rendering kept for backwards compatibility."""
 
     html = sanitize_rich_html(value)
     if not html:
