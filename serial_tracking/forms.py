@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.utils import timezone
 
 from catalog.models import ProductVariant
@@ -71,6 +72,11 @@ class SerializedUnitForm(forms.ModelForm):
             self.fields[name].required = False
         if self.instance and self.instance.pk:
             self.fields["variant"].disabled = True
+        else:
+            self.fields["status"].choices = [
+                (SerializedUnit.Status.AVAILABLE, SerializedUnit.Status.AVAILABLE.label),
+                (SerializedUnit.Status.RESERVED, SerializedUnit.Status.RESERVED.label),
+            ]
         _style_fields(self)
 
     def clean_serial_number(self):
@@ -118,9 +124,15 @@ class WarrantyClaimForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["unit"].queryset = SerializedUnit.objects.select_related("variant", "variant__product").order_by("variant__product__name", "id")
-        self.fields["replacement_unit"].queryset = SerializedUnit.objects.select_related("variant", "variant__product").filter(
+        replacement_qs = SerializedUnit.objects.select_related("variant", "variant__product").filter(
             status__in=[SerializedUnit.Status.AVAILABLE, SerializedUnit.Status.RETURNED]
-        ).order_by("variant__product__name", "id")
+        )
+        if self.instance and self.instance.pk and self.instance.replacement_unit_id:
+            replacement_qs = SerializedUnit.objects.select_related("variant", "variant__product").filter(
+                Q(status__in=[SerializedUnit.Status.AVAILABLE, SerializedUnit.Status.RETURNED])
+                | Q(pk=self.instance.replacement_unit_id)
+            )
+        self.fields["replacement_unit"].queryset = replacement_qs.order_by("variant__product__name", "id")
         self.fields["replacement_unit"].required = False
         self.fields["resolved_at"].required = False
         for name in ("customer_name", "customer_phone", "order_reference", "resolution", "service_reference", "notes"):
@@ -129,6 +141,7 @@ class WarrantyClaimForm(forms.ModelForm):
             self.fields["claim_date"].initial = timezone.localdate()
         if self.instance and self.instance.pk:
             self.fields["unit"].disabled = True
+            self.fields["claim_no"].disabled = True
         else:
             self.fields["status"].choices = [
                 (WarrantyClaim.Status.OPEN, WarrantyClaim.Status.OPEN.label),
