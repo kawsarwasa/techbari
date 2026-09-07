@@ -1,6 +1,65 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
+{% load static %}
 {% block title %}Inventory Management | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/inventory-v110.css' %}">{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Inventory Management</h1><p>Track stock, reservations, warehouses and movements.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:warehouses' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg> Warehouses</a><a class="btn" href="{% url 'backoffice:stock_transfer' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg> Transfer Stock</a><a class="btn btn-primary" href="{% url 'backoffice:stock_adjustment' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Stock Adjustment</a></div></div><div class="cards kpi-grid-4">{% include "backoffice/components/stat_card.html" with stat=statistics.0 %}{% include "backoffice/components/stat_card.html" with stat=statistics.1 %}{% include "backoffice/components/stat_card.html" with stat=statistics.2 %}{% include "backoffice/components/stat_card.html" with stat=statistics.3 %}</div><div class="dashboard-grid"><div class="card"><div class="section-head"><h3>All Products Inventory</h3></div><div class="table-scroll"><table class="data-table" data-crud-table="inventory"><thead><tr><th>#</th><th>Product</th><th>SKU</th><th>Warehouse</th><th>Available</th><th>Reserved</th><th>Reorder</th><th>Status</th><th>Actions</th></tr></thead><tbody>{% for record in inventory %}{% include "backoffice/components/record_row.html" with entity="inventory" columns=table_columns.inventory %}{% endfor %}</tbody></table></div></div><div class="card card-pad"><div class="card-title">Low Stock Alerts</div><div class="alert-list">{% for alert in stock_alerts %}{% include "backoffice/components/stock_alert.html" %}{% endfor %}</div></div></div></section>
+<section class="page">
+  <div class="page-head">
+    <div><h1>Inventory Management</h1><p>Warehouse stock, reservations, movements, adjustments and transfers from one inventory engine.</p></div>
+    <div class="head-actions">
+      <a class="btn" href="{% url 'backoffice:warehouses' %}">Warehouses</a>
+      <a class="btn" href="{% url 'backoffice:inventory_movements' %}">Movements</a>
+      <a class="btn" href="{% url 'backoffice:inventory_low_stock' %}">Low Stock</a>
+      <a class="btn" href="{% url 'backoffice:stock_transfer' %}">Transfer Stock</a>
+      <a class="btn btn-primary" href="{% url 'backoffice:stock_adjustment' %}">＋ Stock Adjustment</a>
+    </div>
+  </div>
+  {% if inventory_notice %}<div class="inventory-notice">✓ {{ inventory_notice }}</div>{% endif %}
+  {% if inventory_error %}<div class="inventory-error">{{ inventory_error }}</div>{% endif %}
+
+  <div class="cards kpi-grid-4">
+    {% for stat in inventory_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="card">
+      <div class="section-head"><h3>Warehouse Stock Balances</h3></div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Product / Variant</th><th>SKU</th><th>Warehouse</th><th>On Hand</th><th>Reserved</th><th>Available</th><th>Low Alert</th><th>Status</th></tr></thead>
+          <tbody>
+          {% for balance in balances %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td><strong>{{ balance.variant.product.name }}</strong><br><span class="muted">{{ balance.variant.name }}</span></td>
+              <td>{{ balance.variant.sku }}</td>
+              <td>{{ balance.warehouse.name }}</td>
+              <td>{{ balance.on_hand }}</td>
+              <td>{{ balance.reserved_quantity }}</td>
+              <td><strong>{{ balance.available_quantity }}</strong></td>
+              <td>
+                <form method="post" class="inventory-inline-form">
+                  {% csrf_token %}<input type="hidden" name="action" value="set_threshold"><input type="hidden" name="balance_id" value="{{ balance.id }}">
+                  <input class="control" type="number" min="0" name="low_stock_threshold" value="{{ balance.low_stock_threshold }}"><button class="btn small" type="submit">Save</button>
+                </form>
+              </td>
+              <td>{% if balance.available_quantity == 0 %}<span class="inventory-status out">Out</span>{% elif balance.is_low_stock %}<span class="inventory-status low">Low</span>{% else %}<span class="inventory-status ok">Healthy</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="9"><div class="empty-state">No inventory balances yet. Existing catalog stock will be imported to Main Warehouse when migrations run.</div></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card card-pad">
+      <div class="card-title">Low Stock Alerts</div>
+      {% for balance in low_rows %}
+        <div class="soft-note" style="margin-top:10px"><strong>{{ balance.variant.product.name }} — {{ balance.variant.sku }}</strong><br>{{ balance.warehouse.name }} · Available {{ balance.available_quantity }} · Alert at {{ balance.low_stock_threshold }}</div>
+      {% empty %}
+        <div class="soft-note" style="margin-top:10px">No low-stock alerts.</div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
 {% endblock %}
