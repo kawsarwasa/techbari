@@ -1,0 +1,40 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Purchase Return {{ purchase.po_number }} | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/purchasing-v130.css' %}?v=1.3.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Purchase Return</h1><p>{{ purchase.po_number }} · {{ purchase.supplier.name }} · {{ purchase.warehouse.name }}</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:purchase_detail' purchase.id %}">Back to Purchase</a></div></div>
+  {% if purchase_form_error %}<div class="purchase-error">{{ purchase_form_error }}</div>{% endif %}
+  {% if form.non_field_errors %}<div class="purchase-error">{{ form.non_field_errors }}</div>{% endif %}
+  <form method="post" class="purchase-grid">{% csrf_token %}
+    <div class="card purchase-panel">
+      <div class="section-head"><h3>Items to Return</h3></div>
+      {% for panel in item_panels %}
+      <div class="purchase-history-item" style="margin-bottom:12px">
+        <div class="purchase-meta">
+          <div><small>Product</small><strong>{{ panel.item.variant.product.name }}</strong></div>
+          <div><small>SKU</small><strong>{{ panel.item.variant.sku }}</strong></div>
+          <div><small>Received</small><strong>{{ panel.item.received_quantity }}</strong></div>
+          <div><small>Returnable</small><strong>{{ panel.item.remaining_to_return }}</strong></div>
+        </div>
+        <label class="field" style="margin-top:12px"><span>Return Quantity</span><input class="control" type="number" min="0" max="{{ panel.item.remaining_to_return }}" name="return_{{ panel.item.id }}" value="0"></label>
+        {% if panel.serial_units %}
+        <div class="serial-box"><span class="muted">Serialized units from this PO (select the exact units being returned)</span><div class="serial-options">{% for unit in panel.serial_units %}<label><input type="checkbox" name="serial_unit_{{ panel.item.id }}" value="{{ unit.id }}"> <strong>{{ unit.display_identifier }}</strong> <span>{{ unit.get_status_display }}</span></label>{% endfor %}</div></div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <aside class="card purchase-panel">
+      <div class="section-head"><h3>Return Information</h3></div>
+      <div class="purchase-form-grid" style="grid-template-columns:1fr">
+        <label class="field"><span>Return Date</span>{{ form.return_date }}{{ form.return_date.errors }}</label>
+        <label class="field"><span>Reason</span>{{ form.reason }}{{ form.reason.errors }}</label>
+        <label class="field"><span>Note</span>{{ form.note }}{{ form.note.errors }}</label>
+      </div>
+      <div class="purchase-actions" style="margin-top:16px"><a class="btn" href="{% url 'backoffice:purchase_detail' purchase.id %}">Cancel</a><button class="btn btn-primary" type="submit">Post Purchase Return</button></div>
+      <p class="muted" style="margin-top:12px">Return quantity decreases Inventory. Selected Serial/IMEI units are linked to the return and marked Returned to Supplier. The return value reduces supplier outstanding.</p>
+    </aside>
+  </form>
+</section>
+{% endblock %}
