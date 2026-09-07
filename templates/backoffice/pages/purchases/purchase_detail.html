@@ -1,0 +1,71 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}{{ purchase.po_number }} | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/purchasing-v130.css' %}?v=1.3.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head">
+    <div><h1>{{ purchase.po_number }}</h1><p>{{ purchase.supplier.name }} · {{ purchase.warehouse.name }}</p></div>
+    <div class="head-actions">
+      <a class="btn" href="{% url 'backoffice:purchases' %}">Purchases</a>
+      {% if purchase.status == 'draft' or purchase.status == 'ordered' %}<a class="btn" href="{% url 'backoffice:purchase_add' %}?id={{ purchase.id }}">Edit</a>{% endif %}
+      {% if purchase.status == 'ordered' or purchase.status == 'partially_received' %}<a class="btn btn-primary" href="{% url 'backoffice:purchase_receive' purchase.id %}">Receive Stock</a>{% endif %}
+      {% if purchase.status != 'draft' and purchase.status != 'cancelled' and purchase.outstanding_amount > 0 %}<a class="btn" href="{% url 'backoffice:purchase_payment' purchase.id %}">Record Payment</a>{% endif %}
+      {% if purchase.status == 'partially_received' or purchase.status == 'received' %}<a class="btn" href="{% url 'backoffice:purchase_return' purchase.id %}">Purchase Return</a>{% endif %}
+    </div>
+  </div>
+  {% if purchase_notice %}<div class="purchase-notice">{{ purchase_notice }}</div>{% endif %}
+  {% if purchase_error %}<div class="purchase-error">{{ purchase_error }}</div>{% endif %}
+
+  <div class="purchase-grid">
+    <div>
+      <div class="card purchase-panel">
+        <div class="section-head"><h3>Items</h3><span class="purchase-status {{ purchase.status }}">{{ purchase.get_status_display }}</span></div>
+        <div class="table-scroll">
+          <table class="purchase-items">
+            <thead><tr><th>Product / SKU</th><th>Ordered</th><th>Received</th><th>Returned</th><th>Unit Cost</th><th>Discount</th><th>Line Total</th></tr></thead>
+            <tbody>{% for item in purchase.items.all %}<tr><td><strong>{{ item.variant.product.name }}</strong><div class="muted">{{ item.variant.sku }}</div></td><td>{{ item.ordered_quantity }}</td><td>{{ item.received_quantity }}</td><td>{{ item.returned_quantity }}</td><td>৳ {{ item.unit_cost|floatformat:2 }}</td><td>৳ {{ item.discount_amount|floatformat:2 }}</td><td><strong>৳ {{ item.line_total|floatformat:2 }}</strong></td></tr>{% empty %}<tr><td colspan="7" class="purchase-empty">No items.</td></tr>{% endfor %}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card purchase-panel" style="margin-top:18px">
+        <div class="section-head"><h3>Activity</h3></div>
+        <div class="purchase-history">
+          {% for receipt in purchase.receipts.all %}<div class="purchase-history-item"><strong>{{ receipt.receipt_no }} · Goods Received</strong><span>{{ receipt.received_date|date:"M d, Y" }}{% if receipt.supplier_challan_no %} · Challan {{ receipt.supplier_challan_no }}{% endif %}</span>{% for row in receipt.items.all %}<span>{{ row.purchase_item.variant.sku }} × {{ row.quantity }}{% if row.serial_data %} · {{ row.serial_data|length }} serial/IMEI{% endif %}</span>{% endfor %}</div>{% endfor %}
+          {% for payment in purchase.payments.all %}<div class="purchase-history-item"><strong>{{ payment.payment_no }} · Supplier Payment</strong><span>{{ payment.payment_date|date:"M d, Y" }} · {{ payment.get_method_display }} · ৳ {{ payment.amount|floatformat:2 }}{% if payment.reference %} · {{ payment.reference }}{% endif %}</span></div>{% endfor %}
+          {% for purchase_return in purchase.returns.all %}<div class="purchase-history-item"><strong>{{ purchase_return.return_no }} · Purchase Return</strong><span>{{ purchase_return.return_date|date:"M d, Y" }} · {{ purchase_return.reason }} · ৳ {{ purchase_return.total_amount|floatformat:2 }}</span></div>{% endfor %}
+          {% if not purchase.receipts.exists and not purchase.payments.exists and not purchase.returns.exists %}<div class="purchase-empty">No receipt, payment or return activity yet.</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="card purchase-panel">
+        <div class="section-head"><h3>Purchase Summary</h3></div>
+        <div class="purchase-meta">
+          <div><small>Supplier</small><strong>{{ purchase.supplier.name }}</strong></div>
+          <div><small>Warehouse</small><strong>{{ purchase.warehouse.name }}</strong></div>
+          <div><small>Purchase Date</small><strong>{{ purchase.purchase_date|date:"M d, Y" }}</strong></div>
+          <div><small>Expected Date</small><strong>{{ purchase.expected_date|date:"M d, Y"|default:"—" }}</strong></div>
+          <div><small>Supplier Invoice</small><strong>{{ purchase.supplier_invoice_no|default:"—" }}</strong></div>
+          <div><small>Payment Status</small><strong>{{ purchase.payment_status }}</strong></div>
+        </div>
+        <div class="purchase-summary" style="margin-top:16px">
+          <div><span>Subtotal</span><strong>৳ {{ purchase.subtotal|floatformat:2 }}</strong></div>
+          <div><span>Shipping</span><strong>৳ {{ purchase.shipping_cost|floatformat:2 }}</strong></div>
+          <div><span>Other Cost</span><strong>৳ {{ purchase.other_cost|floatformat:2 }}</strong></div>
+          <div><span>Discount</span><strong>− ৳ {{ purchase.discount_amount|floatformat:2 }}</strong></div>
+          <div class="grand"><span>Grand Total</span><strong>৳ {{ purchase.grand_total|floatformat:2 }}</strong></div>
+          <div><span>Paid</span><strong>৳ {{ purchase.paid_amount|floatformat:2 }}</strong></div>
+          <div><span>Returns</span><strong>৳ {{ purchase.returned_amount|floatformat:2 }}</strong></div>
+          <div class="grand"><span>Outstanding</span><strong>৳ {{ purchase.outstanding_amount|floatformat:2 }}</strong></div>
+        </div>
+        {% if purchase.notes %}<p class="muted" style="margin-top:14px">{{ purchase.notes }}</p>{% endif %}
+      </div>
+      {% if purchase.status == 'draft' %}<form method="post" action="{% url 'backoffice:purchase_delete' purchase.id %}" style="margin-top:12px" onsubmit="return confirm('Delete this draft purchase?');">{% csrf_token %}<button class="btn" type="submit">Delete Draft</button></form>{% endif %}
+      {% if purchase.status == 'draft' or purchase.status == 'ordered' %}<form method="post" action="{% url 'backoffice:purchase_cancel' purchase.id %}" style="margin-top:12px" onsubmit="return confirm('Cancel this purchase?');">{% csrf_token %}<button class="btn" type="submit">Cancel Purchase</button></form>{% endif %}
+    </aside>
+  </div>
+</section>
+{% endblock %}
