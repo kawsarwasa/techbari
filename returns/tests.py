@@ -233,6 +233,10 @@ class ReturnServiceTests(ReturnsBase):
 class ReturnDashboardTests(ReturnsBase):
     def test_return_pages_render_real_database_data(self):
         order = self.create_completed_order(quantity=1)
+        response = self.client.get(reverse("backoffice:return_add") + f"?order={order.pk}")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Return Phone")
+
         sales_return = self.open_return(order)
         response = self.client.get(reverse("backoffice:returns"))
         self.assertEqual(response.status_code, 200)
@@ -240,9 +244,6 @@ class ReturnDashboardTests(ReturnsBase):
         response = self.client.get(reverse("backoffice:return_detail", args=[sales_return.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, order.order_number)
-        response = self.client.get(reverse("backoffice:return_add") + f"?order={order.pk}")
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Return Phone")
 
     def test_dashboard_can_create_approve_receive_and_complete_return(self):
         order = self.create_completed_order(quantity=1)
