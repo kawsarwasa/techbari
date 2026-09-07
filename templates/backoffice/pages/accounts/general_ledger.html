@@ -1,0 +1,21 @@
+{% extends "backoffice/base.html" %}
+{% load static demo %}
+{% block title %}General Ledger | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>General Ledger</h1><p>Account-by-account debit, credit and running balance history.</p></div></div>
+  {% if accounting_error %}<div class="acct-error">{{ accounting_error }}</div>{% endif %}
+  {% include "backoffice/pages/accounts/_subnav.html" with accounting_tab="ledger" %}
+  <form method="get" class="acct-toolbar">
+    <div class="field search"><label>Account</label><select class="control" name="account">{% for account in ledger_accounts %}<option value="{{ account.id }}" {% if ledger_account.id == account.id %}selected{% endif %}>{{ account.code }} — {{ account.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label>From</label><input class="control" type="date" name="from" value="{{ ledger_date_from|date:'Y-m-d' }}"></div>
+    <div class="field"><label>To</label><input class="control" type="date" name="to" value="{{ ledger_date_to|date:'Y-m-d' }}"></div>
+    <button class="btn" type="submit">Apply</button><a class="btn" href="{% url 'backoffice:general_ledger' %}">Reset</a>
+  </form>
+  {% if ledger_account %}<div class="acct-kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="acct-kpi"><span>Account</span><strong>{{ ledger_account.code }}</strong><small>{{ ledger_account.name }}</small></div><div class="acct-kpi"><span>Normal Balance</span><strong>{{ ledger_account.get_normal_balance_display }}</strong><small>{{ ledger_account.get_account_type_display }}</small></div><div class="acct-kpi"><span>Selected Balance</span><strong>{{ ledger_balance|money }}</strong><small>For the filtered ledger rows</small></div></div>{% endif %}
+  <div class="card card-pad"><div class="table-scroll"><table class="acct-table"><thead><tr><th>Date</th><th>Entry</th><th>Source</th><th>Reference / Memo</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Running Balance</th></tr></thead><tbody>
+    {% for row in ledger_rows %}<tr><td>{{ row.line.entry.entry_date }}</td><td><a class="acct-code" href="{% url 'backoffice:journal_detail' row.line.entry.id %}">{{ row.line.entry.entry_no }}</a></td><td>{{ row.line.entry.get_source_type_display }}</td><td>{{ row.line.entry.source_reference|default:"—" }}{% if row.line.memo %}<div class="acct-help">{{ row.line.memo }}</div>{% endif %}</td><td class="num">{{ row.line.debit|money }}</td><td class="num">{{ row.line.credit|money }}</td><td class="num"><strong>{{ row.running_balance|money }}</strong></td></tr>{% empty %}<tr><td colspan="7" class="acct-empty">No ledger activity for this selection.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+</section>
+{% endblock %}
