@@ -10,6 +10,7 @@ from .page_registry import PAGES
 
 CATALOG_PAGE_NAMES = {"products", "product_add", "product_edit", "categories", "category_add", "brands", "brand_add"}
 INVENTORY_PAGE_NAMES = {"inventory", "warehouses", "warehouse_add", "stock_adjustment", "stock_transfer"}
+SERIAL_PAGE_NAMES = {"serials", "serial_add", "warranty", "warranty_add"}
 
 
 def page(request, page_name="dashboard"):
@@ -21,6 +22,9 @@ def page(request, page_name="dashboard"):
     if page_name in INVENTORY_PAGE_NAMES:
         from . import inventory_views
         return getattr(inventory_views, page_name)(request)
+    if page_name in SERIAL_PAGE_NAMES:
+        from . import serial_views
+        return getattr(serial_views, page_name)(request)
     context = page_context(page_name)
     entity = {"order_detail": "orders", "customer_detail": "customers"}.get(page_name)
     if entity:
