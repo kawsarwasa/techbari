@@ -6,7 +6,7 @@
 <section class="page">
   <div class="page-head"><div><h1>Accounting & General Ledger</h1><p>Double-entry accounting generated from Sales, Purchases, Payments, Returns and Courier settlement activity.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:journal_add' %}">+ Manual Journal</a><a class="btn" href="{% url 'backoffice:payments' %}">Payment Ledger</a></div></div>
   {% if accounting_notice %}<div class="acct-success">{{ accounting_notice }}</div>{% endif %}{% if accounting_error %}<div class="acct-error">{{ accounting_error }}</div>{% endif %}
-  {% include "backoffice/pages/accounts/_subnav.html" %}
+  {% include "backoffice/pages/accounts/_subnav.html" with accounting_tab="overview" %}
   <div class="acct-kpis">
     <div class="acct-kpi"><span>Cash & Equivalents</span><strong>{{ accounting_summary.cash_equivalents|money }}</strong><small>Cash, bank, card, bKash, Nagad & clearing</small></div>
     <div class="acct-kpi"><span>Accounts Receivable</span><strong>{{ accounting_summary.receivable|money }}</strong><small>Customer balances</small></div>
