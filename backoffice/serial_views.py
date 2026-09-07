@@ -70,10 +70,10 @@ def serials(request):
         serial_status_choices=SerializedUnit.Status.choices,
         serial_warehouses=Warehouse.objects.filter(is_active=True).order_by("-is_default", "name"),
         serial_stats=[
-            {"label": "Tracked Units", "value": str(all_units.count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/products.svg", "color": "blue"},
-            {"label": "Available", "value": str(all_units.filter(status=SerializedUnit.Status.AVAILABLE).count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/inventory.svg", "color": "green"},
-            {"label": "Sold", "value": str(all_units.filter(status=SerializedUnit.Status.SOLD).count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/orders.svg", "color": "purple"},
-            {"label": "Warranty Service", "value": str(all_units.filter(status=SerializedUnit.Status.WARRANTY_SERVICE).count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/returns.svg", "color": "orange"},
+            {"label": "Tracked Units", "value": str(all_units.count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_5.html", "color": "blue"},
+            {"label": "Available", "value": str(all_units.filter(status=SerializedUnit.Status.AVAILABLE).count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_5.html", "color": "green"},
+            {"label": "Sold", "value": str(all_units.filter(status=SerializedUnit.Status.SOLD).count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_13.html", "color": "purple"},
+            {"label": "Warranty Service", "value": str(all_units.filter(status=SerializedUnit.Status.WARRANTY_SERVICE).count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_20.html", "color": "orange"},
         ],
     )
     return render(request, "backoffice/pages/serials/serials.html", context)
@@ -139,10 +139,10 @@ def warranty(request):
         warranty_status=status,
         warranty_status_choices=WarrantyClaim.Status.choices,
         warranty_stats=[
-            {"label": "Total Claims", "value": str(all_claims.count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/returns.svg", "color": "blue"},
-            {"label": "Open", "value": str(all_claims.filter(status=WarrantyClaim.Status.OPEN).count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/notifications.svg", "color": "orange"},
-            {"label": "In Service", "value": str(all_claims.filter(status=WarrantyClaim.Status.IN_SERVICE).count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/settings.svg", "color": "purple"},
-            {"label": "Resolved / Replaced", "value": str(all_claims.filter(status__in=[WarrantyClaim.Status.RESOLVED, WarrantyClaim.Status.REPLACED]).count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/reports.svg", "color": "green"},
+            {"label": "Total Claims", "value": str(all_claims.count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_20.html", "color": "blue"},
+            {"label": "Open", "value": str(all_claims.filter(status=WarrantyClaim.Status.OPEN).count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_14.html", "color": "orange"},
+            {"label": "In Service", "value": str(all_claims.filter(status=WarrantyClaim.Status.IN_SERVICE).count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_20.html", "color": "purple"},
+            {"label": "Resolved / Replaced", "value": str(all_claims.filter(status__in=[WarrantyClaim.Status.RESOLVED, WarrantyClaim.Status.REPLACED]).count()), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_7.html", "color": "green"},
         ],
     )
     return render(request, "backoffice/pages/warranty/warranty.html", context)
@@ -155,7 +155,12 @@ def warranty_add(request):
         pk=claim_id,
     ) if claim_id else None
 
-    form = WarrantyClaimForm(request.POST or None, instance=instance)
+    initial = {}
+    if not instance and request.method == "GET":
+        unit_id = request.GET.get("unit")
+        if unit_id and SerializedUnit.objects.filter(pk=unit_id).exists():
+            initial["unit"] = unit_id
+    form = WarrantyClaimForm(request.POST or None, instance=instance, initial=initial)
     if request.method == "POST" and form.is_valid():
         try:
             data = dict(form.cleaned_data)
