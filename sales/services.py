@@ -91,10 +91,12 @@ def _history(order, event, *, previous_status="", new_status="", note="", actor=
 
 def _derive_payment_status(order):
     paid = order.amount_paid or Decimal("0.00")
-    total = order.grand_total or Decimal("0.00")
+    target = order.payable_total
+    if target <= 0 and (order.return_credit_amount or Decimal("0.00")) > 0:
+        return SalesOrder.PaymentStatus.REFUNDED
     if paid <= 0:
         return SalesOrder.PaymentStatus.UNPAID
-    if paid >= total:
+    if paid >= target:
         return SalesOrder.PaymentStatus.PAID
     return SalesOrder.PaymentStatus.PARTIAL
 
@@ -104,10 +106,10 @@ def _recalculate(order):
     discount = order.discount_amount or Decimal("0.00")
     shipping = order.shipping_charge or Decimal("0.00")
     total = max(subtotal - discount + shipping, Decimal("0.00"))
-    if order.amount_paid > total:
-        raise SalesOrderError("Paid amount cannot exceed the order total.")
     order.subtotal = subtotal
     order.grand_total = total
+    if order.amount_paid > order.payable_total:
+        raise SalesOrderError("Paid amount cannot exceed the payable order total after return credits.")
     order.payment_status = _derive_payment_status(order)
     order.save(update_fields=["subtotal", "grand_total", "payment_status", "updated_at"])
     return order
@@ -303,7 +305,7 @@ def transition_order(*, order, new_status, actor="", note=""):
         _issue_all_reserved(order, actor=actor)
     elif new_status == SalesOrder.Status.CANCELLED:
         if order.items.filter(issued_quantity__gt=0).exists():
-            raise SalesOrderError("A sold/completed order cannot be cancelled. Use the Returns module later.")
+            raise SalesOrderError("A sold/completed order cannot be cancelled. Use the Returns module.")
         _release_reserved(order, actor=actor)
 
     order.status = new_status
@@ -327,8 +329,8 @@ def update_order_payment(*, order, amount_paid, actor="", note=""):
     amount_paid = _decimal(amount_paid, "paid amount")
     if amount_paid < 0:
         raise SalesOrderError("Paid amount cannot be negative.")
-    if amount_paid > order.grand_total:
-        raise SalesOrderError("Paid amount cannot exceed the order total.")
+    if amount_paid > order.payable_total:
+        raise SalesOrderError("Paid amount cannot exceed the payable order total after return credits.")
     old_paid = order.amount_paid
     order.amount_paid = amount_paid
     order.payment_status = _derive_payment_status(order)
