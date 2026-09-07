@@ -80,9 +80,13 @@ def _description_data(product):
 
 def serialize_product(product):
     variants = list(product.variants.all())
+    active_variants = [variant for variant in variants if variant.is_active]
     images = list(product.images.all())
     specs = list(product.specifications.all())
-    default_variant = next((v for v in variants if v.is_default), variants[0] if variants else None)
+    default_variant = next(
+        (variant for variant in active_variants if variant.is_default),
+        active_variants[0] if active_variants else None,
+    )
     primary_image = next((i for i in images if i.role == ProductImage.Role.PRIMARY), images[0] if images else None)
     detail_image = next((i for i in images if i.role == ProductImage.Role.DETAIL), primary_image)
     gallery_images = [i for i in images if i.role in {ProductImage.Role.GALLERY, ProductImage.Role.PRIMARY}]
@@ -99,16 +103,14 @@ def serialize_product(product):
         if default_variant and default_variant.price_override is not None
         else product.current_price
     )
-    stock = sum(v.stock_quantity for v in variants if v.is_active)
+    stock = sum(variant.stock_quantity for variant in active_variants)
     image_url = _image_url(primary_image) or static("store/images/baseus-e16.webp")
     detail_image_url = _image_url(detail_image) or image_url
     gallery_urls = [_image_url(i) for i in gallery_images if _image_url(i)] or [image_url]
     description, short_description, description_paragraphs, description_html = _description_data(product)
 
     serialized_variants = []
-    for variant in variants:
-        if not variant.is_active:
-            continue
+    for variant in active_variants:
         variant_regular = (
             variant.regular_price_override
             if variant.regular_price_override is not None
