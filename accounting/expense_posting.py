@@ -1,10 +1,11 @@
 from .models import JournalEntry, ZERO
-from .services import payment_asset_code, post_journal
+from .services import post_journal
 
 
 def post_expense(expense, *, actor="Accounting"):
     """Translate one approved/paid operating expense into the double-entry ledger."""
     account = expense.category.account
+    payment_account = expense.payment_account
     amount = expense.amount or ZERO
     return post_journal(
         entry_date=expense.payment_date or expense.expense_date,
@@ -20,7 +21,7 @@ def post_expense(expense, *, actor="Accounting"):
                 "memo": expense.payee or expense.category.name,
             },
             {
-                "account": payment_asset_code(expense.payment_method),
+                "account": payment_account,
                 "debit": ZERO,
                 "credit": amount,
                 "memo": expense.payment_reference or expense.get_payment_method_display(),
