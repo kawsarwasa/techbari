@@ -307,3 +307,45 @@ class PurchasingDashboardTests(PurchasingBase):
         for url in urls:
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_receive_payment_and_return_views_post_transactions(self):
+        purchase = self.create_purchase(quantity=3, po_number="PO-WEB-FLOW")
+        item = purchase.items.get()
+
+        response = self.client.post(reverse("backoffice:purchase_receive", args=[purchase.pk]), {
+            "received_date": "2026-09-08",
+            "supplier_challan_no": "CH-1",
+            "note": "Received through dashboard",
+            f"receive_{item.pk}": "3",
+            f"serials_{item.pk}": "",
+        })
+        self.assertEqual(response.status_code, 302)
+        purchase.refresh_from_db()
+        item.refresh_from_db()
+        self.assertEqual(purchase.status, PurchaseOrder.Status.RECEIVED)
+        self.assertEqual(item.received_quantity, 3)
+        self.assertEqual(InventoryBalance.objects.get(warehouse=self.warehouse, variant=self.variant).on_hand, 3)
+
+        self.assertEqual(self.client.get(reverse("backoffice:purchase_return", args=[purchase.pk])).status_code, 200)
+
+        response = self.client.post(reverse("backoffice:purchase_payment", args=[purchase.pk]), {
+            "amount": "90.00",
+            "method": PurchasePayment.Method.BANK,
+            "reference": "TX-WEB",
+            "payment_date": "2026-09-08",
+            "note": "Dashboard payment",
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(PurchasePayment.objects.filter(purchase=purchase, amount=Decimal("90.00")).exists())
+
+        response = self.client.post(reverse("backoffice:purchase_return", args=[purchase.pk]), {
+            "return_date": "2026-09-09",
+            "reason": "One defective unit",
+            "note": "Dashboard return",
+            f"return_{item.pk}": "1",
+        })
+        self.assertEqual(response.status_code, 302)
+        item.refresh_from_db()
+        self.assertEqual(item.returned_quantity, 1)
+        self.assertTrue(PurchaseReturn.objects.filter(purchase=purchase).exists())
+        self.assertEqual(InventoryBalance.objects.get(warehouse=self.warehouse, variant=self.variant).on_hand, 2)
