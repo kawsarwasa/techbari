@@ -18,7 +18,7 @@
   {% if inventory_error %}<div class="inventory-error">{{ inventory_error }}</div>{% endif %}
 
   <div class="cards kpi-grid-4">
-    {% for stat in inventory_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}
+    {% for stat in inventory_stats %}<div class="kpi"><div><div class="kpi-label">{{ stat.label }}</div><div class="kpi-value">{{ stat.value }}</div><span class="trend">{{ stat.trend }}</span></div></div>{% endfor %}
   </div>
 
   <div class="dashboard-grid">
