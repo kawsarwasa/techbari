@@ -1,7 +1,57 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
+{% load static %}
 {% block title %}Suppliers | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/purchasing-v130.css' %}?v=1.3.0">{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Suppliers</h1><p>Manage suppliers, payment terms and outstanding balances.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:supplier_add' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add Supplier</a></div></div><div class="cards kpi-grid-4">{% include "backoffice/components/stat_card.html" with stat=statistics.0 %}{% include "backoffice/components/stat_card.html" with stat=statistics.1 %}{% include "backoffice/components/stat_card.html" with stat=statistics.2 %}{% include "backoffice/components/stat_card.html" with stat=statistics.3 %}</div><div class="filters-card"><div class="filter-row"><input class="control search" data-table-search="#SuppliersTable" placeholder="Search suppliers..."><select class="control"><option>All Status</option><option>Active</option><option>Inactive</option></select><span class="filter-spacer"></span><button class="btn" data-export-table="#SuppliersTable"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/></svg> Export CSV</button></div></div>
-    <div class="card orders-table-card"><div class="table-scroll"><table class="data-table" id="SuppliersTable" data-crud-table="suppliers"><thead><tr><th>#</th><th>Supplier</th><th>Phone</th><th>Email</th><th>Purchases</th><th>Outstanding</th><th>Payment Terms</th><th>Status</th><th>Actions</th></tr></thead><tbody>{% for record in suppliers %}{% include "backoffice/components/record_row.html" with entity="suppliers" columns=table_columns.suppliers %}{% endfor %}</tbody></table></div><div class="table-footer"><span data-table-count></span>{% include "backoffice/components/table_pagination.html" %}</div></div></section>
+<section class="page">
+  <div class="page-head">
+    <div><h1>Suppliers</h1><p>Manage supplier profiles, payment terms and live outstanding balances.</p></div>
+    <div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:supplier_add' %}">Add Supplier</a><a class="btn" href="{% url 'backoffice:purchases' %}">Purchases</a></div>
+  </div>
+  {% if purchase_notice %}<div class="purchase-notice">{{ purchase_notice }}</div>{% endif %}
+  {% if purchase_error %}<div class="purchase-error">{{ purchase_error }}</div>{% endif %}
+  <div class="cards kpi-grid-4">
+    {% for stat in supplier_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}
+  </div>
+  <div class="filters-card">
+    <form method="get" class="purchase-filters">
+      <input class="control search" name="q" value="{{ supplier_query }}" placeholder="Search code, supplier, phone or email...">
+      <select class="control" name="status">
+        <option value="">All Status</option>
+        <option value="active"{% if supplier_status == 'active' %} selected{% endif %}>Active</option>
+        <option value="inactive"{% if supplier_status == 'inactive' %} selected{% endif %}>Inactive</option>
+      </select>
+      <button class="btn" type="submit">Filter</button>
+      {% if supplier_query or supplier_status %}<a class="btn" href="{% url 'backoffice:suppliers' %}">Clear</a>{% endif %}
+    </form>
+  </div>
+  <div class="card orders-table-card">
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>Code</th><th>Supplier</th><th>Contact</th><th>Purchases</th><th>Outstanding</th><th>Terms</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for supplier in supplier_rows %}
+          <tr>
+            <td><strong>{{ supplier.code }}</strong></td>
+            <td><strong>{{ supplier.name }}</strong>{% if supplier.contact_person %}<div class="muted">{{ supplier.contact_person }}</div>{% endif %}</td>
+            <td>{{ supplier.phone|default:"—" }}{% if supplier.email %}<div class="muted">{{ supplier.email }}</div>{% endif %}</td>
+            <td>৳ {{ supplier.total_purchases|floatformat:2 }}</td>
+            <td>{% if supplier.outstanding_balance > 0 %}<span class="supplier-due">৳ {{ supplier.outstanding_balance|floatformat:2 }}</span>{% else %}<span class="supplier-ok">৳ 0.00</span>{% endif %}</td>
+            <td>{{ supplier.payment_terms_days }} day{{ supplier.payment_terms_days|pluralize }}</td>
+            <td><span class="purchase-status {% if supplier.is_active %}received{% else %}cancelled{% endif %}">{% if supplier.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+            <td>
+              <div class="purchase-actions">
+                <a class="btn btn-sm" href="{% url 'backoffice:supplier_add' %}?id={{ supplier.id }}">Edit</a>
+                <form method="post" action="{% url 'backoffice:supplier_delete' supplier.id %}" onsubmit="return confirm('Delete this supplier?');">{% csrf_token %}<button class="btn btn-sm" type="submit">Delete</button></form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="purchase-empty">No suppliers found.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 {% endblock %}
