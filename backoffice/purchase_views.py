@@ -88,10 +88,10 @@ def suppliers(request):
         supplier_query=query,
         supplier_status=status,
         supplier_stats=[
-            {"label": "Total Suppliers", "value": str(len(all_suppliers)), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/suppliers.svg", "color": "blue"},
-            {"label": "Active Suppliers", "value": str(active_count), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/suppliers.svg", "color": "green"},
-            {"label": "Outstanding", "value": _money(total_due), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/accounts.svg", "color": "red"},
-            {"label": "Purchase Value", "value": _money(total_purchase), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/purchases.svg", "color": "purple"},
+            {"label": "Total Suppliers", "value": str(len(all_suppliers)), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_2.html", "color": "blue"},
+            {"label": "Active Suppliers", "value": str(active_count), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_7.html", "color": "green"},
+            {"label": "Outstanding", "value": _money(total_due), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_1.html", "color": "red"},
+            {"label": "Purchase Value", "value": _money(total_purchase), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_13.html", "color": "purple"},
         ],
     )
     return render(request, "backoffice/pages/suppliers/suppliers.html", context)
@@ -169,10 +169,10 @@ def purchases(request):
         purchase_status_choices=PurchaseOrder.Status.choices,
         purchase_suppliers=Supplier.objects.filter(is_active=True).order_by("name"),
         purchase_stats=[
-            {"label": "Purchase Orders", "value": str(len(all_orders)), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/purchases.svg", "color": "blue"},
-            {"label": "Pending Receipt", "value": str(pending_receive), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/inventory.svg", "color": "orange"},
-            {"label": "Received", "value": str(received), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/orders.svg", "color": "green"},
-            {"label": "Supplier Due", "value": _money(total_due), "trend": _money(total_value), "trend_class": "up", "icon": "backoffice/icons/accounts.svg", "color": "red"},
+            {"label": "Purchase Orders", "value": str(len(all_orders)), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_13.html", "color": "blue"},
+            {"label": "Pending Receipt", "value": str(pending_receive), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_14.html", "color": "orange"},
+            {"label": "Received", "value": str(received), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_12.html", "color": "green"},
+            {"label": "Supplier Due", "value": _money(total_due), "trend": _money(total_value), "trend_class": "up", "icon": "backoffice/components/icons/icon_1.html", "color": "red"},
         ],
     )
     return render(request, "backoffice/pages/purchases/purchases.html", context)
