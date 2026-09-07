@@ -7,6 +7,12 @@ from inventory.models import Warehouse
 from .models import SerializedUnit, WarrantyClaim
 
 
+def _style_fields(form):
+    for field in form.fields.values():
+        classes = field.widget.attrs.get("class", "")
+        field.widget.attrs["class"] = (classes + " control").strip()
+
+
 class SerializedUnitForm(forms.ModelForm):
     class Meta:
         model = SerializedUnit
@@ -65,6 +71,7 @@ class SerializedUnitForm(forms.ModelForm):
             self.fields[name].required = False
         if self.instance and self.instance.pk:
             self.fields["variant"].disabled = True
+        _style_fields(self)
 
     def clean_serial_number(self):
         return (self.cleaned_data.get("serial_number") or "").strip() or None
@@ -79,12 +86,6 @@ class SerializedUnitForm(forms.ModelForm):
         cleaned = super().clean()
         if not any((cleaned.get("serial_number"), cleaned.get("imei1"), cleaned.get("imei2"))):
             raise ValidationError("Enter at least one Serial Number, IMEI 1 or IMEI 2.")
-        if cleaned.get("sold_at") and cleaned.get("status") not in {
-            SerializedUnit.Status.SOLD,
-            SerializedUnit.Status.WARRANTY_SERVICE,
-            SerializedUnit.Status.SCRAPPED,
-        }:
-            self.add_error("sold_at", "Sold date should only be set for a sold/service/scrapped unit.")
         return cleaned
 
 
@@ -133,6 +134,7 @@ class WarrantyClaimForm(forms.ModelForm):
                 (WarrantyClaim.Status.OPEN, WarrantyClaim.Status.OPEN.label),
                 (WarrantyClaim.Status.IN_SERVICE, WarrantyClaim.Status.IN_SERVICE.label),
             ]
+        _style_fields(self)
 
     def clean(self):
         cleaned = super().clean()
