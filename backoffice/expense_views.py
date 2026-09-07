@@ -75,7 +75,7 @@ def expenses(request):
     date_from = parse_date(request.GET.get("from") or "")
     date_to = parse_date(request.GET.get("to") or "")
 
-    qs = Expense.objects.select_related("category", "category__account")
+    qs = Expense.objects.select_related("category", "category__account", "payment_account")
     if query:
         qs = qs.filter(
             Q(expense_no__icontains=query)
@@ -131,7 +131,7 @@ def expenses(request):
 
 
 def expense_add(request):
-    form = ExpenseForm(request.POST or None, initial={"expense_date": timezone.localdate()})
+    form = ExpenseForm(request.POST or None, request.FILES or None, initial={"expense_date": timezone.localdate()})
     error = ""
     if request.method == "POST" and form.is_valid():
         try:
@@ -156,7 +156,7 @@ def expense_edit(request, expense_id):
     expense = get_object_or_404(Expense, pk=expense_id)
     if expense.status != Expense.Status.DRAFT:
         return _redirect_with("backoffice:expense_detail", args=[expense.pk], error="Only Draft expenses can be edited.")
-    form = ExpenseForm(request.POST or None, instance=expense)
+    form = ExpenseForm(request.POST or None, request.FILES or None, instance=expense)
     error = ""
     if request.method == "POST" and form.is_valid():
         try:
@@ -178,7 +178,7 @@ def expense_edit(request, expense_id):
 
 def expense_detail(request, expense_id):
     expense = get_object_or_404(
-        Expense.objects.select_related("category", "category__account").prefetch_related("events"),
+        Expense.objects.select_related("category", "category__account", "payment_account").prefetch_related("events"),
         pk=expense_id,
     )
     context = _base_context(request)
@@ -228,6 +228,7 @@ def expense_pay(request, expense_id):
             pay_expense(
                 expense=expense,
                 payment_method=form.cleaned_data["payment_method"],
+                payment_account=form.cleaned_data["payment_account"],
                 payment_reference=form.cleaned_data["payment_reference"],
                 payment_date=form.cleaned_data["payment_date"],
                 note=form.cleaned_data["note"],
