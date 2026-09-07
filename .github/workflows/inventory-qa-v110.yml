@@ -1,0 +1,49 @@
+name: Inventory QA v1.1.0
+
+on:
+  push:
+    branches:
+      - v1.1.0-inventory-phase1
+
+jobs:
+  inventory-qa:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: techbari
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_NAME: techbari
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DJANGO_DEBUG: "0"
+      DJANGO_SECRET_KEY: inventory-qa-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Django system check
+        run: python manage.py check
+      - name: Migration drift check
+        run: python manage.py makemigrations --check --dry-run
+      - name: Apply migrations
+        run: python manage.py migrate --noinput
+      - name: Catalog and inventory tests
+        run: python manage.py test catalog inventory -v 2
+      - name: Verify inventory migration state
+        run: python manage.py showmigrations inventory
