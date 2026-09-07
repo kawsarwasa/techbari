@@ -74,10 +74,10 @@ def customers(request):
         customer_groups=CustomerGroup.objects.filter(is_active=True).order_by("name"),
         customer_source_choices=Customer.Source.choices,
         customer_stats=[
-            {"label": "Total Customers", "value": str(len(all_customers)), "trend": "Live CRM", "trend_class": "up", "icon": "backoffice/icons/orders.svg", "color": "blue"},
-            {"label": "Active", "value": str(active_count), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/inventory.svg", "color": "green"},
-            {"label": "Repeat Customers", "value": str(repeat_count), "trend": "2+ completed", "trend_class": "up", "icon": "backoffice/icons/orders.svg", "color": "purple"},
-            {"label": "Customer Due", "value": _money(total_due), "trend": _money(total_spent), "trend_class": "up", "icon": "backoffice/icons/accounts.svg", "color": "red"},
+            {"label": "Total Customers", "value": str(len(all_customers)), "trend": "Live CRM", "trend_class": "up", "icon": "backoffice/components/icons/icon_2.html", "color": "blue"},
+            {"label": "Active", "value": str(active_count), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_7.html", "color": "green"},
+            {"label": "Repeat Customers", "value": str(repeat_count), "trend": "2+ completed", "trend_class": "up", "icon": "backoffice/components/icons/icon_12.html", "color": "purple"},
+            {"label": "Customer Due", "value": _money(total_due), "trend": _money(total_spent), "trend_class": "up", "icon": "backoffice/components/icons/icon_1.html", "color": "red"},
         ],
     )
     return render(request, "backoffice/pages/customers/customers.html", context)
