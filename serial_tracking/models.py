@@ -14,6 +14,7 @@ class SerializedUnit(models.Model):
         DAMAGED = "damaged", "Damaged"
         WARRANTY_SERVICE = "warranty_service", "Warranty Service"
         SCRAPPED = "scrapped", "Scrapped"
+        SUPPLIER_RETURNED = "supplier_returned", "Returned to Supplier"
 
     variant = models.ForeignKey(
         ProductVariant,
