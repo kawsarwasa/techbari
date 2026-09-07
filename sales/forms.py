@@ -8,6 +8,14 @@ from inventory.models import Warehouse
 from .models import SalesOrder
 
 
+def _style_fields(form):
+    for field in form.fields.values():
+        if isinstance(field.widget, forms.CheckboxInput):
+            field.widget.attrs.setdefault("class", "checkbox")
+        else:
+            field.widget.attrs.setdefault("class", "control")
+
+
 class SalesOrderForm(forms.ModelForm):
     class Meta:
         model = SalesOrder
@@ -45,6 +53,7 @@ class SalesOrderForm(forms.ModelForm):
             (SalesOrder.Status.PENDING, SalesOrder.Status.PENDING.label),
         ]
         self.fields["order_number"].required = False
+        _style_fields(self)
 
     def clean_order_number(self):
         number = (self.cleaned_data.get("order_number") or "").strip().upper()
@@ -72,5 +81,13 @@ class SalesOrderForm(forms.ModelForm):
 
 
 class OrderPaymentUpdateForm(forms.Form):
-    amount_paid = forms.DecimalField(max_digits=18, decimal_places=2, min_value=Decimal("0.00"))
-    note = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 2}))
+    amount_paid = forms.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        min_value=Decimal("0.00"),
+        widget=forms.NumberInput(attrs={"class": "control", "step": "0.01", "min": "0"}),
+    )
+    note = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"class": "control", "rows": 2}),
+    )
