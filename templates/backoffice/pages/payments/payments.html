@@ -1,7 +1,42 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
+{% load demo %}
 {% block title %}Payments & Transactions | TechBari Admin{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Payments & Transactions</h1><p>Record incoming and outgoing financial transactions.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:payment_add' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add Payment</a></div></div><div class="cards kpi-grid-4">{% include "backoffice/components/stat_card.html" with stat=statistics.0 %}{% include "backoffice/components/stat_card.html" with stat=statistics.1 %}{% include "backoffice/components/stat_card.html" with stat=statistics.2 %}{% include "backoffice/components/stat_card.html" with stat=statistics.3 %}</div><div class="filters-card"><div class="filter-row"><input class="control search" data-table-search="#PaymentsTable" placeholder="Search payments..."><select class="control"><option>All Status</option><option>Active</option><option>Inactive</option></select><span class="filter-spacer"></span><button class="btn" data-export-table="#PaymentsTable"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/></svg> Export CSV</button></div></div>
-    <div class="card orders-table-card"><div class="table-scroll"><table class="data-table" id="PaymentsTable" data-crud-table="payments"><thead><tr><th>#</th><th>Transaction</th><th>Date</th><th>Type</th><th>Method</th><th>Reference</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead><tbody>{% for record in payments %}{% include "backoffice/components/record_row.html" with entity="payments" columns=table_columns.payments %}{% endfor %}</tbody></table></div><div class="table-footer"><span data-table-count></span>{% include "backoffice/components/table_pagination.html" %}</div></div></section>
+<section class="page">
+  <div class="page-head">
+    <div><h1>Payments & Transactions</h1><p>Central money-in / money-out ledger for Sales, POS and Supplier payments.</p></div>
+    <div class="head-actions"><a class="btn" href="{% url 'backoffice:payment_methods' %}">Payment Methods</a><a class="btn btn-primary" href="{% url 'backoffice:payment_add' %}">+ Add Payment</a></div>
+  </div>
+  {% if payment_notice %}<div class="soft-note" style="margin-bottom:14px">{{ payment_notice }}</div>{% endif %}
+  {% if payment_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ payment_error }}</div>{% endif %}
+  <div class="cards kpi-grid-4">{% for stat in payment_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}</div>
+  <div class="filters-card">
+    <form class="filter-row" method="get">
+      <input class="control search" name="q" value="{{ payment_query }}" placeholder="Transaction, order, PO, customer, reference...">
+      <select class="control" name="status"><option value="">All Status</option>{% for value,label in payment_status_choices %}<option value="{{ value }}"{% if payment_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <select class="control" name="method"><option value="">All Methods</option>{% for value,label in payment_method_choices %}<option value="{{ value }}"{% if payment_method == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <select class="control" name="kind"><option value="">All Types</option>{% for value,label in payment_kind_choices %}<option value="{{ value }}"{% if payment_kind == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <select class="control" name="reconciliation"><option value="">All Reconciliation</option>{% for value,label in payment_reconciliation_choices %}<option value="{{ value }}"{% if payment_reconciliation == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <button class="btn" type="submit">Filter</button>
+      <a class="btn" href="{% url 'backoffice:payments' %}">Reset</a>
+    </form>
+  </div>
+  <div class="card orders-table-card">
+    <div class="table-scroll"><table class="data-table" id="PaymentsTable"><thead><tr><th>Transaction</th><th>Date</th><th>Type</th><th>Source</th><th>Counterparty</th><th>Method</th><th>Reference</th><th>Amount</th><th>Status</th><th>Reconciliation</th><th>Action</th></tr></thead><tbody>
+      {% for row in payment_rows %}<tr>
+        <td><strong>{{ row.transaction_no }}</strong>{% if row.parent_transaction %}<br><small>For {{ row.parent_transaction.transaction_no }}</small>{% endif %}</td>
+        <td>{{ row.transaction_date }}</td>
+        <td>{{ row.get_kind_display }}</td>
+        <td>{{ row.source_reference|default:"—" }}</td>
+        <td>{{ row.counterparty }}</td>
+        <td>{{ row.get_method_display }}</td>
+        <td>{{ row.provider_reference|default:"—" }}</td>
+        <td><strong>{% if row.direction == 'out' %}- {% else %}+ {% endif %}{{ row.amount|money }}</strong></td>
+        <td>{{ row.get_status_display }}</td>
+        <td>{{ row.get_reconciliation_status_display }}</td>
+        <td><a class="btn" href="{% url 'backoffice:payment_detail' row.id %}">View</a></td>
+      </tr>{% empty %}<tr><td colspan="11"><div class="empty-state">No payment transactions found.</div></td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</section>
 {% endblock %}
