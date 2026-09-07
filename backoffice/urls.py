@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import catalog_views, customer_views, inventory_views, payment_views, pos_views, purchase_views, return_views, sales_views, shipping_views, views
+from . import accounting_views, catalog_views, customer_views, inventory_views, payment_views, pos_views, purchase_views, return_views, sales_views, shipping_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
@@ -86,9 +86,23 @@ return_patterns = [
     path("returns/<int:return_id>/cancel/", return_views.return_cancel, name="return_cancel"),
 ]
 
-urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + return_patterns + [
+accounting_patterns = [
+    path("accounts/", accounting_views.accounts, name="accounts"),
+    path("accounts/chart/", accounting_views.chart_accounts, name="chart_accounts"),
+    path("accounts/chart/add/", accounting_views.account_add, name="account_add"),
+    path("accounts/journals/", accounting_views.journals, name="journals"),
+    path("accounts/journals/add/", accounting_views.journal_add, name="journal_add"),
+    path("accounts/journals/<int:journal_id>/", accounting_views.journal_detail, name="journal_detail"),
+    path("accounts/journals/<int:journal_id>/reverse/", accounting_views.journal_reverse, name="journal_reverse"),
+    path("accounts/ledger/", accounting_views.general_ledger, name="general_ledger"),
+    path("accounts/trial-balance/", accounting_views.trial_balance_view, name="trial_balance"),
+    path("accounts/periods/", accounting_views.periods, name="accounting_periods"),
+    path("accounts/periods/<int:period_id>/toggle/", accounting_views.period_toggle, name="accounting_period_toggle"),
+]
+
+urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + return_patterns + accounting_patterns + [
     path(info["path"], views.page, {"page_name": name}, name=name)
     for name, info in PAGES.items()
-    if name not in {"pos", "payments", "payment_add", "shipping", "shipment_add", "returns", "return_add"}
+    if name not in {"accounts", "pos", "payments", "payment_add", "shipping", "shipment_add", "returns", "return_add"}
 ]
 urlpatterns += [path("<slug:page>.html", views.legacy_page, name="legacy_page")]
