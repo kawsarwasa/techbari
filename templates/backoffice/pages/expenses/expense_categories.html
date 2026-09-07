@@ -1,0 +1,30 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Expense Categories | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/expense-v210.css' %}?v=2.1.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Expense Categories</h1><p>Map operational expense categories to the Accounting Chart of Accounts.</p></div><a class="btn" href="{% url 'backoffice:expenses' %}">Back to Expenses</a></div>
+  {% if expense_notice %}<div class="expense-success">{{ expense_notice }}</div>{% endif %}{% if expense_error %}<div class="expense-error">{{ expense_error }}</div>{% endif %}
+  {% include "backoffice/pages/expenses/_subnav.html" %}
+
+  <div class="expense-category-grid">
+    <div class="card card-pad">
+      <div class="table-scroll"><table class="expense-table"><thead><tr><th>Code</th><th>Category</th><th>GL Account</th><th>Status</th><th>Used</th><th></th></tr></thead><tbody>
+        {% for row in category_rows %}<tr><td><strong>{{ row.code }}</strong></td><td>{{ row.name }}{% if row.description %}<br><small>{{ row.description }}</small>{% endif %}</td><td>{{ row.account.code }} · {{ row.account.name }}</td><td><span class="expense-badge {% if row.is_active %}approved{% else %}cancelled{% endif %}">{% if row.is_active %}Active{% else %}Inactive{% endif %}</span></td><td>{{ row.expenses.count }}</td><td><div class="expense-actions"><a class="btn" href="{% url 'backoffice:expense_categories' %}?edit={{ row.id }}">Edit</a><form method="post" action="{% url 'backoffice:expense_category_toggle' row.id %}">{% csrf_token %}<button class="btn" type="submit">{% if row.is_active %}Deactivate{% else %}Activate{% endif %}</button></form></div></td></tr>{% empty %}<tr><td colspan="6" class="expense-empty">No expense categories yet.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    <form method="post" class="expense-form-card">{% csrf_token %}
+      <h3>{% if editing_category %}Edit {{ editing_category.name }}{% else %}Add Category{% endif %}</h3>
+      <div class="expense-note">Each category must point to an active Expense-type GL account. Paid expenses automatically debit that account.</div>
+      <label class="field"><span>Code</span>{{ category_form.code }}{% for e in category_form.code.errors %}<small class="expense-error">{{ e }}</small>{% endfor %}</label>
+      <label class="field"><span>Name</span>{{ category_form.name }}{% for e in category_form.name.errors %}<small class="expense-error">{{ e }}</small>{% endfor %}</label>
+      <label class="field"><span>GL Expense Account</span>{{ category_form.account }}{% for e in category_form.account.errors %}<small class="expense-error">{{ e }}</small>{% endfor %}</label>
+      <label class="field"><span>Description</span>{{ category_form.description }}</label>
+      <label class="field"><span>Sort Order</span>{{ category_form.sort_order }}</label>
+      <label class="field"><span>{{ category_form.is_active }} Active</span></label>
+      <div class="expense-actions"><button class="btn btn-primary" type="submit">{% if editing_category %}Save Category{% else %}Add Category{% endif %}</button>{% if editing_category %}<a class="btn" href="{% url 'backoffice:expense_categories' %}">Cancel Edit</a>{% endif %}</div>
+    </form>
+  </div>
+</section>
+{% endblock %}
