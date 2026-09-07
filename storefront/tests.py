@@ -12,12 +12,14 @@ from sales.models import SalesOrder
 
 class CheckoutBackendTests(TestCase):
     def setUp(self):
-        self.warehouse = Warehouse.objects.create(
-            name="Online Main",
-            code="ONLINE-MAIN",
-            is_default=True,
-            is_active=True,
-        )
+        self.warehouse = Warehouse.objects.filter(is_default=True, is_active=True).order_by("id").first()
+        if self.warehouse is None:
+            self.warehouse = Warehouse.objects.create(
+                name="Online Main",
+                code="ONLINE-MAIN",
+                is_default=True,
+                is_active=True,
+            )
         self.category = Category.objects.create(name="Checkout Phones", slug="checkout-phones")
         self.brand = Brand.objects.create(name="Checkout Brand", slug="checkout-brand")
         self.product = Product.objects.create(
@@ -173,7 +175,9 @@ class CheckoutBackendTests(TestCase):
     def test_storefront_available_stock_follows_default_warehouse_reservations(self):
         self.client.post(reverse("storefront:checkout"), self.payload(quantity=2))
         response = self.client.get(reverse("storefront:products"))
-        product = next(row for row in response.context["store_data"]["products"] if row["id"] == self.product.public_id)
+        product = next(
+            row for row in response.context["store_data"]["products"] if row["id"] == self.product.public_id
+        )
         variant = next(row for row in product["variants"] if row["id"] == self.variant.pk)
         self.assertEqual(variant["stock"], 3)
         self.assertEqual(product["stock"], 3)
