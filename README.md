@@ -1,8 +1,20 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v1.8.0**
+**Current version: v1.9.0**
 
-TechBari is being converted phase-by-phase from a static Django template demo into a MySQL 8-backed commerce system. Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS and Payment are now connected to the real business data flow.
+TechBari is being converted phase-by-phase from a static Django template demo into a MySQL 8-backed commerce system. Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS, Payment and Shipping / Courier are now connected to the real business data flow.
+
+## v1.9.0 — Shipping / Courier System
+
+Shipping is now a real database-backed fulfillment workflow. Confirmed/Processing non-POS Sales Orders can be assigned to one courier shipment with provider, tracking, parcel, fee, COD and delivery state.
+
+Inventory remains owned by the Sales + Inventory engines: creating a shipment does not deduct stock; moving a parcel to courier handover completes the Sales Order and issues its reserved inventory through the existing Sales service. Returned courier parcels do not silently re-add stock because that belongs to the next Returns/Refunds phase.
+
+Courier COD is tracked as Expected / Collected / Settled / Unsettled. Delivered COD may be reconciled through courier settlement batches; each settlement creates and reconciles transaction-level Sale Payments in the existing Payment ledger while keeping courier deduction/net-receipt data for later Accounting.
+
+Courier profiles are configurable and API readiness is stored, but no live third-party booking/tracking success is faked without real credentials and verified responses.
+
+See `SHIPPING_COURIER_PHASE.md`.
 
 ## v1.8.0 — Payment System
 
@@ -107,6 +119,21 @@ Routes: `/dashboard/pos/`, `/dashboard/pos/action/`, `/dashboard/pos/held/<id>/`
 
 Routes: `/dashboard/payments/`, `/dashboard/payments/add/`, `/dashboard/payments/methods/`, `/dashboard/payments/<id>/`.
 
+### Shipping / Courier
+- Courier provider configuration
+- Sales Order linked shipment lifecycle
+- Tracking ID / courier reference / location timeline
+- Parcel, weight and courier fee data
+- Hand-over driven inventory issue through Sales Engine
+- Delivery failure / returning / returned states
+- COD expected / collected / settled / unsettled
+- Short COD dispute state
+- Multi-shipment courier COD settlement batches
+- Payment-ledger posting and reconciliation for settled COD
+- Immutable shipment event audit trail
+
+Routes: `/dashboard/shipping/`, `/dashboard/shipping/add/`, `/dashboard/shipping/providers/`, `/dashboard/shipping/<id>/`, `/dashboard/shipping/cod-settlements/`.
+
 ## Local setup
 
 ```powershell
@@ -131,11 +158,11 @@ Apply migrations and verify:
 ```powershell
 python manage.py migrate
 python manage.py check
-python manage.py test catalog inventory serial_tracking purchasing customers sales payments storefront
+python manage.py test catalog inventory serial_tracking purchasing customers sales payments shipping storefront
 python manage.py runserver
 ```
 
-Upgrading from v1.7.0 to v1.8.0 applies the new `payments` migrations and preserves existing Sales/POS/Supplier payment data. No seed command is required.
+Upgrading from v1.8.0 to v1.9.0 applies `shipping.0001_initial`. Existing Sales, Inventory, Payment and Purchase data are preserved. No seed command is required.
 
 ## Architecture direction
 
@@ -143,4 +170,4 @@ TechBari follows:
 
 **One Product Database + One Inventory Engine + One Sales Engine + One Accounting Ledger.**
 
-The next recommended roadmap phase is **v1.9.x — Shipping / Courier**, followed by Returns/Refunds, Accounting, Reports, Marketing, Roles/Permissions, CMS, Customer Account, Integrations and Production QA.
+The next recommended roadmap phase is **v1.10.x — Returns / Refunds**, followed by Accounting, Reports, Marketing, Roles/Permissions, CMS, Customer Account, Integrations and Production QA.
