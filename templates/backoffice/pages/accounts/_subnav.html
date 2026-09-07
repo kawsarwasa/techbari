@@ -5,5 +5,6 @@
   <a class="{% if accounting_tab == 'ledger' %}active{% endif %}" href="{% url 'backoffice:general_ledger' %}">General Ledger</a>
   <a class="{% if accounting_tab == 'trial' %}active{% endif %}" href="{% url 'backoffice:trial_balance' %}">Trial Balance</a>
   <a class="{% if accounting_tab == 'periods' %}active{% endif %}" href="{% url 'backoffice:accounting_periods' %}">Periods</a>
+  <a href="{% url 'backoffice:expenses' %}">Expenses</a>
   <a href="{% url 'backoffice:payments' %}">Payment Ledger</a>
 </div>
