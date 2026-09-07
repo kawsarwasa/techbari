@@ -1,0 +1,76 @@
+{% extends "backoffice/base.html" %}
+{% load demo %}
+{% block title %}{{ sales_return.return_no }} | TechBari Admin{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head">
+    <div><h1>{{ sales_return.return_no }}</h1><p>{{ sales_return.get_source_display }} • {{ sales_return.requested_date }} • {{ sales_return.order.order_number }}</p></div>
+    <div class="head-actions"><a class="btn" href="{% url 'backoffice:returns' %}">Returns</a><a class="btn" href="{% url 'backoffice:order_detail_id' sales_return.order_id %}">Sales Order</a></div>
+  </div>
+  {% if returns_notice %}<div class="soft-note" style="margin-bottom:14px">{{ returns_notice }}</div>{% endif %}
+  {% if returns_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ returns_error }}</div>{% endif %}
+
+  <div class="detail-cards">
+    <div class="card info-card"><div class="section-head"><h3>Return Status</h3></div><div class="info-body">
+      <div class="kv"><span>Status</span><strong>{{ sales_return.get_status_display }}</strong></div>
+      <div class="kv"><span>Resolution</span><strong>{{ sales_return.get_resolution_display }}</strong></div>
+      <div class="kv"><span>Reason</span><strong>{{ sales_return.get_reason_category_display }}</strong></div>
+      <div class="kv"><span>Receiving Warehouse</span><strong>{{ sales_return.warehouse.code }}</strong></div>
+    </div></div>
+    <div class="card info-card"><div class="section-head"><h3>Customer / Order</h3></div><div class="info-body">
+      <strong>{{ sales_return.customer_name }}</strong><br>{{ sales_return.order.customer_phone }}<br>
+      <a href="{% url 'backoffice:order_detail_id' sales_return.order_id %}">{{ sales_return.order.order_number }}</a>
+      {% if sales_return.source_reference %}<div class="soft-note" style="margin-top:10px">Source ref: {{ sales_return.source_reference }}</div>{% endif %}
+    </div></div>
+    <div class="card info-card"><div class="section-head"><h3>Financial Summary</h3></div><div class="info-body">
+      <div class="kv"><span>Return Credit</span><strong>{{ sales_return.credit_total|money }}</strong></div>
+      <div class="kv"><span>Cash / Payment Refunded</span><strong>{{ sales_return.refunded_total|money }}</strong></div>
+      <div class="kv"><span>Order Return Credit Total</span><strong>{{ sales_return.order.return_credit_amount|money }}</strong></div>
+      <div class="kv"><span>Order Due After Returns</span><strong>{{ sales_return.order.outstanding_amount|money }}</strong></div>
+    </div></div>
+  </div>
+
+  <div class="card orders-table-card" style="margin-top:16px"><div class="section-head"><h3>Return Items</h3></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Product / SKU</th><th>Qty</th><th>Condition</th><th>Disposition</th><th>Serial / IMEI</th><th>Credit</th><th>Restocked</th><th>Note</th></tr></thead><tbody>
+    {% for item in sales_return.items.all %}<tr>
+      <td><strong>{{ item.product_snapshot }}</strong><br><small>{{ item.sku_snapshot }}</small></td>
+      <td>{{ item.quantity }}</td><td>{{ item.get_condition_display }}</td><td>{{ item.get_disposition_display }}</td>
+      <td>{% if item.serialized_unit %}{{ item.serialized_unit.display_identifier }}{% else %}—{% endif %}</td>
+      <td>{{ item.refund_amount|money }}</td><td>{{ item.restocked_quantity }}</td><td>{{ item.note|default:"—" }}</td>
+    </tr>{% endfor %}
+  </tbody></table></div></div>
+
+  <div class="detail-grid-top" style="margin-top:16px">
+    <div class="card info-card"><div class="section-head"><h3>Process Return</h3></div><div class="info-body">
+      {% if sales_return.status == 'requested' %}
+        <form method="post" action="{% url 'backoffice:return_approve' sales_return.id %}">{% csrf_token %}<label class="field"><span>Approval note</span><textarea class="control" name="note" rows="2"></textarea></label><button class="btn btn-primary" type="submit">Approve Return</button></form>
+      {% elif sales_return.status == 'approved' %}
+        <form method="post" action="{% url 'backoffice:return_receive' sales_return.id %}">{% csrf_token %}<label class="field"><span>Receiving / inspection note</span><textarea class="control" name="note" rows="2"></textarea></label><button class="btn btn-primary" type="submit">Mark Received</button></form>
+      {% elif sales_return.status == 'received' %}
+        <div class="soft-note" style="margin-bottom:12px">Completing posts sellable Return-In stock only for Restock lines, updates exact Serial/IMEI state, applies Sales Order return credit, and refunds any overpaid amount through the Payment ledger.</div>
+        <form method="post" action="{% url 'backoffice:return_complete' sales_return.id %}" onsubmit="return confirm('Complete this return and post Inventory/Payment changes?');">{% csrf_token %}<label class="field"><span>Completion note</span><textarea class="control" name="note" rows="2"></textarea></label><button class="btn btn-primary" type="submit">Complete Return</button></form>
+      {% else %}<div class="soft-note">This return is {{ sales_return.get_status_display }} and has no further processing actions.</div>{% endif %}
+    </div></div>
+    <div class="card info-card"><div class="section-head"><h3>Reject / Cancel</h3></div><div class="info-body">
+      {% if sales_return.status == 'requested' or sales_return.status == 'approved' or sales_return.status == 'received' %}
+        <form method="post" action="{% url 'backoffice:return_reject' sales_return.id %}" onsubmit="return confirm('Reject this return?');">{% csrf_token %}<label class="field"><span>Reason</span><textarea class="control" name="note" rows="2" required></textarea></label><button class="btn" type="submit">Reject</button></form>
+      {% endif %}
+      {% if sales_return.status == 'requested' or sales_return.status == 'approved' %}
+        <form method="post" action="{% url 'backoffice:return_cancel' sales_return.id %}" style="margin-top:12px" onsubmit="return confirm('Cancel this return?');">{% csrf_token %}<input type="hidden" name="note" value="Return cancelled from Dashboard."><button class="btn" type="submit">Cancel</button></form>
+      {% endif %}
+    </div></div>
+  </div>
+
+  <div class="card orders-table-card" style="margin-top:16px"><div class="section-head"><h3>Refund Transactions</h3></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Refund</th><th>Source Payment</th><th>Method</th><th>Amount</th><th>Date</th></tr></thead><tbody>
+    {% for refund in sales_return.refunds.all %}<tr><td><a href="{% url 'backoffice:payment_detail' refund.refund_transaction_id %}">{{ refund.refund_transaction.transaction_no }}</a></td><td>{{ refund.source_payment.transaction_no }}</td><td>{{ refund.refund_transaction.get_method_display }}</td><td>{{ refund.amount|money }}</td><td>{{ refund.created_at }}</td></tr>{% empty %}<tr><td colspan="5">No cash/payment refund was required or posted.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+
+  <div class="card orders-table-card" style="margin-top:16px"><div class="section-head"><h3>Return Audit Trail</h3></div><div class="table-scroll"><table class="data-table"><thead><tr><th>When</th><th>Event</th><th>From</th><th>To</th><th>Actor</th><th>Note</th></tr></thead><tbody>
+    {% for event in sales_return.events.all %}<tr><td>{{ event.created_at }}</td><td>{{ event.get_event_display }}</td><td>{{ event.previous_status|default:"—" }}</td><td>{{ event.new_status|default:"—" }}</td><td>{{ event.actor|default:"System" }}</td><td>{{ event.note }}</td></tr>{% empty %}<tr><td colspan="6">No return events.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+
+  {% if sales_return.customer_note or sales_return.internal_note %}<div class="detail-grid-top" style="margin-top:16px">
+    <div class="card info-card"><div class="section-head"><h3>Customer Note</h3></div><div class="info-body">{{ sales_return.customer_note|default:"—"|linebreaksbr }}</div></div>
+    <div class="card info-card"><div class="section-head"><h3>Internal Note</h3></div><div class="info-body">{{ sales_return.internal_note|default:"—"|linebreaksbr }}</div></div>
+  </div>{% endif %}
+</section>
+{% endblock %}
