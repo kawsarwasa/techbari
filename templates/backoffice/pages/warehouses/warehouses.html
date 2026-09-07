@@ -7,8 +7,8 @@
   <div class="page-head"><div><h1>Warehouses</h1><p>Manage physical stock locations used by the inventory engine.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:inventory' %}">Inventory</a><a class="btn btn-primary" href="{% url 'backoffice:warehouse_add' %}">＋ Add Warehouse</a></div></div>
   {% if inventory_notice %}<div class="inventory-notice">✓ {{ inventory_notice }}</div>{% endif %}
   {% if inventory_error %}<div class="inventory-error">{{ inventory_error }}</div>{% endif %}
-  <div class="cards kpi-grid-4">{% for stat in warehouse_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}</div>
-  <div class="card orders-table-card"><div class="table-scroll"><table class="data-table"><thead><tr><th>#</th><th>Warehouse</th><th>Code</th><th>Address</th><th>Available</th><th>Default</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+  <div class="cards kpi-grid-4">{% for stat in warehouse_stats %}<div class="kpi"><div><div class="kpi-label">{{ stat.label }}</div><div class="kpi-value">{{ stat.value }}</div><span class="trend">{{ stat.trend }}</span></div></div>{% endfor %}</div>
+  <div class="card orders-table-card"><div class="table-scroll"><table class="data-table"><thead><tr><th>#</th><th>Warehouse</th><th>Code</th><th>Address</th><th>SKU Balances</th><th>Default</th><th>Status</th><th>Actions</th></tr></thead><tbody>
   {% for warehouse in warehouse_rows %}
     <tr>
       <td>{{ forloop.counter }}</td><td><strong>{{ warehouse.name }}</strong></td><td>{{ warehouse.code }}</td><td>{{ warehouse.address|default:"—" }}</td>
