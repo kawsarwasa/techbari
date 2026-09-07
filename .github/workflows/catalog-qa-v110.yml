@@ -1,5 +1,6 @@
 name: Catalog QA v1.0.10
 
+# Final v1.0.10 verification run after all catalog fixes.
 on:
   push:
     branches:
