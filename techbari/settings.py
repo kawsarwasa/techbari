@@ -10,7 +10,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "techbari-development-change-me")
 DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
 
-# Catalog + Inventory + Serial/IMEI/Warranty phases are ORM-backed.
+# Catalog + Inventory + Serial/IMEI/Warranty + Supplier/Purchase phases are ORM-backed.
 # Remaining business modules are phased in later.
 # Auth/session/admin apps intentionally remain out of scope for the current phase.
 INSTALLED_APPS = [
@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     "catalog",
     "inventory",
     "serial_tracking",
+    "purchasing",
     "storefront",
     "backoffice",
 ]
