@@ -4,7 +4,7 @@
 {% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">{% endblock %}
 {% block content %}
 <section class="page">
-  <div class="page-head"><div><h1>Accounting & General Ledger</h1><p>Double-entry accounting generated from Sales, Purchases, Payments, Returns and Courier settlement activity.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:journal_add' %}">+ Manual Journal</a><a class="btn" href="{% url 'backoffice:payments' %}">Payment Ledger</a></div></div>
+  <div class="page-head"><div><h1>Accounting & General Ledger</h1><p>Double-entry accounting generated from Sales, Purchases, Payments, Returns, Expenses and Courier settlement activity.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:journal_add' %}">+ Manual Journal</a><a class="btn" href="{% url 'backoffice:expenses' %}">Expenses</a><a class="btn" href="{% url 'backoffice:payments' %}">Payment Ledger</a></div></div>
   {% if accounting_notice %}<div class="acct-success">{{ accounting_notice }}</div>{% endif %}{% if accounting_error %}<div class="acct-error">{{ accounting_error }}</div>{% endif %}
   {% include "backoffice/pages/accounts/_subnav.html" with accounting_tab="overview" %}
   <div class="acct-kpis">
@@ -32,7 +32,7 @@
         <div class="acct-summary-row"><span>Total Recognized Expenses</span><strong>{{ accounting_summary.expenses|money }}</strong></div>
         <div class="acct-summary-row"><span>Trial Balance</span><strong class="{% if trial_balanced %}acct-balance-ok{% else %}acct-balance-bad{% endif %}">{% if trial_balanced %}Balanced{% else %}Needs Review{% endif %}</strong></div>
       </div>
-      <div class="acct-note">Expense management is scheduled for v2.1.x. v2.0.0 records the accounting foundation and currently recognized costs without replacing that roadmap phase.</div>
+      <div class="acct-note">Expense Management v2.1.0 now posts approved operating expenses directly into this ledger. The broader P&amp;L, Balance Sheet, Cash Flow and aging reports remain scheduled for v2.2.x.</div>
     </div>
   </div>
 </section>
