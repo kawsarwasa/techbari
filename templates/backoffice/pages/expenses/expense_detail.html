@@ -1,0 +1,53 @@
+{% extends "backoffice/base.html" %}
+{% load static demo %}
+{% block title %}{{ expense.expense_no }} | Expenses{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/expense-v210.css' %}?v=2.1.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head">
+    <div><h1>{{ expense.expense_no }}</h1><p>{{ expense.description }}</p></div>
+    <div class="head-actions"><a class="btn" href="{% url 'backoffice:expenses' %}">Back to Expenses</a>{% if expense.status == 'draft' %}<a class="btn" href="{% url 'backoffice:expense_edit' expense.id %}">Edit Draft</a>{% endif %}{% if expense.status == 'approved' %}<a class="btn btn-primary" href="{% url 'backoffice:expense_pay' expense.id %}">Pay Expense</a>{% endif %}</div>
+  </div>
+  {% if expense_notice %}<div class="expense-success">{{ expense_notice }}</div>{% endif %}{% if expense_error %}<div class="expense-error">{{ expense_error }}</div>{% endif %}
+  {% include "backoffice/pages/expenses/_subnav.html" %}
+
+  <div class="expense-grid">
+    <div class="card card-pad">
+      <div class="page-head" style="margin-bottom:8px"><div><h3>Expense Details</h3><p>Operational record and Accounting classification.</p></div><span class="expense-badge {{ expense.status }}">{{ expense.get_status_display }}</span></div>
+      <div class="expense-summary">
+        <div class="expense-summary-row"><span>Expense Date</span><strong>{{ expense.expense_date }}</strong></div>
+        <div class="expense-summary-row"><span>Category</span><strong>{{ expense.category.name }}</strong></div>
+        <div class="expense-summary-row"><span>GL Account</span><strong>{{ expense.category.account.code }} · {{ expense.category.account.name }}</strong></div>
+        <div class="expense-summary-row"><span>Payee / Vendor</span><strong>{{ expense.payee|default:"—" }}</strong></div>
+        <div class="expense-summary-row"><span>Description</span><strong>{{ expense.description }}</strong></div>
+        <div class="expense-summary-row"><span>Receipt / Invoice</span><strong>{{ expense.receipt_no|default:"—" }}</strong></div>
+        <div class="expense-summary-row"><span>Amount</span><strong>{{ expense.amount|money }}</strong></div>
+        <div class="expense-summary-row"><span>Payment Method</span><strong>{% if expense.payment_method %}{{ expense.get_payment_method_display }}{% else %}—{% endif %}</strong></div>
+        <div class="expense-summary-row"><span>Payment Reference</span><strong>{{ expense.payment_reference|default:"—" }}</strong></div>
+        <div class="expense-summary-row"><span>Payment Date</span><strong>{{ expense.payment_date|default:"—" }}</strong></div>
+        <div class="expense-summary-row"><span>Requested By</span><strong>{{ expense.requested_by|default:"—" }}</strong></div>
+        <div class="expense-summary-row"><span>Approved By</span><strong>{{ expense.approved_by|default:"—" }}</strong></div>
+        <div class="expense-summary-row"><span>Paid By</span><strong>{{ expense.paid_by|default:"—" }}</strong></div>
+      </div>
+      {% if expense.notes %}<div class="expense-note"><strong>Notes</strong><br>{{ expense.notes }}</div>{% endif %}
+
+      <div class="expense-actions" style="margin-top:16px">
+        {% if expense.status == 'draft' %}<form method="post" action="{% url 'backoffice:expense_submit' expense.id %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Submit for Approval</button></form>{% endif %}
+        {% if expense.status == 'pending' %}<form method="post" action="{% url 'backoffice:expense_approve' expense.id %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Approve</button></form><form method="post" action="{% url 'backoffice:expense_reject' expense.id %}">{% csrf_token %}<input type="hidden" name="note" value="Rejected from dashboard"><button class="btn" type="submit">Reject</button></form>{% endif %}
+        {% if expense.status == 'draft' or expense.status == 'pending' or expense.status == 'approved' %}<form method="post" action="{% url 'backoffice:expense_cancel' expense.id %}">{% csrf_token %}<input type="hidden" name="note" value="Cancelled from dashboard"><button class="btn" type="submit">Cancel Expense</button></form>{% endif %}
+      </div>
+    </div>
+
+    <aside class="card card-pad">
+      <h3>Audit Trail</h3>
+      <div class="expense-timeline" style="margin-top:12px">
+        {% for event in expense.events.all %}<div class="expense-event"><strong>{{ event.get_event_display }}</strong><div>{{ event.note|default:"—" }}</div><small>{{ event.created_at }}{% if event.actor %} · {{ event.actor }}{% endif %}</small></div>{% empty %}<div class="expense-empty">No expense events yet.</div>{% endfor %}
+      </div>
+      {% if expense.status == 'paid' %}
+      <div class="expense-note" style="margin-top:18px">Paid expenses are immutable operational records. If the payment itself must be cancelled, voiding creates a reversing Accounting journal instead of deleting financial history.</div>
+      <form method="post" action="{% url 'backoffice:expense_void' expense.id %}">{% csrf_token %}<label class="field"><span>Void Reason</span><textarea class="control" name="reason" rows="3" required></textarea></label><label class="field"><span>Reversal Date</span><input class="control" type="date" name="reversal_date" required></label><button class="btn" type="submit">Void & Reverse</button></form>
+      {% endif %}
+    </aside>
+  </div>
+</section>
+{% endblock %}
