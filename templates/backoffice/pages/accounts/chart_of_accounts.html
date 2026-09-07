@@ -1,0 +1,19 @@
+{% extends "backoffice/base.html" %}
+{% load static demo %}
+{% block title %}Chart of Accounts | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Chart of Accounts</h1><p>System and custom accounts used by the double-entry General Ledger.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:account_add' %}">+ Add Account</a></div></div>
+  {% if accounting_notice %}<div class="acct-success">{{ accounting_notice }}</div>{% endif %}{% if accounting_error %}<div class="acct-error">{{ accounting_error }}</div>{% endif %}
+  {% include "backoffice/pages/accounts/_subnav.html" with accounting_tab="chart" %}
+  <form method="get" class="acct-toolbar">
+    <div class="field search"><label>Search</label><input class="control" name="q" value="{{ account_query }}" placeholder="Code, name or description"></div>
+    <div class="field"><label>Account Type</label><select class="control" name="type"><option value="">All types</option>{% for value,label in account_type_choices %}<option value="{{ value }}" {% if selected_account_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <button class="btn" type="submit">Filter</button><a class="btn" href="{% url 'backoffice:chart_accounts' %}">Reset</a>
+  </form>
+  <div class="card card-pad"><div class="table-scroll"><table class="acct-table"><thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Normal Balance</th><th>System</th><th>Manual</th><th>Status</th><th class="num">Balance</th></tr></thead><tbody>
+    {% for row in accounts_rows %}<tr><td class="acct-code">{{ row.code }}</td><td><strong>{{ row.name }}</strong>{% if row.description %}<div class="acct-help">{{ row.description }}</div>{% endif %}</td><td>{{ row.get_account_type_display }}</td><td>{{ row.get_normal_balance_display }}</td><td>{% if row.is_system %}Yes{% else %}No{% endif %}</td><td>{% if row.allow_manual_entries %}Allowed{% else %}System only{% endif %}</td><td><span class="acct-badge {% if row.is_active %}open{% else %}closed{% endif %}">{% if row.is_active %}Active{% else %}Inactive{% endif %}</span></td><td class="num">{{ row.balance|money }}</td></tr>{% empty %}<tr><td colspan="8" class="acct-empty">No accounts found.</td></tr>{% endfor %}
+  </tbody></table></div></div>
+</section>
+{% endblock %}
