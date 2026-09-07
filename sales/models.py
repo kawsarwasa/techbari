@@ -72,6 +72,7 @@ class SalesOrder(models.Model):
     discount_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     shipping_charge = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     grand_total = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    return_credit_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     amount_paid = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     notes = models.TextField(blank=True)
     created_by = models.CharField(max_length=160, blank=True)
@@ -91,8 +92,13 @@ class SalesOrder(models.Model):
         return self.order_number
 
     @property
+    def payable_total(self):
+        value = (self.grand_total or Decimal("0.00")) - (self.return_credit_amount or Decimal("0.00"))
+        return max(value, Decimal("0.00"))
+
+    @property
     def outstanding_amount(self):
-        value = (self.grand_total or Decimal("0.00")) - (self.amount_paid or Decimal("0.00"))
+        value = self.payable_total - (self.amount_paid or Decimal("0.00"))
         return max(value, Decimal("0.00"))
 
     @property
