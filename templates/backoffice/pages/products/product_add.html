@@ -71,10 +71,13 @@
           <button class="btn small product-form-action" type="button" id="addSpecificationBtn">＋ Add Specification</button>
         </div>
         <div class="spec-list" id="specEditor">
-          {% for specification in specifications %}
-          <div><input name="spec_name" value="{{ specification.name }}" placeholder="Specification"><input name="spec_value" value="{{ specification.value }}" placeholder="Value"><button type="button" data-remove-spec>×</button></div>
-          {% endfor %}
+          {% if request.method == "POST" %}
+            {% for specification in specifications %}
+            <div><input name="spec_name" value="{{ specification.name }}" placeholder="Specification"><input name="spec_value" value="{{ specification.value }}" placeholder="Value"><button type="button" data-remove-spec>×</button></div>
+            {% endfor %}
+          {% endif %}
         </div>
+        <small>Specifications are optional. Add only the fields that apply to this product.</small>
       </section>
     </div>
 
