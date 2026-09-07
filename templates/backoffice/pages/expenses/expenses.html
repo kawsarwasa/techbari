@@ -1,7 +1,51 @@
 {% extends "backoffice/base.html" %}
 {% load static demo %}
 {% block title %}Expenses | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/expense-v210.css' %}?v=2.1.0">{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Expenses</h1><p>Track operating expenses and approvals.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:expense_add' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add Expense</a></div></div><div class="cards kpi-grid-4">{% include "backoffice/components/stat_card.html" with stat=statistics.0 %}{% include "backoffice/components/stat_card.html" with stat=statistics.1 %}{% include "backoffice/components/stat_card.html" with stat=statistics.2 %}{% include "backoffice/components/stat_card.html" with stat=statistics.3 %}</div><div class="filters-card"><div class="filter-row"><input class="control search" data-table-search="#ExpensesTable" placeholder="Search expenses..."><select class="control"><option>All Status</option><option>Active</option><option>Inactive</option></select><span class="filter-spacer"></span><button class="btn" data-export-table="#ExpensesTable"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/></svg> Export CSV</button></div></div>
-    <div class="card orders-table-card"><div class="table-scroll"><table class="data-table" id="ExpensesTable" data-crud-table="expenses"><thead><tr><th>#</th><th>Expense No</th><th>Date</th><th>Category</th><th>Description</th><th>Method</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead><tbody>{% for record in expenses %}{% include "backoffice/components/record_row.html" with entity="expenses" columns=table_columns.expenses %}{% endfor %}</tbody></table></div><div class="table-footer"><span data-table-count></span>{% include "backoffice/components/table_pagination.html" %}</div></div></section>
+<section class="page">
+  <div class="page-head">
+    <div><h1>Expense Management</h1><p>Track business expenses from draft and approval through payment and Accounting.</p></div>
+    <div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:expense_add' %}">+ Add Expense</a><a class="btn" href="{% url 'backoffice:expense_categories' %}">Categories</a></div>
+  </div>
+  {% if expense_notice %}<div class="expense-success">{{ expense_notice }}</div>{% endif %}{% if expense_error %}<div class="expense-error">{{ expense_error }}</div>{% endif %}
+  {% include "backoffice/pages/expenses/_subnav.html" %}
+
+  <div class="expense-kpis">
+    <div class="expense-kpi"><span>Paid This Month</span><strong>{{ expense_kpis.month_paid|money }}</strong><small>Paid expenses in the current month</small></div>
+    <div class="expense-kpi"><span>Paid This Year</span><strong>{{ expense_kpis.year_paid|money }}</strong><small>Year-to-date paid operating expense</small></div>
+    <div class="expense-kpi"><span>Approved / Unpaid</span><strong>{{ expense_kpis.approved_unpaid|money }}</strong><small>Approved expenses awaiting payment</small></div>
+    <div class="expense-kpi"><span>Pending Approval</span><strong>{{ expense_kpis.pending_count }}</strong><small>Expenses waiting for approval</small></div>
+  </div>
+
+  <div class="card card-pad">
+    <form method="get" class="expense-toolbar">
+      <label class="field search"><span>Search</span><input class="control" name="q" value="{{ expense_query }}" placeholder="Expense no, payee, description, receipt, reference"></label>
+      <label class="field"><span>Status</span><select class="control" name="status"><option value="">All statuses</option>{% for value,label in expense_status_choices %}<option value="{{ value }}"{% if expense_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+      <label class="field"><span>Category</span><select class="control" name="category"><option value="">All categories</option>{% for row in expense_categories %}<option value="{{ row.id }}"{% if expense_category == row.id|stringformat:'s' %} selected{% endif %}>{{ row.name }}</option>{% endfor %}</select></label>
+      <label class="field"><span>Method</span><select class="control" name="method"><option value="">All methods</option>{% for value,label in expense_method_choices %}<option value="{{ value }}"{% if expense_method == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+      <label class="field"><span>From</span><input class="control" type="date" name="from" value="{{ expense_date_from|date:'Y-m-d' }}"></label>
+      <label class="field"><span>To</span><input class="control" type="date" name="to" value="{{ expense_date_to|date:'Y-m-d' }}"></label>
+      <button class="btn" type="submit">Filter</button>
+      <a class="btn" href="{% url 'backoffice:expenses' %}">Reset</a>
+    </form>
+  </div>
+
+  <div class="card orders-table-card">
+    <div class="table-scroll"><table class="expense-table"><thead><tr><th>Date</th><th>Expense</th><th>Category</th><th>Payee / Description</th><th>Method</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead><tbody>
+      {% for row in expense_rows %}
+      <tr>
+        <td>{{ row.expense_date }}</td>
+        <td><a href="{% url 'backoffice:expense_detail' row.id %}"><strong>{{ row.expense_no }}</strong></a>{% if row.receipt_no %}<br><small>Receipt: {{ row.receipt_no }}</small>{% endif %}</td>
+        <td>{{ row.category.name }}<br><small>{{ row.category.account.code }} · {{ row.category.account.name }}</small></td>
+        <td>{% if row.payee %}<strong>{{ row.payee }}</strong><br>{% endif %}{{ row.description }}</td>
+        <td>{% if row.payment_method %}{{ row.get_payment_method_display }}{% elif row.preferred_payment_method %}<span title="Preferred method">{{ row.get_preferred_payment_method_display }}*</span>{% else %}—{% endif %}</td>
+        <td><span class="expense-badge {{ row.status }}">{{ row.get_status_display }}</span></td>
+        <td class="num"><strong>{{ row.amount|money }}</strong></td>
+        <td><a class="btn" href="{% url 'backoffice:expense_detail' row.id %}">View</a></td>
+      </tr>
+      {% empty %}<tr><td colspan="8" class="expense-empty">No expenses match the selected filters.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</section>
 {% endblock %}
