@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import catalog_views, customer_views, inventory_views, purchase_views, sales_views, views
+from . import catalog_views, customer_views, inventory_views, pos_views, purchase_views, sales_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
@@ -46,8 +46,16 @@ sales_patterns = [
     path("orders/<int:order_id>/delete/", sales_views.order_delete, name="order_delete"),
 ]
 
-urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + [
+pos_patterns = [
+    path("pos/", pos_views.pos, name="pos"),
+    path("pos/action/", pos_views.pos_action, name="pos_action"),
+    path("pos/held/<int:order_id>/", pos_views.pos_hold_detail, name="pos_hold_detail"),
+    path("pos/receipt/<int:order_id>/", pos_views.pos_receipt, name="pos_receipt"),
+]
+
+urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + [
     path(info["path"], views.page, {"page_name": name}, name=name)
     for name, info in PAGES.items()
+    if name != "pos"
 ]
 urlpatterns += [path("<slug:page>.html", views.legacy_page, name="legacy_page")]
