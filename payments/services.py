@@ -79,16 +79,25 @@ def sales_payment_totals(order):
 def _sync_sales_order(order):
     order = SalesOrder.objects.select_for_update().get(pk=order.pk)
     incoming, outgoing, net = sales_payment_totals(order)
-    if net <= ZERO:
+    target = order.payable_total
+    if target <= ZERO and (order.return_credit_amount or ZERO) > ZERO:
+        payment_status = SalesOrder.PaymentStatus.REFUNDED
+    elif net <= ZERO:
         payment_status = SalesOrder.PaymentStatus.REFUNDED if incoming > ZERO and outgoing > ZERO else SalesOrder.PaymentStatus.UNPAID
-    elif net >= order.grand_total:
+    elif net >= target:
         payment_status = SalesOrder.PaymentStatus.PAID
     else:
         payment_status = SalesOrder.PaymentStatus.PARTIAL
-    order.amount_paid = net
+    order.amount_paid = min(net, target) if target >= ZERO else ZERO
     order.payment_status = payment_status
     order.save(update_fields=["amount_paid", "payment_status", "updated_at"])
     return order
+
+
+@transaction.atomic
+def sync_sales_order_payment(order):
+    """Public compatibility hook for modules that change the payable Sales Order balance."""
+    return _sync_sales_order(order)
 
 
 @transaction.atomic
@@ -115,8 +124,9 @@ def capture_sales_payment(
     if status not in {PaymentTransaction.Status.PENDING, PaymentTransaction.Status.COMPLETED, PaymentTransaction.Status.FAILED}:
         raise PaymentError("Invalid initial payment status.")
     _, _, net_paid = sales_payment_totals(order)
-    if status == PaymentTransaction.Status.COMPLETED and amount > max(order.grand_total - net_paid, ZERO):
-        raise PaymentError(f"Payment cannot exceed outstanding amount ({max(order.grand_total - net_paid, ZERO)}).")
+    outstanding = max(order.payable_total - net_paid, ZERO)
+    if status == PaymentTransaction.Status.COMPLETED and amount > outstanding:
+        raise PaymentError(f"Payment cannot exceed outstanding amount ({outstanding}).")
     payment = PaymentTransaction(
         sales_order=order,
         kind=PaymentTransaction.Kind.SALE_PAYMENT,
@@ -151,8 +161,8 @@ def complete_pending_payment(*, payment, reference="", external_id="", actor="",
         raise PaymentError("Only pending sale payments can be completed.")
     order = SalesOrder.objects.select_for_update().get(pk=payment.sales_order_id)
     _, _, net_paid = sales_payment_totals(order)
-    if payment.amount > max(order.grand_total - net_paid, ZERO):
-        raise PaymentError("Completing this transaction would overpay the order.")
+    if payment.amount > max(order.payable_total - net_paid, ZERO):
+        raise PaymentError("Completing this transaction would overpay the payable order balance.")
     previous = payment.status
     if reference:
         payment.provider_reference = str(reference).strip()
