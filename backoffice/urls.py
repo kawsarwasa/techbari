@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import catalog_views, customer_views, inventory_views, payment_views, pos_views, purchase_views, sales_views, shipping_views, views
+from . import catalog_views, customer_views, inventory_views, payment_views, pos_views, purchase_views, return_views, sales_views, shipping_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
@@ -75,9 +75,20 @@ shipping_patterns = [
     path("shipping/<int:shipment_id>/tracking/", shipping_views.shipment_tracking, name="shipment_tracking"),
 ]
 
-urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + [
+return_patterns = [
+    path("returns/", return_views.returns, name="returns"),
+    path("returns/add/", return_views.return_add, name="return_add"),
+    path("returns/<int:return_id>/", return_views.return_detail, name="return_detail"),
+    path("returns/<int:return_id>/approve/", return_views.return_approve, name="return_approve"),
+    path("returns/<int:return_id>/receive/", return_views.return_receive, name="return_receive"),
+    path("returns/<int:return_id>/complete/", return_views.return_complete, name="return_complete"),
+    path("returns/<int:return_id>/reject/", return_views.return_reject, name="return_reject"),
+    path("returns/<int:return_id>/cancel/", return_views.return_cancel, name="return_cancel"),
+]
+
+urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + return_patterns + [
     path(info["path"], views.page, {"page_name": name}, name=name)
     for name, info in PAGES.items()
-    if name not in {"pos", "payments", "payment_add", "shipping", "shipment_add"}
+    if name not in {"pos", "payments", "payment_add", "shipping", "shipment_add", "returns", "return_add"}
 ]
 urlpatterns += [path("<slug:page>.html", views.legacy_page, name="legacy_page")]
