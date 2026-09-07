@@ -1,8 +1,12 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v1.0.9**
+**Current version: v1.0.10**
 
 TechBari started as a database-free Django template demo. The catalog phase is now backed by MySQL 8 while the remaining business modules continue to use the approved static/mock presentation until their database phases are implemented.
+
+## v1.0.10 — Catalog final QA
+
+The catalog phase received a final QA pass before Inventory development. New products no longer start with fake Bluetooth/headphone specifications, storefront rich descriptions now preserve safe Heading 2/3, lists, quotes, bold, italic and underline markup, and the product summary uses the dedicated short description. Storefront variant selection now follows database-backed variant price, regular price, stock, SKU and barcode values; cart/checkout use actual variants instead of hardcoded Black/White options; product listing category/brand/price/availability/search/sort controls are wired to catalog data. Catalog media cleanup hooks remove replaced/deleted uploaded files, including cascade product deletion. The catalog automated test suite now covers the principal CRUD, validation, storefront serialization/rendering and media cleanup paths.
 
 ## v1.0.9 — Self-contained product description editor
 
