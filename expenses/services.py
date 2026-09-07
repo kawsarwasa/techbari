@@ -2,8 +2,9 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from accounting.expense_posting import post_expense
 from accounting.models import JournalEntry
-from accounting.services import AccountingError, post_expense, reverse_journal
+from accounting.services import AccountingError, reverse_journal
 
 from .models import Expense, ExpenseEvent
 
