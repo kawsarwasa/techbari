@@ -262,7 +262,11 @@ def change_shipment_status(
             actor=actor,
         )
 
-    if new_status in {Shipment.Status.RETURNING, Shipment.Status.RETURNED} and shipment.cod_expected > ZERO:
+    returning_cod = (
+        new_status in {Shipment.Status.RETURNING, Shipment.Status.RETURNED}
+        and shipment.cod_expected > ZERO
+    )
+    if returning_cod:
         shipment.cod_status = Shipment.CODStatus.DISPUTED
     if new_status == Shipment.Status.RETURNED:
         shipment.returned_at = now
@@ -270,7 +274,8 @@ def change_shipment_status(
     shipment.status = new_status
     if location:
         shipment.last_location = str(location).strip()
-    shipment.cod_status = _shipment_cod_status(shipment) if new_status != Shipment.Status.RETURNING else shipment.cod_status
+    if not returning_cod:
+        shipment.cod_status = _shipment_cod_status(shipment)
     shipment.full_clean()
     shipment.save()
     _event(
