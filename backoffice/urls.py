@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import catalog_views, customer_views, inventory_views, payment_views, pos_views, purchase_views, sales_views, views
+from . import catalog_views, customer_views, inventory_views, payment_views, pos_views, purchase_views, sales_views, shipping_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
@@ -63,9 +63,21 @@ payment_patterns = [
     path("payments/<int:payment_id>/reconcile/", payment_views.payment_reconcile, name="payment_reconcile"),
 ]
 
-urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + [
+shipping_patterns = [
+    path("shipping/", shipping_views.shipping, name="shipping"),
+    path("shipping/add/", shipping_views.shipment_add, name="shipment_add"),
+    path("shipping/providers/", shipping_views.courier_providers, name="courier_providers"),
+    path("shipping/cod-settlements/", shipping_views.cod_settlements, name="cod_settlements"),
+    path("shipping/cod-settlements/add/", shipping_views.cod_settlement_add, name="cod_settlement_add"),
+    path("shipping/cod-settlements/<int:settlement_id>/", shipping_views.cod_settlement_detail, name="cod_settlement_detail"),
+    path("shipping/<int:shipment_id>/", shipping_views.shipment_detail, name="shipment_detail"),
+    path("shipping/<int:shipment_id>/status/", shipping_views.shipment_status, name="shipment_status"),
+    path("shipping/<int:shipment_id>/tracking/", shipping_views.shipment_tracking, name="shipment_tracking"),
+]
+
+urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + [
     path(info["path"], views.page, {"page_name": name}, name=name)
     for name, info in PAGES.items()
-    if name not in {"pos", "payments", "payment_add"}
+    if name not in {"pos", "payments", "payment_add", "shipping", "shipment_add"}
 ]
 urlpatterns += [path("<slug:page>.html", views.legacy_page, name="legacy_page")]
