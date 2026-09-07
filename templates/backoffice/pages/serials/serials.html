@@ -1,7 +1,57 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
+{% load static %}
 {% block title %}Serial / IMEI Management | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/serial-v120.css' %}?v=1.2.0">{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Serial / IMEI Management</h1><p>Track electronics units by serial number, IMEI and warranty status.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:serial_add' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add Serial</a></div></div><div class="cards kpi-grid-4">{% include "backoffice/components/stat_card.html" with stat=statistics.0 %}{% include "backoffice/components/stat_card.html" with stat=statistics.1 %}{% include "backoffice/components/stat_card.html" with stat=statistics.2 %}{% include "backoffice/components/stat_card.html" with stat=statistics.3 %}</div><div class="filters-card"><div class="filter-row"><input class="control search" data-table-search="#SerialsTable" placeholder="Search serials..."><select class="control"><option>All Status</option><option>Active</option><option>Inactive</option></select><span class="filter-spacer"></span><button class="btn" data-export-table="#SerialsTable"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/></svg> Export CSV</button></div></div>
-    <div class="card orders-table-card"><div class="table-scroll"><table class="data-table" id="SerialsTable" data-crud-table="serials"><thead><tr><th>#</th><th>Serial / IMEI</th><th>Product</th><th>Warehouse</th><th>Status</th><th>Warranty End</th><th>Actions</th></tr></thead><tbody>{% for record in serials %}{% include "backoffice/components/record_row.html" with entity="serials" columns=table_columns.serials %}{% endfor %}</tbody></table></div><div class="table-footer"><span data-table-count></span>{% include "backoffice/components/table_pagination.html" %}</div></div></section>
+<section class="page">
+  <div class="page-head">
+    <div><h1>Serial / IMEI Management</h1><p>Track each serialized electronics unit, its warehouse, lifecycle status and warranty.</p></div>
+    <div class="head-actions"><a class="btn" href="{% url 'backoffice:warranty' %}">Warranty / RMA</a><a class="btn btn-primary" href="{% url 'backoffice:serial_add' %}">＋ Add Serial / IMEI</a></div>
+  </div>
+  {% if serial_notice %}<div class="serial-notice">✓ {{ serial_notice }}</div>{% endif %}
+
+  <div class="cards kpi-grid-4">
+    {% for stat in serial_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}
+  </div>
+
+  <form method="get" class="filters-card">
+    <div class="serial-filters">
+      <input class="control search" type="search" name="q" value="{{ serial_query }}" placeholder="Search Serial, IMEI, SKU, product, customer...">
+      <select class="control" name="status">
+        <option value="">All Statuses</option>
+        {% for value,label in serial_status_choices %}<option value="{{ value }}"{% if serial_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <select class="control" name="warehouse">
+        <option value="">All Warehouses</option>
+        {% for warehouse in serial_warehouses %}<option value="{{ warehouse.id }}"{% if serial_warehouse == warehouse.id|stringformat:'s' %} selected{% endif %}>{{ warehouse.name }}</option>{% endfor %}
+      </select>
+      <button class="btn" type="submit">Filter</button>
+      <a class="btn" href="{% url 'backoffice:serials' %}">Reset</a>
+    </div>
+  </form>
+
+  <div class="card orders-table-card">
+    <div class="table-scroll">
+      <table class="data-table" id="SerialsTable">
+        <thead><tr><th>#</th><th>Serial / IMEI</th><th>Product / SKU</th><th>Warehouse</th><th>Status</th><th>Warranty</th><th>Sale Ref</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for unit in serial_units %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td><div class="serial-identifiers"><strong>{{ unit.display_identifier }}</strong>{% if unit.imei1 and unit.display_identifier != unit.imei1 %}<span>IMEI 1: {{ unit.imei1 }}</span>{% endif %}{% if unit.imei2 %}<span>IMEI 2: {{ unit.imei2 }}</span>{% endif %}</div></td>
+            <td><strong>{{ unit.variant.product.name }}</strong><br><span class="muted">{{ unit.variant.name }} · {{ unit.variant.sku }}</span></td>
+            <td>{{ unit.warehouse.name }}</td>
+            <td><span class="serial-status {{ unit.status }}">{{ unit.get_status_display }}</span></td>
+            <td>{% if unit.warranty_end_date %}<span class="{% if unit.warranty_is_active %}serial-warranty-active{% else %}serial-warranty-expired{% endif %}">{{ unit.warranty_end_date }}</span>{% else %}—{% endif %}</td>
+            <td>{{ unit.sales_reference|default:"—" }}</td>
+            <td><div class="inventory-actions"><a class="btn small" href="{% url 'backoffice:serial_add' %}?id={{ unit.id }}">View / Edit</a><a class="btn small" href="{% url 'backoffice:warranty_add' %}?unit={{ unit.id }}">Warranty</a></div></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8"><div class="serial-empty">No serialized units found. Add a Serial Number or IMEI to start unit-level tracking.</div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 {% endblock %}
