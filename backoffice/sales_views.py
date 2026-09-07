@@ -8,7 +8,6 @@ from django.urls import reverse
 
 from catalog.models import ProductVariant
 from customers.models import Customer
-from inventory.models import Warehouse
 from sales.forms import OrderPaymentUpdateForm, SalesOrderForm
 from sales.models import SalesOrder
 from sales.services import (
@@ -91,10 +90,10 @@ def orders(request):
         order_payment_choices=SalesOrder.PaymentStatus.choices,
         order_customers=Customer.objects.filter(is_active=True).order_by("name"),
         order_stats=[
-            {"label": "Orders", "value": str(len(all_orders)), "trend": "Live", "trend_class": "up", "icon": "backoffice/icons/orders.svg", "color": "blue"},
-            {"label": "Active", "value": str(len(active_orders)), "trend": _money(pending_value), "trend_class": "up", "icon": "backoffice/icons/inventory.svg", "color": "orange"},
-            {"label": "Completed", "value": str(len(completed_orders)), "trend": _money(completed_value), "trend_class": "up", "icon": "backoffice/icons/orders.svg", "color": "green"},
-            {"label": "Outstanding", "value": _money(due), "trend": "Operational", "trend_class": "up", "icon": "backoffice/icons/accounts.svg", "color": "red"},
+            {"label": "Orders", "value": str(len(all_orders)), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_13.html", "color": "blue"},
+            {"label": "Active", "value": str(len(active_orders)), "trend": _money(pending_value), "trend_class": "up", "icon": "backoffice/components/icons/icon_14.html", "color": "orange"},
+            {"label": "Completed", "value": str(len(completed_orders)), "trend": _money(completed_value), "trend_class": "up", "icon": "backoffice/components/icons/icon_12.html", "color": "green"},
+            {"label": "Outstanding", "value": _money(due), "trend": "Operational", "trend_class": "up", "icon": "backoffice/components/icons/icon_1.html", "color": "red"},
         ],
     )
     return render(request, "backoffice/pages/orders/orders.html", context)
