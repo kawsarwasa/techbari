@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import accounting_views, catalog_views, customer_views, inventory_views, payment_views, pos_views, purchase_views, return_views, sales_views, shipping_views, views
+from . import accounting_views, catalog_views, customer_views, expense_views, inventory_views, payment_views, pos_views, purchase_views, return_views, sales_views, shipping_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
@@ -100,9 +100,24 @@ accounting_patterns = [
     path("accounts/periods/<int:period_id>/toggle/", accounting_views.period_toggle, name="accounting_period_toggle"),
 ]
 
-urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + return_patterns + accounting_patterns + [
+expense_patterns = [
+    path("expenses/", expense_views.expenses, name="expenses"),
+    path("expenses/add/", expense_views.expense_add, name="expense_add"),
+    path("expenses/categories/", expense_views.expense_categories, name="expense_categories"),
+    path("expenses/categories/<int:category_id>/toggle/", expense_views.expense_category_toggle, name="expense_category_toggle"),
+    path("expenses/<int:expense_id>/", expense_views.expense_detail, name="expense_detail"),
+    path("expenses/<int:expense_id>/edit/", expense_views.expense_edit, name="expense_edit"),
+    path("expenses/<int:expense_id>/submit/", expense_views.expense_submit, name="expense_submit"),
+    path("expenses/<int:expense_id>/approve/", expense_views.expense_approve, name="expense_approve"),
+    path("expenses/<int:expense_id>/reject/", expense_views.expense_reject, name="expense_reject"),
+    path("expenses/<int:expense_id>/cancel/", expense_views.expense_cancel, name="expense_cancel"),
+    path("expenses/<int:expense_id>/pay/", expense_views.expense_pay, name="expense_pay"),
+    path("expenses/<int:expense_id>/void/", expense_views.expense_void, name="expense_void"),
+]
+
+urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + return_patterns + accounting_patterns + expense_patterns + [
     path(info["path"], views.page, {"page_name": name}, name=name)
     for name, info in PAGES.items()
-    if name not in {"accounts", "pos", "payments", "payment_add", "shipping", "shipment_add", "returns", "return_add"}
+    if name not in {"accounts", "expenses", "expense_add", "pos", "payments", "payment_add", "shipping", "shipment_add", "returns", "return_add"}
 ]
 urlpatterns += [path("<slug:page>.html", views.legacy_page, name="legacy_page")]
