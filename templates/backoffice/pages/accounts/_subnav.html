@@ -1,0 +1,9 @@
+<div class="accounting-subnav">
+  <a class="{% if accounting_tab == 'overview' %}active{% endif %}" href="{% url 'backoffice:accounts' %}">Overview</a>
+  <a class="{% if accounting_tab == 'chart' %}active{% endif %}" href="{% url 'backoffice:chart_accounts' %}">Chart of Accounts</a>
+  <a class="{% if accounting_tab == 'journals' %}active{% endif %}" href="{% url 'backoffice:journals' %}">Journal Entries</a>
+  <a class="{% if accounting_tab == 'ledger' %}active{% endif %}" href="{% url 'backoffice:general_ledger' %}">General Ledger</a>
+  <a class="{% if accounting_tab == 'trial' %}active{% endif %}" href="{% url 'backoffice:trial_balance' %}">Trial Balance</a>
+  <a class="{% if accounting_tab == 'periods' %}active{% endif %}" href="{% url 'backoffice:accounting_periods' %}">Periods</a>
+  <a href="{% url 'backoffice:payments' %}">Payment Ledger</a>
+</div>
