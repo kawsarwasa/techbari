@@ -1,6 +1,92 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
-{% block title %}Serial Form | TechBari Admin{% endblock %}
+{% load static %}
+{% block title %}{% if is_edit %}Serialized Unit{% else %}Add Serial / IMEI{% endif %} | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/serial-v120.css' %}?v=1.2.0">{% endblock %}
 {% block content %}
-<section class="page">{% include "backoffice/includes/breadcrumbs/serial_add.html" %}<div class="page-head"><div><h1>Serial Form</h1><p>Register or update a serialized electronics unit.</p></div>{% include "backoffice/components/form_actions.html" with cancel_route="backoffice:serials" %}</div><form id="crudForm" class="form-layout" data-crud-form="serials" data-list-url="{% url 'backoffice:serials' %}"><div class="card form-card"><div class="section-head"><h3><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg> Basic Information</h3></div><div class="form-grid"><label class="field"><span>Serial / IMEI</span><input class="control" type="text" name="serial" placeholder="Enter serial / imei" required></label><label class="field"><span>Product</span><input class="control" type="text" name="product" placeholder="Enter product" required></label><label class="field"><span>Warehouse</span><select class="control" name="warehouse" required>{% for option in form_options.warehouse %}<option{% if option.has_value %} value="{{ option.value }}"{% endif %}{% if option.selected %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label><label class="field"><span>Warranty End</span><input class="control" type="date" name="warrantyEnd" required></label></div></div><aside class="card form-side"><div class="section-head"><h3><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg> Publishing</h3></div><div class="info-body"><label class="field"><span>Status</span><select class="control" name="status">{% for option in form_options.status %}<option{% if option.has_value %} value="{{ option.value }}"{% endif %}{% if option.selected %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label><div class="soft-note">This is a static CRUD demo. Data is stored in your browser using localStorage.</div></div></aside></form></section>
+<section class="page">
+  {% include "backoffice/includes/breadcrumbs/serial_add.html" %}
+  <div class="page-head">
+    <div><h1>{% if is_edit %}Serialized Unit Details{% else %}Add Serial / IMEI{% endif %}</h1><p>Register a physical unit against a real SKU and warehouse inventory balance.</p></div>
+    <div class="head-actions"><a class="btn" href="{% url 'backoffice:serials' %}">Back to Serials</a>{% if is_edit %}<a class="btn" href="{% url 'backoffice:warranty_add' %}?unit={{ unit_obj.id }}">Open Warranty Claim</a>{% endif %}</div>
+  </div>
+  {% if serial_notice %}<div class="serial-notice">✓ {{ serial_notice }}</div>{% endif %}
+  {% if form.non_field_errors %}<div class="serial-error">{{ form.non_field_errors }}</div>{% endif %}
+
+  <form method="post" class="form-layout">
+    {% csrf_token %}{% if is_edit %}<input type="hidden" name="unit_id" value="{{ unit_obj.id }}">{% endif %}
+    <div class="card form-card">
+      <div class="section-head"><h3>Unit Identity & Inventory</h3></div>
+      <div class="serial-form-grid">
+        <label class="field"><span>Product Variant / SKU</span>{{ form.variant }}{{ form.variant.errors }}</label>
+        <label class="field"><span>Warehouse</span>{{ form.warehouse }}{{ form.warehouse.errors }}<small class="serial-help">Changing warehouse automatically posts the matching inventory transfer for stock-bearing units.</small></label>
+        <label class="field"><span>Serial Number</span>{{ form.serial_number }}{{ form.serial_number.errors }}</label>
+        <label class="field"><span>IMEI 1</span>{{ form.imei1 }}{{ form.imei1.errors }}</label>
+        <label class="field"><span>IMEI 2</span>{{ form.imei2 }}{{ form.imei2.errors }}</label>
+        <label class="field"><span>Unit Status</span>{{ form.status }}{{ form.status.errors }}<small class="serial-help">Reserved/Sold/Returned/Damaged changes are synchronized with the Inventory Engine.</small></label>
+      </div>
+
+      <div class="section-head serial-section"><h3>Purchase Source</h3></div>
+      <div class="serial-form-grid">
+        <label class="field"><span>Supplier Reference</span>{{ form.supplier_reference }}{{ form.supplier_reference.errors }}</label>
+        <label class="field"><span>Purchase Reference</span>{{ form.purchase_reference }}{{ form.purchase_reference.errors }}</label>
+        <label class="field"><span>Purchase Date</span>{{ form.purchase_date }}{{ form.purchase_date.errors }}</label>
+        <label class="field"><span>Received Date</span>{{ form.received_date }}{{ form.received_date.errors }}</label>
+        <label class="field"><span>Purchase Cost</span>{{ form.purchase_cost }}{{ form.purchase_cost.errors }}</label>
+      </div>
+
+      <div class="section-head serial-section"><h3>Sale Link</h3></div>
+      <div class="serial-form-grid">
+        <label class="field"><span>Sales / Order Reference</span>{{ form.sales_reference }}{{ form.sales_reference.errors }}</label>
+        <label class="field"><span>Customer Reference</span>{{ form.customer_reference }}{{ form.customer_reference.errors }}</label>
+        <label class="field"><span>Sold Date</span>{{ form.sold_at }}{{ form.sold_at.errors }}</label>
+      </div>
+
+      <div class="section-head serial-section"><h3>Warranty</h3></div>
+      <div class="serial-form-grid">
+        <label class="field"><span>Warranty Type</span>{{ form.warranty_type }}{{ form.warranty_type.errors }}</label>
+        <label class="field"><span>Warranty Start</span>{{ form.warranty_start_date }}{{ form.warranty_start_date.errors }}</label>
+        <label class="field"><span>Warranty End</span>{{ form.warranty_end_date }}{{ form.warranty_end_date.errors }}</label>
+        <label class="field"><span>Supplier Warranty Reference</span>{{ form.supplier_warranty_reference }}{{ form.supplier_warranty_reference.errors }}</label>
+        <label class="field wide"><span>Notes</span>{{ form.notes }}{{ form.notes.errors }}</label>
+      </div>
+    </div>
+
+    <aside class="card form-side">
+      <div class="section-head"><h3>Tracking Status</h3></div>
+      <div class="info-body">
+        {% if is_edit %}
+          <div class="serial-unit-meta">
+            <div><small>Identifier</small><strong>{{ unit_obj.display_identifier }}</strong></div>
+            <div><small>SKU</small><strong>{{ unit_obj.variant.sku }}</strong></div>
+            <div><small>Warehouse</small><strong>{{ unit_obj.warehouse.name }}</strong></div>
+            <div><small>Status</small><strong>{{ unit_obj.get_status_display }}</strong></div>
+          </div>
+          <div class="soft-note" style="margin-top:12px">Inventory headroom for this SKU/warehouse after registered serialized units: <strong>{% if inventory_gap is None %}No balance{% else %}{{ inventory_gap }} unit{{ inventory_gap|pluralize }}{% endif %}</strong>.</div>
+        {% else %}
+          <div class="soft-note">Registration does not create stock. Add stock through Inventory/Purchase first, then register Serial/IMEI units against that stock.</div>
+        {% endif %}
+        <div class="serial-form-actions"><a class="btn" href="{% url 'backoffice:serials' %}">Cancel</a><button class="btn btn-primary" type="submit">{% if is_edit %}Save Changes{% else %}Register Unit{% endif %}</button></div>
+      </div>
+    </aside>
+  </form>
+
+  {% if is_edit %}
+  <div class="dashboard-grid serial-section">
+    <div class="card card-pad">
+      <div class="section-head"><h3>Unit History</h3></div>
+      <div class="serial-history">
+        {% for event in unit_events %}
+          <div class="serial-history-item"><strong>{{ event.get_event_type_display }}</strong><span>{{ event.created_at|date:"M d, Y H:i" }}{% if event.reference_no %} · {{ event.reference_no }}{% endif %}</span>{% if event.from_warehouse or event.to_warehouse %}<span>{% if event.from_warehouse %}{{ event.from_warehouse.name }}{% endif %}{% if event.to_warehouse and event.from_warehouse_id != event.to_warehouse_id %} → {{ event.to_warehouse.name }}{% endif %}</span>{% endif %}{% if event.note %}<span>{{ event.note }}</span>{% endif %}</div>
+        {% empty %}<div class="soft-note">No history recorded yet.</div>{% endfor %}
+      </div>
+    </div>
+    <div class="card card-pad">
+      <div class="section-head"><h3>Warranty Claims</h3></div>
+      <div class="serial-history">
+        {% for claim in unit_claims %}<div class="serial-history-item"><strong><a href="{% url 'backoffice:warranty_add' %}?id={{ claim.id }}">{{ claim.claim_no }}</a></strong><span>{{ claim.claim_date }} · {{ claim.get_status_display }}</span><span>{{ claim.issue|truncatechars:100 }}</span></div>{% empty %}<div class="soft-note">No warranty claims for this unit.</div>{% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</section>
 {% endblock %}
