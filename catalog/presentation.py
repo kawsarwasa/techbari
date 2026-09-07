@@ -2,11 +2,11 @@ from decimal import Decimal
 
 from django.db.models import Count, Prefetch, Q
 from django.templatetags.static import static
-from django.utils.html import strip_tags
+from django.utils.html import linebreaks, strip_tags
 from django.utils.safestring import mark_safe
 
 from .models import Brand, Category, Product, ProductImage, ProductSpecification, ProductVariant
-from .richtext import inline_rich_html
+from .richtext import sanitize_rich_html
 
 
 def catalog_queryset(include_inactive=False):
@@ -65,15 +65,17 @@ def _description_data(product):
     raw = product.description or ""
     has_markup = "<" in raw and ">" in raw
     if has_markup:
-        rich = inline_rich_html(raw)
-        plain = " ".join(strip_tags(rich).split())
-        paragraphs = [mark_safe(rich)] if rich else []
+        sanitized = sanitize_rich_html(raw)
+        rich_html = mark_safe(sanitized)
+        plain = " ".join(strip_tags(sanitized).split())
+        paragraphs = [rich_html] if sanitized else []
     else:
         plain = raw
+        rich_html = mark_safe(linebreaks(raw, autoescape=True)) if raw else ""
         paragraphs = product.description_paragraphs or ([raw] if raw else [])
     short_source = product.short_description or plain[:300]
     short = " ".join(strip_tags(short_source).split())
-    return plain, short, paragraphs
+    return plain, short, paragraphs, rich_html
 
 
 def serialize_product(product):
@@ -86,6 +88,7 @@ def serialize_product(product):
     gallery_images = [i for i in images if i.role in {ProductImage.Role.GALLERY, ProductImage.Role.PRIMARY}]
     if not gallery_images and primary_image:
         gallery_images = [primary_image]
+
     regular_price = (
         default_variant.regular_price_override
         if default_variant and default_variant.regular_price_override is not None
@@ -100,7 +103,37 @@ def serialize_product(product):
     image_url = _image_url(primary_image) or static("store/images/baseus-e16.webp")
     detail_image_url = _image_url(detail_image) or image_url
     gallery_urls = [_image_url(i) for i in gallery_images if _image_url(i)] or [image_url]
-    description, short_description, description_paragraphs = _description_data(product)
+    description, short_description, description_paragraphs, description_html = _description_data(product)
+
+    serialized_variants = []
+    for variant in variants:
+        if not variant.is_active:
+            continue
+        variant_regular = (
+            variant.regular_price_override
+            if variant.regular_price_override is not None
+            else product.regular_price
+        )
+        variant_price = (
+            variant.price_override
+            if variant.price_override is not None
+            else product.current_price
+        )
+        serialized_variants.append(
+            {
+                "id": variant.pk,
+                "name": variant.name,
+                "symbol": variant.symbol,
+                "sku": variant.sku,
+                "barcode": variant.barcode or "",
+                "price": _number(variant_price),
+                "regular_price": _number(variant_regular),
+                "stock": variant.stock_quantity,
+                "is_default": variant.is_default,
+                "available": variant.stock_quantity > 0,
+            }
+        )
+
     return {
         "pk": product.pk,
         "id": product.public_id,
@@ -112,6 +145,7 @@ def serialize_product(product):
         "regular_price": _number(regular_price),
         "stock": stock,
         "variant": default_variant.name if default_variant else "Default",
+        "default_variant_id": default_variant.pk if default_variant else None,
         "sku": default_variant.sku if default_variant else "",
         "barcode": default_variant.barcode if default_variant and default_variant.barcode else "",
         "badge": product.badge,
@@ -126,31 +160,16 @@ def serialize_product(product):
         "description": description,
         "short_description": short_description,
         "description_paragraphs": description_paragraphs,
+        "description_html": description_html,
         "features": product.features or [],
         "specifications": [{"name": s.name, "value": s.value} for s in specs],
-        "variants": [
-            {
-                "id": v.pk,
-                "name": v.name,
-                "symbol": v.symbol,
-                "sku": v.sku,
-                "barcode": v.barcode or "",
-                "price": _number(v.price_override if v.price_override is not None else product.current_price),
-                "regular_price": _number(
-                    v.regular_price_override if v.regular_price_override is not None else product.regular_price
-                ),
-                "stock": v.stock_quantity,
-                "is_default": v.is_default,
-            }
-            for v in variants
-            if v.is_active
-        ],
+        "variants": serialized_variants,
         "box_contents": product.box_contents or [],
         "review_score": str(product.review_score.normalize()) if product.review_score else "0",
         "review_count": str(product.review_count),
         "rating": f"{product.review_score} ({product.review_count})",
         "detail_badge": product.detail_badge or product.badge,
-        "detail_regular_price": _number(product.regular_price),
+        "detail_regular_price": _number(regular_price),
         "reviews": product.reviews or [],
         "questions": product.questions or [],
         "status": product.get_status_display(),
