@@ -1,0 +1,17 @@
+{% extends "backoffice/base.html" %}
+{% load demo %}
+{% block title %}{{ settlement.settlement_no }} | TechBari Admin{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>{{ settlement.settlement_no }}</h1><p>{{ settlement.courier.name }} • {{ settlement.settlement_date }}</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:cod_settlements' %}">COD Settlements</a><a class="btn" href="{% url 'backoffice:shipping' %}">Shipping</a></div></div>
+  {% if shipping_notice %}<div class="soft-note" style="margin-bottom:14px">{{ shipping_notice }}</div>{% endif %}
+  <div class="detail-cards">
+    <div class="card info-card"><div class="section-head"><h3>Settlement</h3></div><div class="info-body"><div class="kv"><span>Courier</span><strong>{{ settlement.courier.name }}</strong></div><div class="kv"><span>Method</span><strong>{{ settlement.get_payment_method_display }}</strong></div><div class="kv"><span>Reference</span><strong>{{ settlement.reference|default:"—" }}</strong></div><div class="kv"><span>Actor</span><strong>{{ settlement.actor|default:"System" }}</strong></div></div></div>
+    <div class="card info-card"><div class="section-head"><h3>Amounts</h3></div><div class="info-body"><div class="kv"><span>Gross COD</span><strong>{{ settlement.gross_amount|money }}</strong></div><div class="kv"><span>Courier Deduction</span><strong>{{ settlement.courier_deduction|money }}</strong></div><div class="kv"><span>Net Received</span><strong>{{ settlement.net_received|money }}</strong></div></div></div>
+  </div>
+  <div class="card orders-table-card" style="margin-top:16px"><div class="section-head"><h3>Shipment / Payment Reconciliation</h3></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Shipment</th><th>Order</th><th>Amount</th><th>Payment Transaction</th><th>Payment Status</th><th>Reconciliation</th></tr></thead><tbody>
+    {% for item in settlement.items.all %}<tr><td><a href="{% url 'backoffice:shipment_detail' item.shipment.id %}">{{ item.shipment.shipment_no }}</a></td><td><a href="{% url 'backoffice:order_detail_id' item.shipment.order.id %}">{{ item.shipment.order.order_number }}</a></td><td>{{ item.amount|money }}</td><td><a href="{% url 'backoffice:payment_detail' item.payment_transaction.id %}">{{ item.payment_transaction.transaction_no }}</a></td><td>{{ item.payment_transaction.get_status_display }}</td><td>{{ item.payment_transaction.get_reconciliation_status_display }}</td></tr>{% endfor %}
+  </tbody></table></div></div>
+  {% if settlement.note %}<div class="card info-card" style="margin-top:16px"><div class="section-head"><h3>Notes</h3></div><div class="info-body">{{ settlement.note|linebreaksbr }}</div></div>{% endif %}
+</section>
+{% endblock %}
