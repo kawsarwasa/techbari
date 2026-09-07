@@ -1,0 +1,47 @@
+{% extends "storefront/base.html" %}
+{% block title %}Order {{ order.order_number }} - TechBari{% endblock %}
+{% block body_attributes %} data-checkout-complete="v1.6.0"{% endblock %}
+{% block content %}
+<main class="page"><div class="container" style="max-width:920px">
+<div id="checkoutSuccessV160" class="form-card" style="text-align:center;margin-bottom:24px">
+<div style="font-size:52px;line-height:1">✓</div>
+<h1 class="page-title" style="margin-bottom:8px">Order Placed Successfully</h1>
+<p class="page-subtitle">Thank you, {{ order.shipping_name }}. Your order has been received and stock is reserved.</p>
+<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+<span class="badge">Order: {{ order.order_number }}</span>
+<span class="badge">Status: {{ order.get_status_display }}</span>
+<span class="badge">Payment: {{ order.get_payment_status_display }}</span>
+</div>
+</div>
+
+<div class="checkout-layout" style="grid-template-columns:1.4fr .8fr">
+<section class="form-card">
+<h2>Order Items</h2>
+{% for item in order.items.all %}
+<div class="summary-line" style="align-items:flex-start">
+<div><strong>{{ item.product_snapshot }}</strong><br><span class="muted">{{ item.variant_snapshot }} · SKU {{ item.sku_snapshot }} · Qty {{ item.quantity }}</span></div>
+<strong>৳ {{ item.line_total|floatformat:2 }}</strong>
+</div>
+{% endfor %}
+</section>
+<aside class="summary-box checkout-summary">
+<h2>Order Summary</h2>
+<div class="summary-line"><span>Subtotal</span><strong>৳ {{ order.subtotal|floatformat:2 }}</strong></div>
+{% if order.discount_amount %}<div class="summary-line"><span>Discount</span><strong class="text-green">- ৳ {{ order.discount_amount|floatformat:2 }}</strong></div>{% endif %}
+<div class="summary-line"><span>Shipping</span><strong>৳ {{ order.shipping_charge|floatformat:2 }}</strong></div>
+<div class="summary-line total"><span>Grand Total</span><strong>৳ {{ order.grand_total|floatformat:2 }}</strong></div>
+<div class="summary-line"><span>Amount Paid</span><strong>৳ {{ order.amount_paid|floatformat:2 }}</strong></div>
+<div class="summary-line"><span>Due</span><strong>৳ {{ order.outstanding_amount|floatformat:2 }}</strong></div>
+</aside>
+</div>
+
+<div class="form-card" style="margin-top:24px">
+<h2>Delivery Information</h2>
+<p><strong>{{ order.shipping_name }}</strong> · {{ order.shipping_phone }}{% if order.shipping_email %} · {{ order.shipping_email }}{% endif %}</p>
+<p class="muted">{{ order.shipping_summary }}</p>
+<p class="muted">Your order is currently Pending. TechBari can confirm/process it from the dashboard; when it is marked Completed / Sold, the reserved inventory will be deducted by the Sales Engine.</p>
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px"><a class="btn btn-primary" href="{% url 'storefront:products' %}">Continue Shopping</a><a class="btn" href="{% url 'storefront:home' %}">Back to Home</a></div>
+</div>
+</div></main>
+{% endblock %}
+{% block extra_js %}<script src="{% load static %}{% static 'store/js/checkout-v160.js' %}?v=1.6.0"></script>{% endblock %}
