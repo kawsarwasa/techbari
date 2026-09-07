@@ -231,7 +231,7 @@ class CatalogModelTests(TestCase):
         self.assertIn("<ol><li><em>One</em></li></ol>", sanitized)
         self.assertNotIn("onclick", sanitized)
         self.assertNotIn("<script", sanitized)
-        self.assertIn("alert(1)", sanitized)
+        self.assertNotIn("alert(1)", sanitized)
 
     def test_storefront_serializer_includes_default_barcode_variants_and_rich_html(self):
         product = self.make_product(
@@ -444,6 +444,7 @@ class CatalogViewTests(TestCase):
         self.assertContains(response, "USB-C")
         self.assertNotContains(response, "onclick=\"bad()\"")
         self.assertNotContains(response, "<script>bad()</script>")
+        self.assertNotContains(response, "bad()")
 
     def test_deleted_product_removes_uploaded_media_file_after_commit(self):
         product = self.create_product()
