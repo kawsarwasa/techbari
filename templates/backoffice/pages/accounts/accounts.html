@@ -1,6 +1,39 @@
 {% extends "backoffice/base.html" %}
 {% load static demo %}
-{% block title %}Accounts & Finance | TechBari Admin{% endblock %}
+{% block title %}Accounting | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Accounts & Finance</h1><p>Manage cash, bank, expenses, receivables and payables.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:expense_add' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add Expense</a><a class="btn" href="{% url 'backoffice:payments' %}" ><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 12h.01M17 12h.01"/><circle cx="12" cy="12" r="3"/></svg> Record Payment</a></div></div><div class="cards kpi-grid-5">{% include "backoffice/components/stat_card.html" with stat=statistics.0 %}{% include "backoffice/components/stat_card.html" with stat=statistics.1 %}{% include "backoffice/components/stat_card.html" with stat=statistics.2 %}{% include "backoffice/components/stat_card.html" with stat=statistics.3 %}{% include "backoffice/components/stat_card.html" with stat=statistics.4 %}</div><div class="subnav"><a class="active" href="{% url 'backoffice:accounts' %}">Overview</a><a href="{% url 'backoffice:expenses' %}">Expenses</a><a href="{% url 'backoffice:payments' %}">Payments</a><a href="{% url 'backoffice:reports' %}">Financial Reports</a></div><div class="dashboard-grid"><div class="card card-pad"><div class="card-title">Revenue vs Expenses</div><div class="chart-bars">{% for month in account_chart %}<div style="--v:{{ month.revenue }}%;--e:{{ month.expenses }}%"><span></span><i></i><small>{{ month.month }}</small></div>{% endfor %}</div></div><div class="card card-pad"><div class="card-title">Profit Summary</div><div class="metric-big">{{ account_summary.net_profit|money }}</div><div class="kv"><span>Total Revenue</span><strong>{{ account_summary.revenue|money }}</strong></div><div class="kv"><span>Total Expenses</span><strong>{{ account_summary.expenses|money }}</strong></div><div class="kv"><span>Gross Profit</span><strong>{{ account_summary.gross_profit|money }}</strong></div><div class="summary-line total"><span>Net Profit</span><strong>{{ account_summary.net_profit|money }}</strong></div></div></div></section>
+<section class="page">
+  <div class="page-head"><div><h1>Accounting & General Ledger</h1><p>Double-entry accounting generated from Sales, Purchases, Payments, Returns and Courier settlement activity.</p></div><div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:journal_add' %}">+ Manual Journal</a><a class="btn" href="{% url 'backoffice:payments' %}">Payment Ledger</a></div></div>
+  {% if accounting_notice %}<div class="acct-success">{{ accounting_notice }}</div>{% endif %}{% if accounting_error %}<div class="acct-error">{{ accounting_error }}</div>{% endif %}
+  {% include "backoffice/pages/accounts/_subnav.html" %}
+  <div class="acct-kpis">
+    <div class="acct-kpi"><span>Cash & Equivalents</span><strong>{{ accounting_summary.cash_equivalents|money }}</strong><small>Cash, bank, card, bKash, Nagad & clearing</small></div>
+    <div class="acct-kpi"><span>Accounts Receivable</span><strong>{{ accounting_summary.receivable|money }}</strong><small>Customer balances</small></div>
+    <div class="acct-kpi"><span>Inventory Asset</span><strong>{{ accounting_summary.inventory|money }}</strong><small>Recognized cost value</small></div>
+    <div class="acct-kpi"><span>Accounts Payable</span><strong>{{ accounting_summary.payable|money }}</strong><small>Supplier balances</small></div>
+    <div class="acct-kpi"><span>Net Profit</span><strong>{{ accounting_summary.net_profit|money }}</strong><small>Net revenue less recognized expenses</small></div>
+  </div>
+  <div class="acct-grid">
+    <div class="card card-pad">
+      <div class="page-head" style="margin-bottom:8px"><div><h3>Recent Journal Entries</h3><p>{{ journal_count }} total posted/draft/reversed journals</p></div><a class="btn" href="{% url 'backoffice:journals' %}">View All</a></div>
+      <div class="table-scroll"><table class="acct-table"><thead><tr><th>Date</th><th>Entry</th><th>Source</th><th>Reference</th><th>Status</th><th class="num">Debit</th></tr></thead><tbody>
+        {% for row in recent_journals %}<tr><td>{{ row.entry_date }}</td><td><a href="{% url 'backoffice:journal_detail' row.id %}">{{ row.entry_no }}</a></td><td>{{ row.get_source_type_display }}</td><td>{{ row.source_reference|default:"—" }}</td><td><span class="acct-badge {{ row.status }}">{{ row.get_status_display }}</span></td><td class="num">{{ row.total_debit|money }}</td></tr>{% empty %}<tr><td colspan="6" class="acct-empty">No accounting journals yet.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    <div class="card card-pad">
+      <h3>Profit & Ledger Health</h3>
+      <div class="acct-summary-list">
+        <div class="acct-summary-row"><span>Gross Revenue</span><strong>{{ accounting_summary.revenue|money }}</strong></div>
+        <div class="acct-summary-row"><span>Sales Returns</span><strong>{{ accounting_summary.sales_returns|money }}</strong></div>
+        <div class="acct-summary-row"><span>Net Revenue</span><strong>{{ accounting_summary.net_revenue|money }}</strong></div>
+        <div class="acct-summary-row"><span>COGS</span><strong>{{ accounting_summary.cogs|money }}</strong></div>
+        <div class="acct-summary-row"><span>Courier / Collection Fees</span><strong>{{ accounting_summary.courier_fees|money }}</strong></div>
+        <div class="acct-summary-row"><span>Total Recognized Expenses</span><strong>{{ accounting_summary.expenses|money }}</strong></div>
+        <div class="acct-summary-row"><span>Trial Balance</span><strong class="{% if trial_balanced %}acct-balance-ok{% else %}acct-balance-bad{% endif %}">{% if trial_balanced %}Balanced{% else %}Needs Review{% endif %}</strong></div>
+      </div>
+      <div class="acct-note">Expense management is scheduled for v2.1.x. v2.0.0 records the accounting foundation and currently recognized costs without replacing that roadmap phase.</div>
+    </div>
+  </div>
+</section>
 {% endblock %}
