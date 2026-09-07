@@ -1,4 +1,5 @@
 {% extends "storefront/base.html" %}
+{% load static %}
 {% block title %}Order {{ order.order_number }} - TechBari{% endblock %}
 {% block body_attributes %} data-checkout-complete="v1.6.0"{% endblock %}
 {% block content %}
@@ -44,4 +45,4 @@
 </div>
 </div></main>
 {% endblock %}
-{% block extra_js %}<script src="{% load static %}{% static 'store/js/checkout-v160.js' %}?v=1.6.0"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'store/js/checkout-v160.js' %}?v=1.6.0"></script>{% endblock %}
