@@ -40,6 +40,19 @@ class SalesBase(TestCase):
             is_default=True,
             is_active=True,
         )
+        # Keep the fixture explicit: Sales tests must exercise the selected warehouse,
+        # regardless of legacy stock-cache/bootstrap behavior used by Catalog tests.
+        balance, _ = InventoryBalance.objects.get_or_create(
+            warehouse=self.warehouse,
+            variant=self.variant,
+            defaults={"on_hand": 10, "reserved_quantity": 0, "low_stock_threshold": 5},
+        )
+        balance.on_hand = 10
+        balance.reserved_quantity = 0
+        balance.save(update_fields=["on_hand", "reserved_quantity", "updated_at"])
+        ProductVariant.objects.filter(pk=self.variant.pk).update(stock_quantity=10)
+        self.variant.refresh_from_db()
+
         self.group = CustomerGroup.objects.get(code="RETAIL")
         self.customer = Customer.objects.create(
             name="Sales Customer",
@@ -115,6 +128,16 @@ class SalesOrderServiceTests(SalesBase):
         self.assertEqual(self.customer.completed_order_count, 1)
         self.assertEqual(self.customer.total_spent, Decimal("205.00"))
         self.assertEqual(self.customer.due_balance, Decimal("205.00"))
+
+    def test_repeat_customer_tracking_after_two_completed_orders(self):
+        first = self.create_order(quantity=1)
+        transition_order(order=first, new_status=SalesOrder.Status.CONFIRMED, actor="Test")
+        transition_order(order=first, new_status=SalesOrder.Status.COMPLETED, actor="Test")
+        second = self.create_order(quantity=1)
+        transition_order(order=second, new_status=SalesOrder.Status.CONFIRMED, actor="Test")
+        transition_order(order=second, new_status=SalesOrder.Status.COMPLETED, actor="Test")
+        self.assertEqual(self.customer.completed_order_count, 2)
+        self.assertTrue(self.customer.repeat_customer)
 
     def test_cancel_releases_reservation_without_deducting_stock(self):
         order = self.create_order(quantity=3)
