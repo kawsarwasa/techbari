@@ -1,0 +1,40 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Receive {{ purchase.po_number }} | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/purchasing-v130.css' %}?v=1.3.0">{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Receive Stock</h1><p>{{ purchase.po_number }} · {{ purchase.supplier.name }} → {{ purchase.warehouse.name }}</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:purchase_detail' purchase.id %}">Back to Purchase</a></div></div>
+  {% if purchase_form_error %}<div class="purchase-error">{{ purchase_form_error }}</div>{% endif %}
+  {% if form.non_field_errors %}<div class="purchase-error">{{ form.non_field_errors }}</div>{% endif %}
+  <form method="post" class="purchase-grid">{% csrf_token %}
+    <div>
+      <div class="card purchase-panel">
+        <div class="section-head"><h3>Items to Receive</h3></div>
+        {% for item in purchase.items.all %}
+        <div class="purchase-history-item" style="margin-bottom:12px">
+          <div class="purchase-meta">
+            <div><small>Product</small><strong>{{ item.variant.product.name }}</strong></div>
+            <div><small>SKU</small><strong>{{ item.variant.sku }}</strong></div>
+            <div><small>Ordered</small><strong>{{ item.ordered_quantity }}</strong></div>
+            <div><small>Remaining</small><strong>{{ item.remaining_to_receive }}</strong></div>
+          </div>
+          <label class="field" style="margin-top:12px"><span>Receive Quantity</span><input class="control" type="number" min="0" max="{{ item.remaining_to_receive }}" name="receive_{{ item.id }}" value="0"></label>
+          <div class="serial-box"><label class="field"><span>Optional Serial / IMEI rows</span><textarea class="control" name="serials_{{ item.id }}" placeholder="SERIAL | IMEI1 | IMEI2&#10;SERIAL-002 | 352099001234568 |"></textarea></label><p class="muted">One line per serialized unit. A single 15-digit value is treated as IMEI 1. Serial rows may be fewer than received quantity for non-serialized stock.</p></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <aside class="card purchase-panel">
+      <div class="section-head"><h3>Receipt Information</h3></div>
+      <div class="purchase-form-grid" style="grid-template-columns:1fr">
+        <label class="field"><span>Received Date</span>{{ form.received_date }}{{ form.received_date.errors }}</label>
+        <label class="field"><span>Supplier Challan No.</span>{{ form.supplier_challan_no }}{{ form.supplier_challan_no.errors }}</label>
+        <label class="field"><span>Note</span>{{ form.note }}{{ form.note.errors }}</label>
+      </div>
+      <div class="purchase-actions" style="margin-top:16px"><a class="btn" href="{% url 'backoffice:purchase_detail' purchase.id %}">Cancel</a><button class="btn btn-primary" type="submit">Post Receipt</button></div>
+      <p class="muted" style="margin-top:12px">Posting a receipt increases Inventory with Purchase In movements. Serial/IMEI rows are registered only after stock is added, so counts stay consistent.</p>
+    </aside>
+  </form>
+</section>
+{% endblock %}
