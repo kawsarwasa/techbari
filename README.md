@@ -1,53 +1,52 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v1.2.0**
+**Current version: v1.3.0**
 
-TechBari is being converted phase-by-phase from a static Django template demo into a MySQL 8-backed commerce system. Catalog, Inventory Phase 1 and Serial / IMEI / Warranty tracking are database-backed; the remaining business modules continue to use the approved presentation until their own database phases are implemented.
+TechBari is being converted phase-by-phase from a static Django template demo into a MySQL 8-backed commerce system. Catalog, Inventory, Serial / IMEI / Warranty and Supplier / Purchase are database-backed; remaining business modules keep the approved presentation until their own database phases are implemented.
+
+## v1.3.0 — Supplier + Purchase
+
+This phase adds the procurement engine. Suppliers are real database records with contact details, payment terms, credit/opening balances, active status and live purchase/outstanding calculations. Purchase Orders use real Catalog Variant/SKU rows, cost snapshots and Draft → Ordered → Partially Received → Received / Cancelled lifecycle.
+
+Goods receipts are separately audited and support partial receiving. Receipt posting calls the shared Inventory Engine with `PURCHASE_IN` movements; it never writes catalog stock directly. A receipt may also register Serial/IMEI units against the same supplier, PO, warehouse, purchase cost and received date. Invalid or duplicate serialized identifiers roll the full receipt back atomically.
+
+Supplier payments are stored against the purchase with method/reference/date and cannot exceed outstanding. Purchase returns validate net received quantity, reduce stock, reduce supplier outstanding and can link exact Serial/IMEI units. Serialized units returned to a supplier use the new `Returned to Supplier` lifecycle state.
+
+See `SUPPLIER_PURCHASE_PHASE.md` for schema, workflows, routes and safety rules.
 
 ## v1.2.0 — Serial / IMEI / Warranty Tracking
 
-This phase adds unit-level tracking for electronics. Every tracked physical unit can be linked to a Product Variant/SKU and Warehouse with Serial Number, IMEI 1/2, lifecycle status, purchase source, sale reference, customer reference and warranty dates. Serial/IMEI identifiers are validated and unique; IMEI values require 15 digits.
+Every tracked electronics unit can be linked to a Product Variant/SKU and Warehouse with unique Serial Number / IMEI 1 / IMEI 2, lifecycle status, purchase source, sales/customer references and warranty dates. Unit status/warehouse changes integrate with Inventory and immutable event history. Warranty/RMA claims support service, resolution and same-SKU replacement.
 
-Lifecycle changes are integrated with the shared Inventory Engine. Available, Reserved, Sold, Returned, Damaged, Warranty Service and Scrapped transitions post the required stock/reservation movements instead of silently changing a status field. Warehouse changes for stock-bearing serialized units post real Inventory transfers, including reservation release/reapply for reserved units. An immutable SerializedUnitEvent history records registration, transfers, status changes and warranty activity.
-
-Warranty/RMA claims are linked to the exact serialized unit. Claims support Open, In Service, Resolved, Replaced and Rejected states, customer/order references, service notes, resolution history and same-SKU replacement units. Normal claim closure restores the unit's pre-claim lifecycle state; a replacement sells the selected replacement unit through Inventory and marks the original unit as Scrapped.
-
-See `SERIAL_IMEI_WARRANTY_PHASE.md` for schema, workflows, routes, validations and service behavior.
+See `SERIAL_IMEI_WARRANTY_PHASE.md`.
 
 ## v1.1.0 — Inventory Phase 1
 
-Inventory Phase 1 adds the shared stock engine that future Purchase, Online Order, POS and Return modules will call. It introduces Warehouse, InventoryBalance, immutable StockMovement, StockAdjustment, StockTransfer and StockTransferItem models; atomic service-layer stock operations; reservations; negative-stock protection; low-stock thresholds/reports; and database-backed warehouse/adjustment/transfer/movement dashboard pages.
+Inventory is warehouse/SKU based with authoritative `InventoryBalance`, immutable `StockMovement`, Stock Adjustment, Stock Transfer, reservations, low-stock rules and negative-stock protection. Existing catalog quantity is imported into the default warehouse as opening stock; `ProductVariant.stock_quantity` remains only a compatibility cache.
 
-Existing catalog stock is preserved by migration `inventory.0002_import_catalog_opening_stock`, which creates the default `MAIN` warehouse and imports every existing variant quantity as opening stock. `ProductVariant.stock_quantity` remains only as a backward-compatible available-stock cache; warehouse balances are authoritative. Legacy catalog stock writes are reconciled through inventory ledger movements instead of bypassing Inventory.
-
-See `INVENTORY_PHASE1.md` for the full schema, stock flow, routes and service API.
+See `INVENTORY_PHASE1.md`.
 
 ## v1.0.10 — Catalog final QA
 
-The catalog phase received a final QA pass before Inventory development. New products no longer start with fake Bluetooth/headphone specifications, storefront rich descriptions preserve safe Heading 2/3, lists, quotes, bold, italic and underline markup, and the product summary uses the dedicated short description. Storefront variant selection follows database-backed variant price, regular price, stock, SKU and barcode values; cart/checkout use actual variants instead of hardcoded Black/White options; product listing category/brand/price/availability/search/sort controls are wired to catalog data. Catalog media cleanup hooks remove replaced/deleted uploaded files, including cascade product deletion. The catalog automated test suite covers the principal CRUD, validation, storefront serialization/rendering and media cleanup paths.
+Catalog covers Categories, Brands, Products, Variants/SKUs/Barcodes, managed Product Images, Specifications, rich descriptions, pricing/status/SEO and database-backed Storefront variant/stock/filter behavior.
 
-## v1.0.9 — Self-contained product description editor
-
-The Jodit experiment was removed from Add Product and Edit Product. Both forms use the same local, dependency-free editor component with Paragraph, Heading 2, Heading 3, Quote, Bold, Italic, Underline, bulleted list and numbered list controls. The toolbar is isolated from dashboard button styles and stores sanitized HTML in the existing Django `description` field.
+See `CATALOG_DATABASE_PHASE.md`.
 
 ## Current database-backed modules
 
 ### Catalog
 
-- Categories
-- Brands
+- Categories / Brands
 - Products
-- Variants / SKUs
-- Barcodes
-- Variant-level price overrides
+- Variants / SKUs / Barcodes
+- Variant price overrides
 - Product images/media
 - Product specifications
-- Product pricing and sale pricing
-- Draft / Active / Archived status
-- Featured / New Arrival
-- SEO title, description and slug
+- Rich description
+- Product pricing / status / SEO
+- Storefront catalog integration
 
-Catalog routes:
+Routes:
 
 - `/dashboard/products/`
 - `/dashboard/categories/`
@@ -56,24 +55,22 @@ Catalog routes:
 - `/dashboard/product-media/`
 - `/dashboard/specifications/`
 
-### Inventory Phase 1
+### Inventory
 
 - Warehouses
 - Warehouse/SKU balances
-- On-hand / reserved / available stock
+- On-hand / reserved / available
 - Stock movement ledger
 - Stock adjustments
-- Multi-SKU stock transfers
-- Reservations and releases
+- Multi-SKU transfers
+- Reservations / releases
+- Low-stock reporting
 - Negative-stock protection
-- Low-stock thresholds and reports
-- Opening-stock migration from existing catalog data
 
-Inventory routes:
+Routes:
 
 - `/dashboard/inventory/`
 - `/dashboard/warehouses/`
-- `/dashboard/warehouses/add/`
 - `/dashboard/stock-adjustment/`
 - `/dashboard/stock-transfer/`
 - `/dashboard/inventory/movements/`
@@ -81,25 +78,44 @@ Inventory routes:
 
 ### Serial / IMEI / Warranty
 
-- Serialized physical units by Variant/SKU
-- Unique Serial Number / IMEI 1 / IMEI 2
-- Warehouse location
-- Available / Reserved / Sold / Returned / Damaged / Warranty Service / Scrapped lifecycle
-- Inventory-aware unit transfers and status changes
-- Purchase / supplier references ready for Purchase integration
-- Sales / customer references ready for Sales and CRM integration
-- Warranty start/end and supplier warranty reference
-- Immutable unit event history
-- Warranty / RMA claims and replacement tracking
+- Unit-level Serial / IMEI tracking
+- Warehouse and Variant/SKU linkage
+- Available / Reserved / Sold / Returned / Damaged / Warranty Service / Scrapped / Returned to Supplier states
+- Inventory-aware unit lifecycle
+- Immutable unit events
+- Warranty / RMA claims and replacement
 
-Serial/Warranty routes:
+Routes:
 
 - `/dashboard/serials/`
 - `/dashboard/serials/add/`
 - `/dashboard/warranty/`
 - `/dashboard/warranty/add/`
 
-See `CATALOG_DATABASE_PHASE.md`, `INVENTORY_PHASE1.md` and `SERIAL_IMEI_WARRANTY_PHASE.md` for detailed coverage.
+### Supplier + Purchase
+
+- Supplier CRUD with delete protection
+- Payment terms / credit / opening balance
+- Purchase Order lifecycle
+- Real Variant/SKU purchase lines
+- Partial/full goods receiving
+- Inventory `PURCHASE_IN` integration
+- Optional Serial/IMEI registration during receipt
+- Supplier payments / outstanding
+- Purchase returns / Inventory out
+- Serialized supplier-return tracking
+- Purchase activity/detail audit view
+
+Routes:
+
+- `/dashboard/suppliers/`
+- `/dashboard/suppliers/add/`
+- `/dashboard/purchases/`
+- `/dashboard/purchases/add/`
+- `/dashboard/purchases/<id>/`
+- `/dashboard/purchases/<id>/receive/`
+- `/dashboard/purchases/<id>/payment/`
+- `/dashboard/purchases/<id>/return/`
 
 ## Local setup
 
@@ -110,7 +126,7 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Create a MySQL 8 database named `techbari`, then configure `.env`:
+Create/configure MySQL 8 database `techbari` in `.env`:
 
 ```env
 DB_NAME=techbari
@@ -125,34 +141,18 @@ Apply migrations and verify:
 ```powershell
 python manage.py migrate
 python manage.py check
-python manage.py test catalog inventory serial_tracking
+python manage.py test catalog inventory serial_tracking purchasing
 python manage.py runserver
 ```
 
-For an existing v1.1.0 database, `python manage.py migrate` creates the Serial / IMEI / Warranty tables without changing existing catalog or inventory quantities. Do not reseed just to initialize this phase.
+Upgrading from v1.2.0 only creates the purchasing schema and the Serialized Unit supplier-return status migration. Existing Catalog, Inventory, Serial/IMEI and Warranty data are preserved. Do not reseed just to initialize purchasing.
 
-For a fresh demo database, you may run `python manage.py seed_catalog` after migrations. New variants automatically receive inventory balances.
-
-Open:
-
-- Storefront: `http://127.0.0.1:8000/`
-- Dashboard: `http://127.0.0.1:8000/dashboard/`
-- Inventory: `http://127.0.0.1:8000/dashboard/inventory/`
-- Serial / IMEI: `http://127.0.0.1:8000/dashboard/serials/`
-- Warranty / RMA: `http://127.0.0.1:8000/dashboard/warranty/`
-
-## Image rules
-
-Catalog image uploads support JPG, PNG and WebP. Product/category/brand images are limited to 2MB each. A product supports up to 8 managed images.
-
-## Seed safety
-
-A normal `python manage.py seed_catalog` preserves existing product edits and existing variants/images/specifications. Use `--refresh-demo` only when you intentionally want to overwrite the seeded demo catalog, or `--reset` for a destructive full reseed.
+For a fresh demo database, `python manage.py seed_catalog` remains optional after migrations.
 
 ## Architecture direction
 
-TechBari follows the long-term principle:
+TechBari follows:
 
 **One Product Database + One Inventory Engine + One Sales Engine + One Accounting Ledger.**
 
-The next recommended database phase is Supplier + Purchase, followed by Customer/CRM and the shared Sales Order engine.
+The next recommended database phase is **Customer / CRM**, followed by Sales Order, Checkout and POS.
