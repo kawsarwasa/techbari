@@ -125,6 +125,7 @@ def catalog_context():
         "routes": routes,
         **cms,
     }
+    context["page_seo_description"] = cms["home_seo_description"]
     context["store_data"] = {
         "products": browser_products,
         "listing_products": browser_products,
