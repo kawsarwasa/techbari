@@ -94,7 +94,7 @@ class HeroBanner(models.Model):
 
     class Meta:
         ordering = ("sort_order", "id")
-        indexes = [models.Index(fields=("is_active", "sort_order"))]
+        indexes = [models.Index(fields=("is_active", "sort_order"), name="store_setti_is_acti_3c5103_idx")]
 
     def clean(self):
         if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
