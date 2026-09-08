@@ -81,6 +81,11 @@ X_FRAME_OPTIONS = "DENY"
 EMAIL_BACKEND = os.getenv("DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@techbari.local")
 
+# Legacy module tests predate staff authentication. The custom runner keeps
+# those tests focused on business logic, while staff_access tests explicitly
+# re-enable authentication to validate the real security boundary.
+TEST_RUNNER = "techbari.test_runner.TechBariTestRunner"
+
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Dhaka"
 USE_I18N = True
