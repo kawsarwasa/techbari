@@ -7,7 +7,6 @@ from django.utils import timezone
 from catalog.models import Brand, Category, Product, ProductVariant
 from customers.models import Customer, CustomerGroup
 from inventory.models import InventoryBalance, StockMovement, Warehouse
-from payments.models import PaymentTransaction
 from purchasing.models import (
     PurchaseOrder,
     PurchaseOrderItem,
@@ -154,16 +153,6 @@ class StockPurchaseReportTests(TestCase):
             subtotal=Decimal("100.00"),
             grand_total=Decimal("100.00"),
             amount_paid=Decimal("40.00"),
-        )
-        PaymentTransaction.objects.create(
-            transaction_no="PMT-RPT-1",
-            sales_order=self.sales_order,
-            kind=PaymentTransaction.Kind.SALE_PAYMENT,
-            direction=PaymentTransaction.Direction.IN,
-            method="cash",
-            status=PaymentTransaction.Status.COMPLETED,
-            amount=Decimal("40.00"),
-            transaction_date=self.today,
         )
 
     def params(self, report, **extra):
