@@ -1,13 +1,13 @@
 {% extends "backoffice/base.html" %}
 {% load static demo %}
 {% block title %}{% if expense_mode == 'edit' %}Edit Expense{% else %}Add Expense{% endif %} | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/expense-v210.css' %}?v=2.1.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/expense-v210.css' %}?v=2.1.1">{% endblock %}
 {% block content %}
 <section class="page">
   <div class="page-head"><div><h1>{% if expense_mode == 'edit' %}Edit Draft Expense{% else %}Add Expense{% endif %}</h1><p>Record the business expense first, then send it through approval and payment.</p></div><a class="btn" href="{% if expense %}{% url 'backoffice:expense_detail' expense.id %}{% else %}{% url 'backoffice:expenses' %}{% endif %}">Cancel</a></div>
   {% if expense_error %}<div class="expense-error">{{ expense_error }}</div>{% endif %}
   {% include "backoffice/pages/expenses/_subnav.html" %}
-  <form method="post" class="expense-grid">{% csrf_token %}
+  <form method="post" enctype="multipart/form-data" class="expense-grid">{% csrf_token %}
     <div class="expense-form-card">
       <div class="section-head"><h3>Expense Information</h3></div>
       <div class="expense-form-grid">
@@ -18,6 +18,7 @@
         <label class="field wide"><span>Description</span>{{ expense_form.description }}{% for e in expense_form.description.errors %}<small class="expense-error">{{ e }}</small>{% endfor %}</label>
         <label class="field"><span>Preferred Payment Method</span>{{ expense_form.preferred_payment_method }}{% for e in expense_form.preferred_payment_method.errors %}<small class="expense-error">{{ e }}</small>{% endfor %}</label>
         <label class="field"><span>Receipt / Invoice No</span>{{ expense_form.receipt_no }}{% for e in expense_form.receipt_no.errors %}<small class="expense-error">{{ e }}</small>{% endfor %}</label>
+        <label class="field wide"><span>Attachment</span>{{ expense_form.attachment }}{% for e in expense_form.attachment.errors %}<small class="expense-error">{{ e }}</small>{% endfor %}<small>PDF/JPG/PNG/WebP, maximum 5 MB.</small></label>
         <label class="field wide"><span>Notes</span>{{ expense_form.notes }}{% for e in expense_form.notes.errors %}<small class="expense-error">{{ e }}</small>{% endfor %}</label>
       </div>
     </div>
