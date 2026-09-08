@@ -1,0 +1,50 @@
+name: v2.6.0 CMS Store Settings QA
+
+on:
+  push:
+    branches: [v2.6.0-cms-store-settings]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: techbari_test
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DJANGO_SECRET_KEY: ci-secret
+      DJANGO_DEBUG: 0
+      DJANGO_ALLOWED_HOSTS: 127.0.0.1,localhost,testserver
+      DB_NAME: techbari_test
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      SESSION_COOKIE_SECURE: 0
+      CSRF_COOKIE_SECURE: 0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Django check
+        run: python manage.py check
+      - name: Migration drift
+        run: python manage.py makemigrations --check --dry-run
+      - name: Apply migrations
+        run: python manage.py migrate --noinput
+      - name: CMS Store Settings tests
+        run: python manage.py test store_settings -v 2
+      - name: Full regression
+        run: python manage.py test catalog inventory serial_tracking purchasing customers sales payments shipping returns accounting expenses reports promotions storefront backoffice.test_dashboard_analytics staff_access store_settings -v 1
