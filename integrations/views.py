@@ -25,8 +25,7 @@ STATUS_ALIASES = {
 
 
 def _secret_for(provider):
-    env_name = provider.api_webhook_secret_env or f"COURIER_WEBHOOK_SECRET_{provider.code}"
-    return str(os.getenv(env_name, "") or os.getenv("COURIER_WEBHOOK_SECRET", "") or "").strip()
+    return str(os.getenv(f"COURIER_{provider.code}_WEBHOOK_SECRET", "") or os.getenv("COURIER_WEBHOOK_SECRET", "") or "").strip()
 
 
 @csrf_exempt
