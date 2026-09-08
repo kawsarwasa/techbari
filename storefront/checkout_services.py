@@ -92,18 +92,19 @@ def _customer_for_checkout(data):
     return Customer.objects.create(name=data["full_name"], phone=phone, email=email, group=group, source=Customer.Source.ONLINE, address=latest_address, city=data.get("upazila") or "", district=data.get("district") or "", is_active=True)
 
 
-def _order_notes(data):
+def _order_notes(data, campaign_attribution=None):
     delivery = "Inside Dhaka" if data["delivery_option"] == "inside" else "Outside Dhaka"
     parts = ["Storefront Checkout", "Payment: Cash on Delivery", f"Delivery: {delivery}", f"Division: {data['division']}"]
     if data.get("landmark"): parts.append(f"Landmark: {data['landmark'].strip()}")
     if data.get("coupon_code"): parts.append(f"Coupon: {data['coupon_code']}")
-    if data.get("campaign_code"): parts.append(f"Campaign: {data['campaign_code']}")
+    if campaign_attribution and campaign_attribution.get("campaign"):
+        parts.append(f"Campaign: {campaign_attribution['campaign'].code}")
     if data.get("order_note"): parts.append(f"Customer note: {data['order_note'].strip()}")
     return " | ".join(parts)
 
 
 @transaction.atomic
-def place_checkout_order(cleaned_data):
+def place_checkout_order(cleaned_data, *, campaign_attribution=None):
     token_data = cleaned_data["checkout_token"]
     order_number = token_data["order_number"]
     existing = SalesOrder.objects.select_related("customer", "warehouse").filter(order_number=order_number, channel=SalesOrder.Channel.ONLINE).first()
@@ -123,11 +124,11 @@ def place_checkout_order(cleaned_data):
     warehouse = get_default_warehouse()
     shipping_address = cleaned_data["address"].strip()
     if cleaned_data.get("landmark"): shipping_address += f" (Landmark: {cleaned_data['landmark'].strip()})"
-    header = {"order_number": order_number, "customer": customer, "warehouse": warehouse, "channel": SalesOrder.Channel.ONLINE, "status": SalesOrder.Status.PENDING, "order_date": timezone.localdate(), "shipping_name": cleaned_data["full_name"], "shipping_phone": cleaned_data["phone"], "shipping_email": cleaned_data.get("email") or "", "shipping_address": shipping_address, "shipping_city": cleaned_data.get("upazila") or "", "shipping_district": cleaned_data.get("district") or "", "shipping_postal_code": "", "discount_amount": discount, "shipping_charge": shipping, "amount_paid": Decimal("0.00"), "notes": _order_notes(cleaned_data)}
+    header = {"order_number": order_number, "customer": customer, "warehouse": warehouse, "channel": SalesOrder.Channel.ONLINE, "status": SalesOrder.Status.PENDING, "order_date": timezone.localdate(), "shipping_name": cleaned_data["full_name"], "shipping_phone": cleaned_data["phone"], "shipping_email": cleaned_data.get("email") or "", "shipping_address": shipping_address, "shipping_city": cleaned_data.get("upazila") or "", "shipping_district": cleaned_data.get("district") or "", "shipping_postal_code": "", "discount_amount": discount, "shipping_charge": shipping, "amount_paid": Decimal("0.00"), "notes": _order_notes(cleaned_data, campaign_attribution)}
     try:
         order = save_sales_order(header_data=header, item_rows=rows, actor="Storefront Checkout")
         redeem_coupon(coupon=coupon, order=order, discount_amount=discount)
-        record_campaign_conversion(order=order, campaign_code=cleaned_data.get("campaign_code") or "", coupon=coupon)
+        record_campaign_conversion(order=order, attribution=campaign_attribution, coupon=coupon)
     except (SalesOrderError, PromotionError) as exc:
         raise CheckoutError(" ".join(str(value) for value in getattr(exc, "messages", [str(exc)]))) from exc
     return order, True
