@@ -6,7 +6,7 @@ Route: `/dashboard/reports/`
 
 ## v2.2.0 — Sales + Profit Reports
 
-Implemented reports:
+Implemented:
 
 - Sales Report
 - Daily Sales
@@ -18,31 +18,13 @@ Implemented reports:
 - Profit Report
 - COGS Report
 
-Sales reports support From/To date filtering, sales-channel filtering, KPI summary cards, responsive tables and UTF-8 CSV export.
+Only completed Sales Orders are included. Order-level Net Sales is `grand_total - return_credit_amount`. Posted General Ledger COGS is the primary cost source, completed return COGS reversals reduce Net COGS, and Gross Profit is `Net Sales - Net COGS`.
 
-Only `SalesOrder.Status.COMPLETED` orders are included in v2.2.0 Sales + Profit reporting.
-
-### v2.2.0 calculation rules
-
-Order-level Net Sales:
-
-`grand_total - return_credit_amount`
-
-The primary COGS source is the posted General Ledger COGS account (`5000`) for `SALE` journals linked to the Sales Order reference. Completed return journals with source type `SALE_RETURN` may credit COGS when inventory is restocked; those credits reduce Net COGS.
-
-If a historical completed order does not have its expected posted COGS journal, the report service falls back to the same weighted-cost calculation used by Accounting sale posting.
-
-`Gross Profit = Net Sales - Net COGS`
-
-`Gross Margin % = Gross Profit / Net Sales × 100`
-
-Product-level reports exclude shipping revenue. Order-level discounts and return credits are allocated to product lines, and exact order Net COGS is allocated across sold items. Category and Brand grouping currently use each Product's current Catalog category/brand because category/brand are not snapshotted on Sales Order items.
-
-v2.2.0 is an order-cohort profitability view: completed returns belonging to a completed order reduce that order's current Net Sales/Net COGS even if the return was completed after the original sale date. Period-activity Returns reporting is handled separately in v2.2.2.
+Product/Category/Brand reports exclude shipping revenue and allocate order discounts, return credit and exact order COGS across product lines.
 
 ## v2.2.1 — Stock + Purchase Reports
 
-Implemented reports:
+Implemented:
 
 - Stock Report
 - Stock Valuation
@@ -52,114 +34,160 @@ Implemented reports:
 - Supplier Due
 - Customer Due
 
-The same Reports dashboard and CSV export mechanism are reused. Operational reports add Warehouse filtering where the underlying data has a warehouse dimension, and Stock Movement also supports Movement Type filtering.
+Stock/Valuation/Low Stock use the latest immutable Stock Movement quantity/reservation snapshot up to the selected As-of date, with current InventoryBalance as a compatibility fallback for current-day legacy/bootstrap rows that have no movement snapshot.
 
-### Stock Report
+Operational stock value is:
 
-Stock Report is date-aware. For the selected **As of** date, TechBari reads the latest immutable `StockMovement` snapshot available for each Warehouse + SKU position and uses its:
+`On Hand × weighted purchase cost as of date`
 
-- `quantity_after` for On Hand
-- `reserved_after` for Reserved
-- `On Hand - Reserved` for Available
+Supplier Due is:
 
-For current-day data where a legacy/bootstrap balance has no movement snapshot, the current `InventoryBalance` is used as a compatibility fallback.
+`Opening Balance + Purchases - Purchase Returns - Supplier Payments`
 
-The report includes Warehouse, Product, SKU, On Hand, Reserved, Available, Low Stock Threshold, weighted Unit Cost and Stock Value.
+Customer Due is:
 
-### Stock Valuation
+`Opening Due + Sales - Completed Return Credits - Net Customer Payments`
 
-Stock value is calculated as:
+Historical payment activity comes from the central PaymentTransaction ledger.
 
-`On Hand Quantity × Weighted Purchase Cost as of the selected date`
+## v2.2.2 — Payment + Expense + Returns + Warranty + Serial/IMEI Reports
 
-The weighted cost is the same purchasing-cost service used by TechBari Accounting. Valuation is summarized by warehouse and reconciles to SKU-level stock rows.
+Implemented:
 
-This is an operational weighted-cost valuation. The later Balance Sheet report in v2.2.3 will use the General Ledger Inventory Asset balance as the financial-statement source of truth.
+- Payment Report
+- Expense Report
+- Returns Report
+- Warranty Report
+- Serial / IMEI Report
 
-### Low Stock
+The same Reports dashboard, KPI cards, responsive tables and UTF-8 CSV export are reused.
 
-Low Stock uses:
+### Payment Report
 
-`Available Quantity <= configured Low Stock Threshold`
+Source of truth: `payments.PaymentTransaction`.
 
-The stock quantity is date-aware. The threshold itself currently comes from the SKU/Warehouse's current `InventoryBalance` configuration because historical threshold changes are not snapshotted in the inventory ledger.
+Filters:
 
-### Stock Movement
+- From / To date
+- Kind: Sale Payment / Supplier Payment / Refund / Reversal
+- Method: Cash / Bank / Card / bKash / Nagad / Other
+- Status: Pending / Completed / Failed / Reversed
 
-Stock Movement reads the immutable inventory ledger for the selected From/To range. It supports:
+Rows include transaction date/number, kind, direction, method, status, counterparty, source/reference, amount and reconciliation state.
 
-- Warehouse filter
-- Movement Type filter
-- quantity delta
-- reserved delta
-- quantity-after snapshot
-- source/reference number
+KPI money totals count **Completed** transactions only:
 
-Movement types include purchase in, online/POS sale out, returns, purchase returns, adjustments, transfers, damage/loss, reservation and reservation release/sale events.
+- Completed Money In
+- Completed Money Out
+- Net Cash Flow
+- Reconciled transaction count
 
-### Purchase Report
+This is an operational payment-ledger report. It does not replace the v2.2.3 Cash Flow financial statement, which will use the General Ledger.
 
-Purchase Report includes non-Draft and non-Cancelled Purchase Orders within the selected purchase-date range.
+### Expense Report
 
-For each PO it shows:
+Source of truth: `expenses.Expense`.
 
-- ordered and received quantity
-- Grand Total
-- supplier returns posted on or before the selected To date
-- supplier payments posted on or before the selected To date
-- Outstanding amount
+Filters:
 
-`Outstanding = Grand Total - Returns - Payments`
+- From / To expense date
+- Expense status
+- Expense category
+- Payment method
 
-A Warehouse filter is available.
+Rows include expense number/date, category, payee, description, workflow status, amount, payment method, exact payment Asset account, payment date and reference.
 
-### Supplier Due
+KPI rules:
 
-Supplier Due is an **As of** report:
+- Active Amount excludes Rejected, Cancelled and Voided expenses
+- Paid Amount counts Paid expenses only
+- Pending Approval and Approved/Unpaid are shown separately
 
-`Supplier Due = Opening Balance + Purchases - Purchase Returns - Supplier Payments`
+The report reads the Expense workflow directly; v2.2.3 P&L will use posted GL Expense balances instead of recomputing financial statements from Expense records.
 
-Only purchases, returns and payments whose business dates are on or before the selected date are counted.
+### Returns Report
 
-When a Warehouse filter is applied, purchase activity is restricted to that warehouse. Supplier Opening Balance remains global because the current Supplier model does not allocate opening balance by warehouse.
+Source of truth: `returns.SalesReturn` plus Return Items and Return Refund links.
 
-### Customer Due
+The report uses the **requested-date range** and shows both requested and completed dates.
 
-Customer Due is also an **As of** report. It uses the transaction history rather than today's cached due property:
+Filters:
 
-`Customer Due = Opening Due + Sales - Completed Return Credits - Net Customer Payments`
+- Status
+- Source: Customer / Courier Return / POS / Manual
+- Reason
 
-Customer sales include non-Draft/non-Cancelled orders dated on or before the selected date. Completed return credits are included only when the return completion date is on or before the selected date.
+Rows include return/order/customer, source, reason, status, returned units, restocked units, return credit, cash refund and completion date.
 
-Net Customer Payments are derived from the central `PaymentTransaction` ledger. Money-in sale payments increase paid amount; refund/reversal money-out transactions reduce net paid amount. This makes historical customer due date-aware.
+Financial KPI totals for credit/refund use completed returns so open/rejected/cancelled cases do not inflate completed return value.
 
-Guest sales are not assigned to Customer Due because they have no Customer account.
+### Warranty Report
+
+Source of truth: `serial_tracking.WarrantyClaim`.
+
+Filters:
+
+- Claim-date range
+- Claim status
+- current unit warehouse
+
+Rows include claim number/date, Product, SKU, Serial/IMEI, customer, status, warranty-coverage result, issue, resolution date and replacement unit.
+
+Coverage uses the claimed unit's stored warranty start/end dates against the claim date.
+
+The Warehouse filter represents the unit's **current** warehouse location; warehouse history remains available through SerializedUnitEvent rather than being inferred here.
+
+### Serial / IMEI Report
+
+Source of truth: `serial_tracking.SerializedUnit`.
+
+The date range is the unit's database registration/creation date.
+
+Filters:
+
+- current serialized-unit status
+- current warehouse
+
+Rows include Product, SKU, Serial Number, IMEI 1/2, Warehouse, status, purchase reference, sales reference and warranty end date.
+
+KPI cards include serialized unit count, Available, Sold, Warranty Service and currently active warranty counts.
+
+This is a current-state registry for units created in the selected range; it is not a historical status reconstruction. Immutable `SerializedUnitEvent` remains the lifecycle audit source.
 
 ## Shared filters and output
 
-Across v2.2.0 and v2.2.1, the Reports dashboard supports report-appropriate combinations of:
+Across v2.2.0–v2.2.2 the Reports dashboard supports report-appropriate combinations of:
 
-- From date
-- To / As of date
-- sales channel: All / Online / Manual / POS
+- From / To date
+- As-of date where applicable
+- Sales Channel
 - Warehouse
 - Stock Movement Type
+- Payment Kind / Method / Status
+- Expense Status / Category / Method
+- Return Status / Source / Reason
+- Warranty Status
+- Serial/IMEI Status
 - KPI summary cards
-- UTF-8 CSV export preserving active report filters
-- responsive tables
+- UTF-8 CSV export preserving active filters
+- responsive report tables
 
-The default period is the current month through today. Reversed From/To input is normalized automatically.
+Default range is current month through today. Reversed From/To input is normalized automatically.
 
 ## Validation
 
 ### v2.2.0
 
-Validated on GitHub Actions with MySQL 8 and Python 3.12:
-
-- dedicated Reports suite: 5/5 passed
-- full application regression suite: 157/157 passed
+- Reports suite: 5/5 passed
+- Full regression: 157/157 passed
 
 ### v2.2.1
+
+- Reports suite: 11/11 passed
+- Full regression: 163/163 passed
+- no new migration
+
+### v2.2.2
 
 Validated on GitHub Actions with MySQL 8 and Python 3.12 using:
 
@@ -169,21 +197,14 @@ Validated on GitHub Actions with MySQL 8 and Python 3.12 using:
 - `python manage.py test reports -v 2`
 - full application regression suite including Reports
 
-Final validation result:
+Final result:
 
-- dedicated Reports suite: 11/11 passed
-- full application regression suite: 163/163 passed
+- Reports suite: **16/16 passed**
+- Full regression suite: **168/168 passed**
+- migration drift: **No changes detected**
 - no new database migration required
 
 ## Remaining Reports roadmap
-
-### v2.2.2 — Operational Finance + After-sales Reports
-
-- Payment Report
-- Expense Report
-- Returns Report
-- Warranty Report
-- Serial / IMEI Report
 
 ### v2.2.3 — Financial Statements
 
@@ -192,4 +213,4 @@ Final validation result:
 - Cash Flow
 - Trial Balance
 
-Financial statements will use the Accounting General Ledger as their source of truth rather than recomputing accounting from operational modules.
+Financial statements will use the Accounting General Ledger as the source of truth rather than rebuilding accounting from operational modules.

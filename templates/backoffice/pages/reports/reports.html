@@ -1,14 +1,14 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{{ report_title }} | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/reports-v220.css' %}?v=2.2.1">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/reports-v220.css' %}?v=2.2.2">{% endblock %}
 {% block content %}
 <section class="page reports-page">
   <div class="page-head reports-head">
     <div>
-      <span class="report-eyebrow">Reports v2.2.1</span>
+      <span class="report-eyebrow">Reports v2.2.2</span>
       <h1>Business Reports</h1>
-      <p>Sales, profit, inventory, purchasing and due reports from TechBari's live business data.</p>
+      <p>Sales, profit, inventory, purchasing, payments, expenses, returns, warranty and Serial/IMEI reporting from live business data.</p>
     </div>
     <a class="btn btn-primary" href="{{ export_url }}">Export CSV</a>
   </div>
@@ -20,6 +20,7 @@
     {% if show_channel_filter %}<label><span>Channel</span><select name="channel">{% for value,label in channel_choices %}<option value="{{ value }}"{% if filters.channel == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endif %}
     {% if show_warehouse_filter %}<label><span>Warehouse</span><select name="warehouse">{% for value,label in warehouse_choices %}<option value="{{ value }}"{% if filters.warehouse|stringformat:"s" == value|stringformat:"s" %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endif %}
     {% if show_movement_filter %}<label><span>Movement Type</span><select name="movement_type">{% for value,label in movement_choices %}<option value="{{ value }}"{% if filters.movement_type == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endif %}
+    {% for extra in extra_filters %}<label><span>{{ extra.label }}</span><select name="{{ extra.name }}">{% for value,label in extra.choices %}<option value="{{ value }}"{% if extra.selected == value|stringformat:"s" %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endfor %}
     <div class="report-filter-actions"><button class="btn btn-primary" type="submit">Apply Filter</button><a class="btn" href="{{ reset_url }}">Reset</a></div>
   </form>
 
@@ -41,7 +42,7 @@
         <tbody>
           {% for row in rows %}
           <tr>{% for cell in row.cells %}<td class="cell-{{ cell.kind }}">{% if cell.kind == 'money' %}৳{{ cell.value|floatformat:2 }}{% elif cell.kind == 'percent' %}{{ cell.value|floatformat:2 }}%{% elif cell.kind == 'date' %}{{ cell.value|date:"d M Y" }}{% else %}{{ cell.value }}{% endif %}</td>{% endfor %}</tr>
-          {% empty %}<tr><td class="report-empty" colspan="12">{{ empty_message }}</td></tr>{% endfor %}
+          {% empty %}<tr><td class="report-empty" colspan="14">{{ empty_message }}</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>
