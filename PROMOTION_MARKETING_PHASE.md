@@ -41,6 +41,7 @@ Tracks Visit, Coupon Applied and Conversion events. Conversion events can refere
 6. Product/category coupons discount only their eligible line subtotal.
 7. Fixed discounts are capped at the eligible subtotal; a promotion cannot make an eligible subtotal negative.
 8. Checkout is server-authoritative. Browser/cart display values are never trusted for order unit price or final discount.
+9. Browser coupon previews include the live minimum-order rule and the exact eligible Product set for Product/Category scoped coupons so the displayed preview matches the server rule as closely as possible.
 
 ## Usage-limit safety
 
@@ -56,7 +57,9 @@ A campaign can be linked with:
 ?campaign=FB-SEPT&utm_source=facebook&utm_medium=cpc
 ```
 
-`utm_campaign` is also accepted as the campaign code. Valid live campaign landings create a Visit event and set a signed, HTTP-only `tb_campaign` cookie. Checkout carries that attribution into a Conversion event. Coupon-linked campaigns can also record Coupon Applied events.
+`utm_campaign` is also accepted as the campaign code. Valid live campaign landings create a Visit event and set a signed, HTTP-only `tb_campaign` cookie.
+
+Checkout does not trust a posted/hidden campaign code. It decodes the signed cookie, resolves the exact Visit event by Campaign + tracking token, and carries that Visit attribution into the Conversion event. The Conversion therefore preserves the original tracking token, source, medium, landing path and referrer. A forged/tampered attribution cookie is ignored. Coupon-linked campaigns can still record Coupon Applied events and can act as a fallback attribution when there is no trusted Visit attribution.
 
 The signed cookie does not contain pricing authority and cannot grant a discount. It is attribution data only.
 
@@ -93,12 +96,12 @@ python manage.py migrate
 
 ## Validation gates
 
-The v2.3.0 QA workflow uses MySQL 8 and Python 3.12 and verifies:
+Validated on GitHub Actions using MySQL 8 and Python 3.12:
 
-- Django system check
-- migration drift (`makemigrations --check --dry-run`)
-- migrations
-- dedicated Promotion / Marketing tests
-- full project regression suite
+- Django system check: PASS
+- migration drift (`makemigrations --check --dry-run`): PASS / no changes detected
+- migrations: PASS
+- Promotion / Marketing suite: 15/15 PASS
+- full regression suite: 188/188 PASS
 
-Dedicated tests cover fixed/percentage calculations, minimum order, usage limit, Product/Category scope, Flash Sale best-price behavior, redemption idempotency, campaign attribution, campaign conversion idempotency, checkout integration and database-backed dashboard rendering.
+Dedicated tests cover fixed/percentage calculations, minimum order, usage limit, scheduled/expired/inactive coupons, Product/Category scope, scoped browser preview data, Flash Sale best-price behavior, redemption idempotency, Featured Product dashboard toggling, campaign landing capture, signed Visit-to-Conversion attribution, tampered attribution rejection, campaign conversion idempotency, checkout integration and database-backed dashboard rendering.
