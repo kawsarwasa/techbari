@@ -1,5 +1,4 @@
-"""Storefront presentation context backed by the catalog, inventory and promotion databases."""
-from django.templatetags.static import static
+"""Storefront presentation context backed by catalog, inventory, promotions and CMS settings."""
 from django.urls import reverse
 from django.utils import timezone
 
@@ -8,6 +7,7 @@ from catalog.presentation import brand_filters, catalog_queryset, category_filte
 from inventory.models import InventoryBalance, Warehouse
 from promotions.models import Coupon
 from promotions.services import decorate_catalog
+from store_settings.services import storefront_cms_context
 from . import mock_data
 
 
@@ -109,10 +109,12 @@ def catalog_context():
         )
     }
     featured = [product for product in catalog if product.get("is_featured")][:6] or catalog[:6]
-    return {
+    cms = storefront_cms_context()
+    hero_slides = cms["hero_slides"]
+    context = {
         "catalog": catalog,
         "products": catalog,
-        "hero": mock_data.HERO_SLIDES[0],
+        "hero": hero_slides[0] if hero_slides else None,
         "cart_summary": {"count": 0, "subtotal": 0, "total": 0},
         "categories": category_filters(),
         "brands": brand_filters(),
@@ -121,16 +123,16 @@ def catalog_context():
         "related_products": catalog[:4],
         "recommended_products": catalog[3:9] if len(catalog) > 3 else catalog[:6],
         "routes": routes,
-        "store_data": {
-            "products": browser_products,
-            "listing_products": browser_products,
-            "cart": [],
-            "wishlist": mock_data.DEFAULT_WISHLIST,
-            # Browser display is a preview only. Checkout revalidates all promotion rules server-side.
-            "coupons": _browser_coupon_map(),
-            "slides": [
-                {**slide, "img": static(slide["image"]), "href": routes["products"]}
-                for slide in mock_data.HERO_SLIDES
-            ],
-        },
+        **cms,
     }
+    context["store_data"] = {
+        "products": browser_products,
+        "listing_products": browser_products,
+        "cart": [],
+        "wishlist": mock_data.DEFAULT_WISHLIST,
+        # Browser display is a preview only. Checkout revalidates all promotion/CMS rules server-side.
+        "coupons": _browser_coupon_map(),
+        "slides": hero_slides,
+        "delivery": cms["delivery"],
+    }
+    return context
