@@ -5,6 +5,7 @@ from catalog.models import Product
 from catalog.presentation import catalog_queryset, serialize_product
 from promotions.services import campaign_attribution_for_request
 from sales.models import SalesOrder
+from store_settings.models import ContentPage
 from .checkout_services import CheckoutError, checkout_success_url, create_checkout_token, place_checkout_order, verify_success_token
 from .context import catalog_context
 from .forms import CheckoutForm
@@ -20,6 +21,17 @@ def page(request, page_name="home"):
         query = request.GET.get("q", "").casefold().strip()
         if query: context["products"] = [p for p in context["products"] if query in f'{p["name"]} {p["brand"]} {p["category"]} {p["sku"]}'.casefold()]
     return render(request, f"storefront/pages/{PAGE_TEMPLATES[page_name]}.html", context)
+
+
+def content_page(request, slug):
+    page_obj = get_object_or_404(ContentPage, slug=slug, is_published=True)
+    context = catalog_context()
+    context.update(
+        content_page=page_obj,
+        seo_title=page_obj.seo_title or page_obj.title,
+        page_seo_description=page_obj.seo_description or context["store_settings"].seo_description,
+    )
+    return render(request, "storefront/pages/content_page.html", context)
 
 
 def checkout(request):
