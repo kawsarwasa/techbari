@@ -30,7 +30,6 @@ class CheckoutForm(forms.Form):
     payment_method = forms.ChoiceField(choices=(("cod", "Cash on Delivery"),), initial="cod")
     order_note = forms.CharField(max_length=1000, required=False, widget=forms.Textarea(attrs={"placeholder": "Any special instructions for your order?", "rows": 3}))
     coupon_code = forms.CharField(max_length=40, required=False, widget=forms.TextInput(attrs={"id": "checkoutCouponInput", "placeholder": "Enter coupon code", "autocomplete": "off"}))
-    campaign_code = forms.CharField(max_length=64, required=False, widget=forms.HiddenInput())
     cart_payload = forms.CharField(widget=forms.HiddenInput(attrs={"id": "checkoutCartPayload"}))
     checkout_token = forms.CharField(widget=forms.HiddenInput(attrs={"id": "checkoutToken"}))
 
@@ -51,9 +50,6 @@ class CheckoutForm(forms.Form):
 
     def clean_coupon_code(self):
         return (self.cleaned_data.get("coupon_code") or "").strip().upper()
-
-    def clean_campaign_code(self):
-        return (self.cleaned_data.get("campaign_code") or "").strip().upper()
 
     def clean_cart_payload(self):
         raw = self.cleaned_data.get("cart_payload") or ""
