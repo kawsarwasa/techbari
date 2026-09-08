@@ -14,9 +14,7 @@ from shipping.models import CourierProvider
 
 
 def notifications(request):
-    qs = Notification.objects.annotate(
-        is_read_for_user=Exists(NotificationRead.objects.filter(notification_id=OuterRef("pk"), user=request.user))
-    )
+    qs = Notification.objects.annotate(is_read_for_user=Exists(NotificationRead.objects.filter(notification_id=OuterRef("pk"), user=request.user)))
     kind = str(request.GET.get("kind") or "").strip()
     state = str(request.GET.get("state") or "").strip()
     if kind in {value for value, _ in Notification.Kind.choices}:
@@ -26,13 +24,7 @@ def notifications(request):
     elif state == "read":
         qs = qs.filter(is_read_for_user=True)
     page_obj = Paginator(qs, 30).get_page(request.GET.get("page"))
-    return render(request, "backoffice/pages/notifications/notifications.html", {
-        "notifications": page_obj.object_list,
-        "page_obj": page_obj,
-        "notification_kinds": Notification.Kind.choices,
-        "selected_kind": kind,
-        "selected_state": state,
-    })
+    return render(request, "backoffice/pages/notifications/notifications.html", {"notifications": page_obj.object_list, "page_obj": page_obj, "notification_kinds": Notification.Kind.choices, "selected_kind": kind, "selected_state": state})
 
 
 @require_POST
@@ -57,17 +49,10 @@ def integration_settings(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Notification and integration settings saved.")
-            return redirect("backoffice:integration_settings")
+            return redirect("integration_admin:integration_settings")
     else:
         form = IntegrationSettingsForm(instance=config)
-    recent = OutboundMessage.objects.order_by("-created_at")[:40]
-    couriers = CourierProvider.objects.filter(api_enabled=True).order_by("name")
-    return render(request, "backoffice/pages/settings/integrations.html", {
-        "form": form,
-        "integration_settings": config,
-        "recent_deliveries": recent,
-        "api_couriers": couriers,
-    })
+    return render(request, "backoffice/pages/settings/integrations.html", {"form": form, "integration_settings": config, "recent_deliveries": OutboundMessage.objects.order_by("-created_at")[:40], "api_couriers": CourierProvider.objects.filter(api_enabled=True).order_by("name")})
 
 
 @require_POST
@@ -79,11 +64,11 @@ def integration_retry(request, message_id):
         outbound.last_error = ""
         outbound.save(update_fields=["status", "available_at", "last_error", "updated_at"])
         messages.success(request, "Delivery queued for retry.")
-    return redirect("backoffice:integration_settings")
+    return redirect("integration_admin:integration_settings")
 
 
 @require_POST
 def integration_process(request):
     result = process_outbound(limit=20)
     messages.success(request, f"Processed integrations: {result['sent']} sent, {result['failed']} failed, {result['skipped']} skipped.")
-    return redirect("backoffice:integration_settings")
+    return redirect("integration_admin:integration_settings")
