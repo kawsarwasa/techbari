@@ -9,7 +9,7 @@ from .models import AuditLog
 from .permissions import PERMISSION_CODES, SYSTEM_ROLE_NAMES, sync_system_roles
 
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", STAFF_AUTH_ENABLED=True)
 class StaffAccessTests(TestCase):
     def setUp(self):
         sync_system_roles()
