@@ -1,16 +1,40 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v2.2.0**
+**Current version: v2.2.1**
 
 TechBari is a MySQL 8-backed commerce platform being built phase-by-phase around one shared business architecture:
 
 **One Product Database + One Inventory Engine + One Sales Engine + One Accounting Ledger.**
 
-Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS, Payment, Shipping / Courier, Returns / Refunds, Accounting, Expense Management and the first Reports release are connected to the real business data flow.
+Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS, Payment, Shipping / Courier, Returns / Refunds, Accounting, Expense Management and Reports are connected to the real business data flow.
+
+## v2.2.1 — Stock + Purchase Reports
+
+The Reports dashboard now adds seven operational reports on top of v2.2.0 Sales + Profit reporting:
+
+- Stock Report
+- Stock Valuation
+- Low Stock
+- Stock Movement
+- Purchase Report
+- Supplier Due
+- Customer Due
+
+Stock, valuation and low-stock reports support an **As of** date and Warehouse filtering. Historical stock is reconstructed from the immutable Stock Movement ledger using quantity/reservation snapshots. Stock valuation uses weighted purchase cost as of the selected date.
+
+Stock Movement supports From/To date, Warehouse and Movement Type filters. Purchase reporting is date-aware and includes receiving, returns, supplier payments and outstanding amounts.
+
+Supplier Due and Customer Due are historical **As of** reports. Supplier Due combines opening payable, purchases, purchase returns and supplier payments. Customer Due combines opening due, customer orders, completed return credits and the central PaymentTransaction ledger.
+
+All v2.2.1 reports support KPI summary cards, responsive tables and UTF-8 CSV export. No new database migration is required.
+
+Route: `/dashboard/reports/`
+
+See `REPORTS_PHASE.md` for calculation rules, historical-data behavior, filters, limitations and the remaining Reports roadmap.
 
 ## v2.2.0 — Sales + Profit Reports
 
-The Reports dashboard is now database-backed and provides the first Reports v2.2.x release:
+The Reports dashboard provides real database-backed Sales and Profit reporting:
 
 - Sales Report
 - Daily Sales
@@ -27,10 +51,6 @@ Reports support From/To date filtering, sales-channel filtering, KPI cards and U
 Order-level COGS uses posted General Ledger COGS entries as the primary source of truth. Completed sales-return COGS reversals reduce net COGS, while return credits reduce net sales. Gross Profit is calculated as Net Sales minus Net COGS.
 
 Product, Category and Brand reports focus on product revenue and therefore exclude shipping revenue. Order-level discounts and return credits are allocated to product rows, and exact order COGS is allocated across the sold items. Category and Brand grouping use the product's current Catalog classification because those values are not currently snapshotted on Sales Order items.
-
-Route: `/dashboard/reports/`
-
-See `REPORTS_PHASE.md` for report definitions, calculation rules, filters and the remaining v2.2.x roadmap.
 
 ## v2.1.1 — Expense Management System
 
@@ -134,14 +154,17 @@ Routes: `/dashboard/accounts/`, `/dashboard/accounts/chart/`, `/dashboard/accoun
 
 Routes: `/dashboard/expenses/`, `/dashboard/expenses/add/`, `/dashboard/expenses/categories/`, `/dashboard/expenses/<id>/`, `/dashboard/expenses/<id>/pay/`.
 
-### Reports v2.2.0
-- completed-sales reporting
-- Daily and Monthly Sales
-- POS vs Online / Manual comparison
-- Product / Category / Brand sales
+### Reports v2.2.1
+- Sales / Daily / Monthly Sales
+- POS vs Online / Manual Sales
+- Product / Category / Brand Sales
 - return-aware COGS and Gross Profit
-- From/To date and Channel filters
-- CSV export
+- Stock / Stock Valuation / Low Stock
+- Stock Movement
+- Purchase Report
+- Supplier Due / Customer Due
+- report-appropriate Date, Channel, Warehouse and Movement Type filters
+- UTF-8 CSV export
 
 Route: `/dashboard/reports/`.
 
@@ -173,7 +196,7 @@ python manage.py test catalog inventory serial_tracking purchasing customers sal
 python manage.py runserver
 ```
 
-v2.2.0 adds no database migration. Existing operational, Accounting and Expense data are preserved.
+v2.2.1 adds no database migration. Existing operational, Accounting, Expense and Reports data are preserved.
 
 ## Roadmap direction
 
@@ -181,7 +204,6 @@ Reports v2.2.x is being released in controlled sub-phases so operational reports
 
 Next planned phases:
 
-- **v2.2.1 — Stock + Purchase Reports**
 - **v2.2.2 — Payment + Expense + Returns + Warranty + Serial/IMEI Reports**
 - **v2.2.3 — P&L + Balance Sheet + Cash Flow + Trial Balance**
 - **v2.3.x — Marketing**
