@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     "payments.apps.PaymentsConfig", "shipping.apps.ShippingConfig", "returns.apps.ReturnsConfig",
     "accounting.apps.AccountingConfig", "expenses.apps.ExpensesConfig", "reports.apps.ReportsConfig",
     "promotions.apps.PromotionsConfig", "store_settings.apps.StoreSettingsConfig",
-    "customer_accounts.apps.CustomerAccountsConfig", "storefront", "backoffice",
+    "customer_accounts.apps.CustomerAccountsConfig", "integrations.apps.IntegrationsConfig", "storefront", "backoffice",
 ]
 
 MIDDLEWARE = [
@@ -53,6 +53,7 @@ TEMPLATES = [{
         "django.contrib.auth.context_processors.auth",
         "django.contrib.messages.context_processors.messages",
         "customer_accounts.context_processors.customer_account",
+        "integrations.context_processors.staff_notifications",
     ]},
 }]
 WSGI_APPLICATION = "techbari.wsgi.application"
@@ -82,6 +83,13 @@ X_FRAME_OPTIONS = "DENY"
 
 EMAIL_BACKEND = os.getenv("DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@techbari.local")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "15"))
 
 # Legacy module tests predate staff authentication. The custom runner keeps
 # those tests focused on business logic, while staff_access tests explicitly
