@@ -6,6 +6,7 @@ handler404 = "techbari.views.not_found"
 handler500 = "techbari.views.server_error"
 
 urlpatterns = [
+    path("dashboard/integrations/", include("integrations.dashboard_urls")),
     path("dashboard/", include("backoffice.urls")),
     path("account/", include("customer_accounts.urls")),
     path("integrations/", include("integrations.urls")),
