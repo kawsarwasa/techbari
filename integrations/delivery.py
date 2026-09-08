@@ -28,9 +28,8 @@ def _safe_error(exc):
     if isinstance(exc, URLError):
         return f"Network error: {exc.reason}"[:1000]
     text = str(exc)
-    for env_name in ("META_CAPI_ACCESS_TOKEN", "GA4_API_SECRET", "SMS_API_TOKEN", "WHATSAPP_API_TOKEN", "COURIER_API_TOKEN"):
-        value = _secret(env_name)
-        if value:
+    for name, value in os.environ.items():
+        if ("TOKEN" in name or "SECRET" in name or "PASSWORD" in name) and value:
             text = text.replace(value, "***")
     return text[:1000]
 
@@ -43,7 +42,7 @@ def _http_json(url, payload, *, token="", timeout=12, headers=None):
     try:
         with urlopen(request, timeout=timeout) as response:
             raw = response.read().decode("utf-8", errors="replace")
-            if response.status < 200 or response.status >= 300:
+            if not 200 <= response.status < 300:
                 raise DeliveryError(f"HTTP {response.status}")
             if not raw.strip():
                 return {}
@@ -65,8 +64,7 @@ def _deliver_webhook(message, *, token_env):
     url = str(message.payload.get("url") or "").strip()
     if not url:
         raise DeliveryError("Webhook URL is not configured.")
-    token = _secret(token_env)
-    _http_json(url, {"to": message.recipient, "message": message.body, "event_type": message.event_type, "reference": message.reference_id}, token=token)
+    _http_json(url, {"to": message.recipient, "message": message.body, "event_type": message.event_type, "reference": message.reference_id}, token=_secret(token_env))
 
 
 def _deliver_meta(message):
@@ -78,8 +76,7 @@ def _deliver_meta(message):
     version = _secret("META_GRAPH_API_VERSION").strip("/")
     base = str(os.getenv("META_CAPI_BASE_URL", "https://graph.facebook.com") or "https://graph.facebook.com").rstrip("/")
     path = f"/{version}/{pixel_id}/events" if version else f"/{pixel_id}/events"
-    url = base + path + "?" + urlencode({"access_token": token})
-    _http_json(url, {"data": [message.payload["event"]]})
+    _http_json(base + path + "?" + urlencode({"access_token": token}), {"data": [message.payload["event"]]})
 
 
 def _deliver_ga4(message):
@@ -90,8 +87,7 @@ def _deliver_ga4(message):
         raise DeliveryError("GA4 API secret or Measurement ID is not configured.")
     endpoint = str(os.getenv("GA4_MEASUREMENT_PROTOCOL_URL", "https://www.google-analytics.com/mp/collect") or "").strip()
     url = endpoint + "?" + urlencode({"measurement_id": measurement_id, "api_secret": secret})
-    body = {"client_id": message.payload.get("client_id"), "events": message.payload.get("events", [])}
-    _http_json(url, body)
+    _http_json(url, {"client_id": message.payload.get("client_id"), "events": message.payload.get("events", [])})
 
 
 def _deliver_courier(message):
@@ -100,12 +96,11 @@ def _deliver_courier(message):
 
     payload = message.payload or {}
     shipment = Shipment.objects.select_related("courier", "order").get(pk=payload["shipment_id"])
-    base = str(payload.get("api_base_url") or shipment.courier.api_base_url or "").strip()
+    base = str(payload.get("api_base_url") or "").strip()
     if not base:
         raise DeliveryError("Courier API base URL is not configured.")
-    path = str(payload.get("api_create_path") or shipment.courier.api_create_path or "/shipments")
-    url = urljoin(base.rstrip("/") + "/", path.lstrip("/"))
-    token_env = str(payload.get("token_env") or shipment.courier.api_token_env or f"COURIER_API_TOKEN_{shipment.courier.code}")
+    url = urljoin(base.rstrip("/") + "/", str(payload.get("api_create_path") or "/shipments").lstrip("/"))
+    token_env = str(payload.get("token_env") or f"COURIER_{shipment.courier.code}_API_TOKEN")
     token = _secret(token_env) or _secret("COURIER_API_TOKEN")
     response = _http_json(url, {"shipment_no": shipment.shipment_no, **(payload.get("order") or {})}, token=token, headers={"X-TechBari-Courier": shipment.courier.code})
     tracking_id = str(response.get("tracking_id") or response.get("tracking_code") or "").strip()
@@ -115,29 +110,25 @@ def _deliver_courier(message):
 
 
 def deliver_message(message):
-    if message.channel == OutboundMessage.Channel.EMAIL:
-        return _deliver_email(message)
+    handlers = {
+        OutboundMessage.Channel.EMAIL: _deliver_email,
+        OutboundMessage.Channel.META_CAPI: _deliver_meta,
+        OutboundMessage.Channel.GA4: _deliver_ga4,
+        OutboundMessage.Channel.COURIER: _deliver_courier,
+    }
     if message.channel == OutboundMessage.Channel.SMS:
         return _deliver_webhook(message, token_env="SMS_API_TOKEN")
     if message.channel == OutboundMessage.Channel.WHATSAPP:
         return _deliver_webhook(message, token_env="WHATSAPP_API_TOKEN")
-    if message.channel == OutboundMessage.Channel.META_CAPI:
-        return _deliver_meta(message)
-    if message.channel == OutboundMessage.Channel.GA4:
-        return _deliver_ga4(message)
-    if message.channel == OutboundMessage.Channel.COURIER:
-        return _deliver_courier(message)
-    raise DeliveryError("Unsupported integration channel.")
+    handler = handlers.get(message.channel)
+    if not handler:
+        raise DeliveryError("Unsupported integration channel.")
+    return handler(message)
 
 
 def process_outbound(*, limit=100, max_attempts=5):
     limit = max(1, min(int(limit or 100), 500))
-    now = timezone.now()
-    ids = list(
-        OutboundMessage.objects.filter(status__in=[OutboundMessage.Status.PENDING, OutboundMessage.Status.FAILED], attempts__lt=max_attempts, available_at__lte=now)
-        .order_by("available_at", "id")
-        .values_list("id", flat=True)[:limit]
-    )
+    ids = list(OutboundMessage.objects.filter(status__in=[OutboundMessage.Status.PENDING, OutboundMessage.Status.FAILED], attempts__lt=max_attempts, available_at__lte=timezone.now()).order_by("available_at", "id").values_list("id", flat=True)[:limit])
     summary = {"sent": 0, "failed": 0, "skipped": 0}
     for pk in ids:
         with transaction.atomic():
@@ -153,8 +144,7 @@ def process_outbound(*, limit=100, max_attempts=5):
                 error_text = _safe_error(exc)
                 message.status = OutboundMessage.Status.FAILED
                 message.last_error = error_text
-                delay = min(60 * (2 ** max(message.attempts - 1, 0)), 3600)
-                message.available_at = timezone.now() + timedelta(seconds=delay)
+                message.available_at = timezone.now() + timedelta(seconds=min(60 * (2 ** max(message.attempts - 1, 0)), 3600))
                 message.save(update_fields=["attempts", "last_attempt_at", "status", "last_error", "available_at", "updated_at"])
                 enqueue_integration_failure(message, error_text)
                 summary["failed"] += 1
