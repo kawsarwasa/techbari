@@ -17,6 +17,8 @@ def page(request, page_name="dashboard"):
     if page_name not in PAGES: raise Http404("Dashboard page not found")
     if page_name == "dashboard":
         from . import dashboard_analytics; return dashboard_analytics.dashboard(request)
+    if page_name == "notifications":
+        from . import integration_views; return integration_views.notifications(request)
     if page_name in CATALOG_PAGE_NAMES:
         from . import catalog_views; return getattr(catalog_views, page_name)(request)
     if page_name in INVENTORY_PAGE_NAMES:
