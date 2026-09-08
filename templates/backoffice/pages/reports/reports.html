@@ -1,27 +1,29 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{{ report_title }} | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/reports-v220.css' %}?v=2.2.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/reports-v220.css' %}?v=2.2.1">{% endblock %}
 {% block content %}
 <section class="page reports-page">
   <div class="page-head reports-head">
     <div>
-      <span class="report-eyebrow">Reports v2.2.0</span>
-      <h1>Sales + Profit Reports</h1>
-      <p>Live database reports for completed Online, POS and Manual sales.</p>
+      <span class="report-eyebrow">Reports v2.2.1</span>
+      <h1>Business Reports</h1>
+      <p>Sales, profit, inventory, purchasing and due reports from TechBari's live business data.</p>
     </div>
     <a class="btn btn-primary" href="{{ export_url }}">Export CSV</a>
   </div>
 
   <form class="report-filter" method="get">
     <input type="hidden" name="report" value="{{ report_key }}">
-    <label><span>From</span><input type="date" name="date_from" value="{{ filters.date_from|date:'Y-m-d' }}"></label>
-    <label><span>To</span><input type="date" name="date_to" value="{{ filters.date_to|date:'Y-m-d' }}"></label>
-    <label><span>Channel</span><select name="channel">{% for value,label in channel_choices %}<option value="{{ value }}"{% if filters.channel == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    {% if date_scope_label != "As of" %}<label><span>From</span><input type="date" name="date_from" value="{{ filters.date_from|date:'Y-m-d' }}"></label>{% endif %}
+    <label><span>{% if date_scope_label == "As of" %}As of{% else %}To{% endif %}</span><input type="date" name="date_to" value="{{ filters.date_to|date:'Y-m-d' }}"></label>
+    {% if show_channel_filter %}<label><span>Channel</span><select name="channel">{% for value,label in channel_choices %}<option value="{{ value }}"{% if filters.channel == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endif %}
+    {% if show_warehouse_filter %}<label><span>Warehouse</span><select name="warehouse">{% for value,label in warehouse_choices %}<option value="{{ value }}"{% if filters.warehouse|stringformat:"s" == value|stringformat:"s" %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endif %}
+    {% if show_movement_filter %}<label><span>Movement Type</span><select name="movement_type">{% for value,label in movement_choices %}<option value="{{ value }}"{% if filters.movement_type == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>{% endif %}
     <div class="report-filter-actions"><button class="btn btn-primary" type="submit">Apply Filter</button><a class="btn" href="{{ reset_url }}">Reset</a></div>
   </form>
 
-  <nav class="report-tabs" aria-label="Sales report types">
+  <nav class="report-tabs" aria-label="Business report types">
     {% for tab in report_tabs %}<a href="{{ tab.url }}" class="{% if report_key == tab.key %}active{% endif %}">{{ tab.label }}</a>{% endfor %}
   </nav>
 
@@ -32,14 +34,14 @@
   </div>
 
   <div class="report-panel">
-    <div class="report-panel-head"><div><h2>{{ report_title }}</h2><p>{{ report_description }}</p></div><span class="report-range">{{ filters.date_from|date:"d M Y" }} — {{ filters.date_to|date:"d M Y" }}</span></div>
+    <div class="report-panel-head"><div><h2>{{ report_title }}</h2><p>{{ report_description }}</p></div><span class="report-range">{% if date_scope_label == "As of" %}As of {{ filters.date_to|date:"d M Y" }}{% else %}{{ filters.date_from|date:"d M Y" }} — {{ filters.date_to|date:"d M Y" }}{% endif %}</span></div>
     <div class="report-table-wrap">
       <table class="report-table">
         <thead><tr>{% for column in columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
         <tbody>
           {% for row in rows %}
           <tr>{% for cell in row.cells %}<td class="cell-{{ cell.kind }}">{% if cell.kind == 'money' %}৳{{ cell.value|floatformat:2 }}{% elif cell.kind == 'percent' %}{{ cell.value|floatformat:2 }}%{% elif cell.kind == 'date' %}{{ cell.value|date:"d M Y" }}{% else %}{{ cell.value }}{% endif %}</td>{% endfor %}</tr>
-          {% empty %}<tr><td class="report-empty" colspan="12">No completed sales found for this filter.</td></tr>{% endfor %}
+          {% empty %}<tr><td class="report-empty" colspan="12">{{ empty_message }}</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>
