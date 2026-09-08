@@ -93,6 +93,30 @@ def checkout(request):
     return render(request, "storefront/pages/checkout.html", context)
 
 
+def _purchase_tracking_data(order):
+    items = []
+    contents = []
+    for item in order.items.all():
+        price = float(item.unit_price)
+        quantity = int(item.quantity)
+        items.append({
+            "item_id": item.sku_snapshot,
+            "item_name": item.product_snapshot,
+            "item_variant": item.variant_snapshot,
+            "price": price,
+            "quantity": quantity,
+        })
+        contents.append({"id": item.sku_snapshot, "quantity": quantity, "item_price": price})
+    return {
+        "order_number": order.order_number,
+        "event_id": f"tb-purchase-{order.order_number}",
+        "value": float(order.grand_total),
+        "shipping": float(order.shipping_charge),
+        "items": items,
+        "contents": contents,
+    }
+
+
 def checkout_success(request, order_number):
     try:
         verify_success_token(order_number, request.GET.get("token", ""))
@@ -100,7 +124,7 @@ def checkout_success(request, order_number):
         raise Http404("Order confirmation not found") from exc
     order = get_object_or_404(SalesOrder.objects.select_related("customer", "warehouse").prefetch_related("items__variant__product"), order_number=order_number, channel=SalesOrder.Channel.ONLINE)
     context = catalog_context()
-    context.update(order=order, checkout_complete=True)
+    context.update(order=order, checkout_complete=True, purchase_tracking_data=_purchase_tracking_data(order))
     return render(request, "storefront/pages/checkout_success.html", context)
 
 
