@@ -66,26 +66,51 @@ def _resolve_order_lines(cart_payload):
     return apply_flash_sale_prices(rows)
 
 
-def _customer_for_checkout(data):
+def _customer_for_checkout(data, customer_account=None):
     phone = data["phone"]
-    customer = Customer.objects.select_for_update().filter(phone=phone).first()
     email = data.get("email") or ""
-    if email:
-        email_owner = Customer.objects.filter(email__iexact=email).exclude(phone=phone).first()
-        if email_owner:
-            raise CheckoutError("This email is already linked to another customer account. Use the phone number linked to that account or leave email blank.")
     address_bits = [data.get("address"), data.get("upazila"), data.get("district"), data.get("division")]
     latest_address = ", ".join(str(bit).strip() for bit in address_bits if str(bit or "").strip())
     if data.get("landmark"):
         latest_address += f" (Landmark: {data['landmark'].strip()})"
+
+    if customer_account:
+        customer = Customer.objects.select_for_update().get(pk=customer_account.customer_id)
+        if customer.phone != phone:
+            raise CheckoutError("For a signed-in account, use the mobile number linked to your profile.")
+        if email and Customer.objects.filter(email__iexact=email).exclude(pk=customer.pk).exists():
+            raise CheckoutError("This email is linked to another customer record.")
+        updates = {"name": data["full_name"], "source": Customer.Source.ONLINE, "address": latest_address, "city": data.get("upazila") or "", "district": data.get("district") or "", "is_active": True}
+        if email:
+            updates["email"] = email
+        changed = []
+        for field, value in updates.items():
+            if getattr(customer, field) != value:
+                setattr(customer, field, value)
+                changed.append(field)
+        if changed:
+            changed.append("updated_at")
+            customer.save(update_fields=changed)
+        if email and customer_account.user.email != email:
+            customer_account.user.email = email
+            customer_account.user.save(update_fields=["email"])
+        return customer
+
+    customer = Customer.objects.select_for_update().filter(phone=phone).first()
+    if email:
+        email_owner = Customer.objects.filter(email__iexact=email).exclude(phone=phone).first()
+        if email_owner:
+            raise CheckoutError("This email is already linked to another customer account. Use the phone number linked to that account or leave email blank.")
     if customer:
         changed = []
         updates = {"name": data["full_name"], "email": email, "source": Customer.Source.ONLINE, "address": latest_address, "city": data.get("upazila") or "", "district": data.get("district") or "", "is_active": True}
         for field, value in updates.items():
             if getattr(customer, field) != value:
-                setattr(customer, field, value); changed.append(field)
+                setattr(customer, field, value)
+                changed.append(field)
         if changed:
-            changed.append("updated_at"); customer.save(update_fields=changed)
+            changed.append("updated_at")
+            customer.save(update_fields=changed)
         return customer
     group = CustomerGroup.objects.filter(code="RETAIL", is_active=True).first()
     return Customer.objects.create(name=data["full_name"], phone=phone, email=email, group=group, source=Customer.Source.ONLINE, address=latest_address, city=data.get("upazila") or "", district=data.get("district") or "", is_active=True)
@@ -94,16 +119,19 @@ def _customer_for_checkout(data):
 def _order_notes(data, campaign_attribution=None):
     delivery = "Inside Dhaka" if data["delivery_option"] == "inside" else "Outside Dhaka"
     parts = ["Storefront Checkout", "Payment: Cash on Delivery", f"Delivery: {delivery}", f"Division: {data['division']}"]
-    if data.get("landmark"): parts.append(f"Landmark: {data['landmark'].strip()}")
-    if data.get("coupon_code"): parts.append(f"Coupon: {data['coupon_code']}")
+    if data.get("landmark"):
+        parts.append(f"Landmark: {data['landmark'].strip()}")
+    if data.get("coupon_code"):
+        parts.append(f"Coupon: {data['coupon_code']}")
     if campaign_attribution and campaign_attribution.get("campaign"):
         parts.append(f"Campaign: {campaign_attribution['campaign'].code}")
-    if data.get("order_note"): parts.append(f"Customer note: {data['order_note'].strip()}")
+    if data.get("order_note"):
+        parts.append(f"Customer note: {data['order_note'].strip()}")
     return " | ".join(parts)
 
 
 @transaction.atomic
-def place_checkout_order(cleaned_data, *, campaign_attribution=None):
+def place_checkout_order(cleaned_data, *, campaign_attribution=None, customer_account=None):
     token_data = cleaned_data["checkout_token"]
     order_number = token_data["order_number"]
     existing = SalesOrder.objects.select_related("customer", "warehouse").filter(order_number=order_number, channel=SalesOrder.Channel.ONLINE).first()
@@ -125,10 +153,11 @@ def place_checkout_order(cleaned_data, *, campaign_attribution=None):
     if not store.cod_enabled:
         raise CheckoutError("Cash on Delivery is currently disabled by the store.")
 
-    customer = _customer_for_checkout(cleaned_data)
+    customer = _customer_for_checkout(cleaned_data, customer_account=customer_account)
     warehouse = get_default_warehouse()
     shipping_address = cleaned_data["address"].strip()
-    if cleaned_data.get("landmark"): shipping_address += f" (Landmark: {cleaned_data['landmark'].strip()})"
+    if cleaned_data.get("landmark"):
+        shipping_address += f" (Landmark: {cleaned_data['landmark'].strip()})"
     header = {"order_number": order_number, "customer": customer, "warehouse": warehouse, "channel": SalesOrder.Channel.ONLINE, "status": SalesOrder.Status.PENDING, "order_date": timezone.localdate(), "shipping_name": cleaned_data["full_name"], "shipping_phone": cleaned_data["phone"], "shipping_email": cleaned_data.get("email") or "", "shipping_address": shipping_address, "shipping_city": cleaned_data.get("upazila") or "", "shipping_district": cleaned_data.get("district") or "", "shipping_postal_code": "", "discount_amount": discount, "shipping_charge": shipping, "amount_paid": Decimal("0.00"), "notes": _order_notes(cleaned_data, campaign_attribution)}
     try:
         order = save_sales_order(header_data=header, item_rows=rows, actor="Storefront Checkout")

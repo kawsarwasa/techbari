@@ -28,7 +28,8 @@ INSTALLED_APPS = [
     "catalog", "inventory", "serial_tracking", "purchasing", "customers", "sales",
     "payments.apps.PaymentsConfig", "shipping.apps.ShippingConfig", "returns.apps.ReturnsConfig",
     "accounting.apps.AccountingConfig", "expenses.apps.ExpensesConfig", "reports.apps.ReportsConfig",
-    "promotions.apps.PromotionsConfig", "store_settings.apps.StoreSettingsConfig", "storefront", "backoffice",
+    "promotions.apps.PromotionsConfig", "store_settings.apps.StoreSettingsConfig",
+    "customer_accounts.apps.CustomerAccountsConfig", "storefront", "backoffice",
 ]
 
 MIDDLEWARE = [
@@ -51,6 +52,7 @@ TEMPLATES = [{
         "django.template.context_processors.request",
         "django.contrib.auth.context_processors.auth",
         "django.contrib.messages.context_processors.messages",
+        "customer_accounts.context_processors.customer_account",
     ]},
 }]
 WSGI_APPLICATION = "techbari.wsgi.application"
