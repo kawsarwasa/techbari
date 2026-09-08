@@ -1,6 +1,62 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
 {% block title %}Store Settings | TechBari Admin{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Store Settings</h1><p>Manage store preferences, payments, shipping and notifications.</p></div><div class="head-actions"><a class="btn btn-primary" href="#" data-demo-alert="Settings saved in static demo."><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg> Save Settings</a></div></div><div class="settings-tabs"><button class="active">General</button><button>Store Info</button><button>Payment Methods</button><button>Shipping</button><button>Notifications</button><button>Social Links</button></div><div class="settings-grid"><div class="card form-card"><div class="section-head"><h3>Basic Settings</h3></div><div class="form-grid"><label class="field"><span>Store Name</span><input class="control" value="TechBari"></label><label class="field"><span>Support Phone</span><input class="control" value="+880 1712-345678"></label><label class="field"><span>Support Email</span><input class="control" value="support@techbari.com"></label><label class="field"><span>Currency</span><select class="control"><option>৳ BDT (Bangladeshi Taka)</option></select></label><label class="field field-full"><span>Store Address</span><textarea class="control textarea">House 12, Road 4, Dhanmondi, Dhaka 1205</textarea></label></div></div><div class="card form-card"><div class="section-head"><h3>Store Features</h3></div><div class="toggle-list"><label><span>Cash on Delivery</span><input type="checkbox" checked></label><label><span>bKash Payment</span><input type="checkbox" checked></label><label><span>Nagad Payment</span><input type="checkbox" checked></label><label><span>Card Payment</span><input type="checkbox" checked></label><label><span>Guest Checkout</span><input type="checkbox" checked></label><label><span>Low Stock Alert</span><input type="checkbox" checked></label></div></div><div class="card form-card"><div class="section-head"><h3>Operational Defaults</h3></div><div class="form-grid one"><label class="field"><span>Inventory Costing</span><select class="control"><option>Weighted Average</option><option>FIFO</option></select></label><label class="field"><span>Default Warehouse</span><select class="control"><option>Main Warehouse</option></select></label><label class="field"><span>Default Order Status</span><select class="control"><option>Processing</option><option>Pending</option></select></label></div></div></div></section>
+<section class="page">
+  <div class="page-head"><div><h1>CMS / Store Settings</h1><p>Branding, contact, delivery, social links and SEO used by the live storefront.</p></div></div>
+  <div class="settings-tabs">
+    <a class="active" href="{% url 'backoffice:settings' %}">Store Settings</a>
+    <a href="{% url 'backoffice:cms_banners' %}">Hero Banners ({{ banner_count }})</a>
+    <a href="{% url 'backoffice:cms_homepage_sections' %}">Homepage Sections</a>
+    <a href="{% url 'backoffice:cms_content_pages' %}">Content Pages</a>
+  </div>
+  <div class="stats-grid" style="margin-bottom:18px">
+    <div class="stat-card"><span>Hero Banners</span><strong>{{ banner_count }}</strong><small>{{ live_banner_count }} live now</small></div>
+    <div class="stat-card"><span>Homepage Sections</span><strong>{{ section_count }}</strong><small>Database controlled</small></div>
+    <div class="stat-card"><span>Content Pages</span><strong>{{ page_count }}</strong><small>Terms / Privacy / Return / Shipping</small></div>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="settings-grid">
+    {% csrf_token %}
+    {% if settings_form.non_field_errors %}<div class="alert error">{{ settings_form.non_field_errors }}</div>{% endif %}
+    <div class="card form-card"><div class="section-head"><h3>Shop Information & Branding</h3></div><div class="form-grid">
+      <label class="field"><span>Store Name</span>{{ settings_form.store_name }}{{ settings_form.store_name.errors }}</label>
+      <label class="field"><span>Tagline</span>{{ settings_form.tagline }}{{ settings_form.tagline.errors }}</label>
+      <label class="field"><span>Support Phone</span>{{ settings_form.support_phone }}{{ settings_form.support_phone.errors }}</label>
+      <label class="field"><span>Support Hours</span>{{ settings_form.support_hours }}{{ settings_form.support_hours.errors }}</label>
+      <label class="field"><span>Support Email</span>{{ settings_form.support_email }}{{ settings_form.support_email.errors }}</label>
+      <label class="field"><span>Business Email</span>{{ settings_form.business_email }}{{ settings_form.business_email.errors }}</label>
+      <label class="field field-full"><span>Store Address</span>{{ settings_form.address }}{{ settings_form.address.errors }}</label>
+      <label class="field"><span>Logo</span>{{ settings_form.logo }}{% if store.logo %}<small>Current: {{ store.logo.name }}</small>{% endif %}{{ settings_form.logo.errors }}</label>
+      <label class="field"><span>Favicon</span>{{ settings_form.favicon }}{% if store.favicon %}<small>Current: {{ store.favicon.name }}</small>{% endif %}{{ settings_form.favicon.errors }}</label>
+    </div></div>
+
+    <div class="card form-card"><div class="section-head"><h3>Contact / Social</h3></div><div class="form-grid">
+      <label class="field"><span>Facebook</span>{{ settings_form.facebook_url }}</label><label class="field"><span>YouTube</span>{{ settings_form.youtube_url }}</label>
+      <label class="field"><span>Instagram</span>{{ settings_form.instagram_url }}</label><label class="field"><span>TikTok</span>{{ settings_form.tiktok_url }}</label>
+      <label class="field"><span>WhatsApp Number</span>{{ settings_form.whatsapp_number }}</label>
+      <label class="field field-full"><span>Footer About</span>{{ settings_form.footer_about }}</label><label class="field field-full"><span>Copyright</span>{{ settings_form.copyright_text }}</label>
+    </div></div>
+
+    <div class="card form-card"><div class="section-head"><h3>Top Bar Messages</h3></div><div class="form-grid one">
+      <label class="field"><span>Delivery Message</span>{{ settings_form.topbar_delivery_text }}</label>
+      <label class="field"><span>Authenticity Message</span>{{ settings_form.topbar_authentic_text }}</label>
+      <label class="field"><span>Return Message</span>{{ settings_form.topbar_return_text }}</label>
+    </div></div>
+
+    <div class="card form-card"><div class="section-head"><h3>Delivery & Checkout</h3></div><div class="form-grid">
+      <label class="field"><span>Inside Dhaka Charge</span>{{ settings_form.delivery_inside_dhaka_charge }}{{ settings_form.delivery_inside_dhaka_charge.errors }}</label>
+      <label class="field"><span>Outside Dhaka Charge</span>{{ settings_form.delivery_outside_dhaka_charge }}{{ settings_form.delivery_outside_dhaka_charge.errors }}</label>
+      <label class="field"><span>Free Delivery Threshold</span>{{ settings_form.free_delivery_threshold }}<small>0 = disabled</small>{{ settings_form.free_delivery_threshold.errors }}</label>
+      <label class="field"><span>Currency Code</span>{{ settings_form.currency_code }}</label><label class="field"><span>Currency Symbol</span>{{ settings_form.currency_symbol }}</label>
+      <label class="field"><span>Inside Dhaka Min Days</span>{{ settings_form.delivery_inside_days_min }}</label><label class="field"><span>Inside Dhaka Max Days</span>{{ settings_form.delivery_inside_days_max }}{{ settings_form.delivery_inside_days_max.errors }}</label>
+      <label class="field"><span>Outside Dhaka Min Days</span>{{ settings_form.delivery_outside_days_min }}</label><label class="field"><span>Outside Dhaka Max Days</span>{{ settings_form.delivery_outside_days_max }}{{ settings_form.delivery_outside_days_max.errors }}</label>
+      <label class="field"><span>{{ settings_form.cod_enabled }} Cash on Delivery Enabled</span></label><label class="field"><span>{{ settings_form.guest_checkout_enabled }} Guest Checkout Enabled</span></label>
+    </div></div>
+
+    <div class="card form-card"><div class="section-head"><h3>SEO</h3></div><div class="form-grid one">
+      <label class="field"><span>Default SEO Title</span>{{ settings_form.seo_title }}</label><label class="field"><span>Default SEO Description</span>{{ settings_form.seo_description }}</label><label class="field"><span>SEO Keywords</span>{{ settings_form.seo_keywords }}</label>
+      <label class="field"><span>Homepage SEO Title</span>{{ settings_form.homepage_seo_title }}</label><label class="field"><span>Homepage SEO Description</span>{{ settings_form.homepage_seo_description }}</label>
+    </div></div>
+    <div class="head-actions"><button class="btn btn-primary" type="submit">Save Store Settings</button></div>
+  </form>
+</section>
 {% endblock %}
