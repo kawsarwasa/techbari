@@ -170,4 +170,4 @@ def enqueue_shipping_event(shipment, event_type="updated"):
 
 
 def enqueue_integration_failure(message, error_text):
-    _notification(kind=Notification.Kind.INTEGRATION, severity=Notification.Severity.DANGER, title=f"Integration delivery failed: {message.get_channel_display()}", message=str(error_text)[:500], link=reverse("backoffice:integration_settings"), reference_type="outbound_message", reference_id=str(message.pk), dedupe_key=f"integration-failure:{message.pk}:{message.attempts}")
+    _notification(kind=Notification.Kind.INTEGRATION, severity=Notification.Severity.DANGER, title=f"Integration delivery failed: {message.get_channel_display()}", message=str(error_text)[:500], link=reverse("integration_admin:integration_settings"), reference_type="outbound_message", reference_id=str(message.pk), dedupe_key=f"integration-failure:{message.pk}:{message.attempts}")
