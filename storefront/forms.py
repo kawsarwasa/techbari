@@ -4,21 +4,8 @@ import re
 from django import forms
 from django.core import signing
 
-from . import mock_data
-
-
 CHECKOUT_SIGNING_SALT = "storefront.checkout.v160"
-DIVISION_CHOICES = [
-    ("", "Select Division"),
-    ("Dhaka", "Dhaka"),
-    ("Chattogram", "Chattogram"),
-    ("Rajshahi", "Rajshahi"),
-    ("Khulna", "Khulna"),
-    ("Barishal", "Barishal"),
-    ("Sylhet", "Sylhet"),
-    ("Rangpur", "Rangpur"),
-    ("Mymensingh", "Mymensingh"),
-]
+DIVISION_CHOICES = [("", "Select Division"), ("Dhaka", "Dhaka"), ("Chattogram", "Chattogram"), ("Rajshahi", "Rajshahi"), ("Khulna", "Khulna"), ("Barishal", "Barishal"), ("Sylhet", "Sylhet"), ("Rangpur", "Rangpur"), ("Mymensingh", "Mymensingh")]
 
 
 def normalize_bd_phone(value):
@@ -31,51 +18,19 @@ def normalize_bd_phone(value):
 
 
 class CheckoutForm(forms.Form):
-    full_name = forms.CharField(
-        max_length=180,
-        widget=forms.TextInput(attrs={"placeholder": "Enter your full name", "autocomplete": "name"}),
-    )
-    phone = forms.CharField(
-        max_length=40,
-        widget=forms.TextInput(attrs={"placeholder": "01XXXXXXXXX", "autocomplete": "tel", "inputmode": "tel"}),
-    )
-    email = forms.EmailField(
-        required=False,
-        widget=forms.EmailInput(attrs={"placeholder": "you@email.com", "autocomplete": "email"}),
-    )
+    full_name = forms.CharField(max_length=180, widget=forms.TextInput(attrs={"placeholder": "Enter your full name", "autocomplete": "name"}))
+    phone = forms.CharField(max_length=40, widget=forms.TextInput(attrs={"placeholder": "01XXXXXXXXX", "autocomplete": "tel", "inputmode": "tel"}))
+    email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={"placeholder": "you@email.com", "autocomplete": "email"}))
     division = forms.ChoiceField(choices=DIVISION_CHOICES)
-    district = forms.CharField(
-        max_length=120,
-        widget=forms.TextInput(attrs={"placeholder": "e.g. Dhaka", "autocomplete": "address-level2"}),
-    )
-    upazila = forms.CharField(
-        max_length=120,
-        widget=forms.TextInput(attrs={"placeholder": "e.g. Dhanmondi / Savar", "autocomplete": "address-level3"}),
-    )
-    address = forms.CharField(
-        max_length=500,
-        widget=forms.TextInput(attrs={"placeholder": "House no, Road no, Area name", "autocomplete": "street-address"}),
-    )
-    landmark = forms.CharField(
-        max_length=180,
-        required=False,
-        widget=forms.TextInput(attrs={"placeholder": "e.g. Near school, mosque, shopping mall"}),
-    )
-    delivery_option = forms.ChoiceField(
-        choices=(("inside", "Inside Dhaka"), ("outside", "Outside Dhaka")),
-        initial="inside",
-    )
+    district = forms.CharField(max_length=120, widget=forms.TextInput(attrs={"placeholder": "e.g. Dhaka", "autocomplete": "address-level2"}))
+    upazila = forms.CharField(max_length=120, widget=forms.TextInput(attrs={"placeholder": "e.g. Dhanmondi / Savar", "autocomplete": "address-level3"}))
+    address = forms.CharField(max_length=500, widget=forms.TextInput(attrs={"placeholder": "House no, Road no, Area name", "autocomplete": "street-address"}))
+    landmark = forms.CharField(max_length=180, required=False, widget=forms.TextInput(attrs={"placeholder": "e.g. Near school, mosque, shopping mall"}))
+    delivery_option = forms.ChoiceField(choices=(("inside", "Inside Dhaka"), ("outside", "Outside Dhaka")), initial="inside")
     payment_method = forms.ChoiceField(choices=(("cod", "Cash on Delivery"),), initial="cod")
-    order_note = forms.CharField(
-        max_length=1000,
-        required=False,
-        widget=forms.Textarea(attrs={"placeholder": "Any special instructions for your order?", "rows": 3}),
-    )
-    coupon_code = forms.CharField(
-        max_length=40,
-        required=False,
-        widget=forms.TextInput(attrs={"id": "checkoutCouponInput", "placeholder": "Enter coupon code", "autocomplete": "off"}),
-    )
+    order_note = forms.CharField(max_length=1000, required=False, widget=forms.Textarea(attrs={"placeholder": "Any special instructions for your order?", "rows": 3}))
+    coupon_code = forms.CharField(max_length=40, required=False, widget=forms.TextInput(attrs={"id": "checkoutCouponInput", "placeholder": "Enter coupon code", "autocomplete": "off"}))
+    campaign_code = forms.CharField(max_length=64, required=False, widget=forms.HiddenInput())
     cart_payload = forms.CharField(widget=forms.HiddenInput(attrs={"id": "checkoutCartPayload"}))
     checkout_token = forms.CharField(widget=forms.HiddenInput(attrs={"id": "checkoutToken"}))
 
@@ -95,10 +50,10 @@ class CheckoutForm(forms.Form):
         return (self.cleaned_data.get("email") or "").strip().lower()
 
     def clean_coupon_code(self):
-        code = (self.cleaned_data.get("coupon_code") or "").strip().upper()
-        if code and code not in mock_data.COUPONS:
-            raise forms.ValidationError("This coupon code is not valid.")
-        return code
+        return (self.cleaned_data.get("coupon_code") or "").strip().upper()
+
+    def clean_campaign_code(self):
+        return (self.cleaned_data.get("campaign_code") or "").strip().upper()
 
     def clean_cart_payload(self):
         raw = self.cleaned_data.get("cart_payload") or ""
@@ -110,14 +65,12 @@ class CheckoutForm(forms.Form):
             raise forms.ValidationError("Your cart is empty.")
         if len(payload) > 50:
             raise forms.ValidationError("Too many cart lines. Please reduce your cart and try again.")
-
         merged = {}
         for index, row in enumerate(payload, start=1):
             if not isinstance(row, dict):
                 raise forms.ValidationError(f"Cart line {index} is invalid.")
             try:
-                variant_id = int(row.get("variant_id"))
-                quantity = int(row.get("qty"))
+                variant_id = int(row.get("variant_id")); quantity = int(row.get("qty"))
             except (TypeError, ValueError) as exc:
                 raise forms.ValidationError(f"Cart line {index} is invalid.") from exc
             if variant_id <= 0 or quantity <= 0:

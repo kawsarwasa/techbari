@@ -10,21 +10,16 @@ from django.utils import timezone
 from catalog.models import Product, ProductVariant
 from customers.models import Customer, CustomerGroup
 from inventory.services import get_default_warehouse
+from promotions.services import PromotionError, apply_flash_sale_prices, coupon_discount_for_rows, record_campaign_conversion, redeem_coupon
 from sales.models import SalesOrder, make_order_number
 from sales.services import SalesOrderError, save_sales_order
-
-from . import mock_data
 from .forms import CHECKOUT_SIGNING_SALT
 
 
 class CheckoutError(ValidationError):
     pass
 
-
-SHIPPING_CHARGES = {
-    "inside": Decimal("60.00"),
-    "outside": Decimal("120.00"),
-}
+SHIPPING_CHARGES = {"inside": Decimal("60.00"), "outside": Decimal("120.00")}
 
 
 def create_checkout_token():
@@ -54,53 +49,22 @@ def checkout_success_url(order):
     return f"{base}?{urlencode({'token': success_token(order)})}"
 
 
-def _coupon_discount(subtotal, code):
-    if not code:
-        return Decimal("0.00")
-    coupon = mock_data.COUPONS.get(code)
-    if not coupon:
-        raise CheckoutError("This coupon code is no longer valid.")
-    value = Decimal(str(coupon.get("value", 0)))
-    if coupon.get("type") == "fixed":
-        discount = value
-    elif coupon.get("type") == "percent":
-        discount = (subtotal * value / Decimal("100")).quantize(Decimal("0.01"))
-    else:
-        raise CheckoutError("This coupon code is not configured correctly.")
-    return min(subtotal, max(discount, Decimal("0.00")))
-
-
 def _resolve_order_lines(cart_payload):
     ids = [row["variant_id"] for row in cart_payload]
-    variants = {
-        variant.pk: variant
-        for variant in ProductVariant.objects.select_related("product", "product__category", "product__brand").filter(pk__in=ids)
-    }
+    variants = {variant.pk: variant for variant in ProductVariant.objects.select_related("product", "product__category", "product__brand").filter(pk__in=ids)}
     rows = []
     for line in cart_payload:
         variant = variants.get(line["variant_id"])
         if not variant:
             raise CheckoutError("One of the selected products is no longer available.")
         product = variant.product
-        if (
-            not variant.is_active
-            or product.status != Product.Status.ACTIVE
-            or not product.category.is_active
-            or not product.brand.is_active
-        ):
+        if not variant.is_active or product.status != Product.Status.ACTIVE or not product.category.is_active or not product.brand.is_active:
             raise CheckoutError(f"{product.name} / {variant.name} is no longer available.")
         unit_price = variant.price_override if variant.price_override is not None else product.current_price
-        rows.append(
-            {
-                "variant": variant,
-                "quantity": int(line["qty"]),
-                "unit_price": Decimal(unit_price),
-                "discount_amount": Decimal("0.00"),
-            }
-        )
+        rows.append({"variant": variant, "quantity": int(line["qty"]), "unit_price": Decimal(unit_price), "discount_amount": Decimal("0.00")})
     if len(rows) != len(cart_payload):
         raise CheckoutError("Your cart changed while checking out. Please refresh and try again.")
-    return rows
+    return apply_flash_sale_prices(rows)
 
 
 def _customer_for_checkout(data):
@@ -111,60 +75,30 @@ def _customer_for_checkout(data):
         email_owner = Customer.objects.filter(email__iexact=email).exclude(phone=phone).first()
         if email_owner:
             raise CheckoutError("This email is already linked to another customer account. Use the phone number linked to that account or leave email blank.")
-
     address_bits = [data.get("address"), data.get("upazila"), data.get("district"), data.get("division")]
     latest_address = ", ".join(str(bit).strip() for bit in address_bits if str(bit or "").strip())
     if data.get("landmark"):
         latest_address += f" (Landmark: {data['landmark'].strip()})"
-
     if customer:
         changed = []
-        updates = {
-            "name": data["full_name"],
-            "email": email,
-            "source": Customer.Source.ONLINE,
-            "address": latest_address,
-            "city": data.get("upazila") or "",
-            "district": data.get("district") or "",
-            "is_active": True,
-        }
+        updates = {"name": data["full_name"], "email": email, "source": Customer.Source.ONLINE, "address": latest_address, "city": data.get("upazila") or "", "district": data.get("district") or "", "is_active": True}
         for field, value in updates.items():
             if getattr(customer, field) != value:
-                setattr(customer, field, value)
-                changed.append(field)
+                setattr(customer, field, value); changed.append(field)
         if changed:
-            changed.append("updated_at")
-            customer.save(update_fields=changed)
+            changed.append("updated_at"); customer.save(update_fields=changed)
         return customer
-
     group = CustomerGroup.objects.filter(code="RETAIL", is_active=True).first()
-    return Customer.objects.create(
-        name=data["full_name"],
-        phone=phone,
-        email=email,
-        group=group,
-        source=Customer.Source.ONLINE,
-        address=latest_address,
-        city=data.get("upazila") or "",
-        district=data.get("district") or "",
-        is_active=True,
-    )
+    return Customer.objects.create(name=data["full_name"], phone=phone, email=email, group=group, source=Customer.Source.ONLINE, address=latest_address, city=data.get("upazila") or "", district=data.get("district") or "", is_active=True)
 
 
 def _order_notes(data):
     delivery = "Inside Dhaka" if data["delivery_option"] == "inside" else "Outside Dhaka"
-    parts = [
-        "Storefront Checkout",
-        "Payment: Cash on Delivery",
-        f"Delivery: {delivery}",
-        f"Division: {data['division']}",
-    ]
-    if data.get("landmark"):
-        parts.append(f"Landmark: {data['landmark'].strip()}")
-    if data.get("coupon_code"):
-        parts.append(f"Coupon: {data['coupon_code']}")
-    if data.get("order_note"):
-        parts.append(f"Customer note: {data['order_note'].strip()}")
+    parts = ["Storefront Checkout", "Payment: Cash on Delivery", f"Delivery: {delivery}", f"Division: {data['division']}"]
+    if data.get("landmark"): parts.append(f"Landmark: {data['landmark'].strip()}")
+    if data.get("coupon_code"): parts.append(f"Coupon: {data['coupon_code']}")
+    if data.get("campaign_code"): parts.append(f"Campaign: {data['campaign_code']}")
+    if data.get("order_note"): parts.append(f"Customer note: {data['order_note'].strip()}")
     return " | ".join(parts)
 
 
@@ -172,56 +106,28 @@ def _order_notes(data):
 def place_checkout_order(cleaned_data):
     token_data = cleaned_data["checkout_token"]
     order_number = token_data["order_number"]
-
-    existing = SalesOrder.objects.select_related("customer", "warehouse").filter(
-        order_number=order_number,
-        channel=SalesOrder.Channel.ONLINE,
-    ).first()
+    existing = SalesOrder.objects.select_related("customer", "warehouse").filter(order_number=order_number, channel=SalesOrder.Channel.ONLINE).first()
     if existing:
         return existing, False
-
     rows = _resolve_order_lines(cleaned_data["cart_payload"])
-    subtotal = sum((row["unit_price"] * row["quantity"] for row in rows), Decimal("0.00"))
-    discount = _coupon_discount(subtotal, cleaned_data.get("coupon_code") or "")
+    try:
+        coupon, discount = coupon_discount_for_rows(cleaned_data.get("coupon_code") or "", rows, lock=True)
+    except PromotionError as exc:
+        raise CheckoutError(" ".join(str(value) for value in getattr(exc, "messages", [str(exc)]))) from exc
     shipping = SHIPPING_CHARGES.get(cleaned_data["delivery_option"])
     if shipping is None:
         raise CheckoutError("Select a valid delivery option.")
     if cleaned_data.get("payment_method") != "cod":
         raise CheckoutError("Only Cash on Delivery is available in this phase.")
-
     customer = _customer_for_checkout(cleaned_data)
     warehouse = get_default_warehouse()
     shipping_address = cleaned_data["address"].strip()
-    if cleaned_data.get("landmark"):
-        shipping_address += f" (Landmark: {cleaned_data['landmark'].strip()})"
-
-    header = {
-        "order_number": order_number,
-        "customer": customer,
-        "warehouse": warehouse,
-        "channel": SalesOrder.Channel.ONLINE,
-        "status": SalesOrder.Status.PENDING,
-        "order_date": timezone.localdate(),
-        "shipping_name": cleaned_data["full_name"],
-        "shipping_phone": cleaned_data["phone"],
-        "shipping_email": cleaned_data.get("email") or "",
-        "shipping_address": shipping_address,
-        "shipping_city": cleaned_data.get("upazila") or "",
-        "shipping_district": cleaned_data.get("district") or "",
-        "shipping_postal_code": "",
-        "discount_amount": discount,
-        "shipping_charge": shipping,
-        "amount_paid": Decimal("0.00"),
-        "notes": _order_notes(cleaned_data),
-    }
-
+    if cleaned_data.get("landmark"): shipping_address += f" (Landmark: {cleaned_data['landmark'].strip()})"
+    header = {"order_number": order_number, "customer": customer, "warehouse": warehouse, "channel": SalesOrder.Channel.ONLINE, "status": SalesOrder.Status.PENDING, "order_date": timezone.localdate(), "shipping_name": cleaned_data["full_name"], "shipping_phone": cleaned_data["phone"], "shipping_email": cleaned_data.get("email") or "", "shipping_address": shipping_address, "shipping_city": cleaned_data.get("upazila") or "", "shipping_district": cleaned_data.get("district") or "", "shipping_postal_code": "", "discount_amount": discount, "shipping_charge": shipping, "amount_paid": Decimal("0.00"), "notes": _order_notes(cleaned_data)}
     try:
-        order = save_sales_order(
-            header_data=header,
-            item_rows=rows,
-            actor="Storefront Checkout",
-        )
-    except SalesOrderError as exc:
-        message = " ".join(str(value) for value in getattr(exc, "messages", [str(exc)]))
-        raise CheckoutError(message) from exc
+        order = save_sales_order(header_data=header, item_rows=rows, actor="Storefront Checkout")
+        redeem_coupon(coupon=coupon, order=order, discount_amount=discount)
+        record_campaign_conversion(order=order, campaign_code=cleaned_data.get("campaign_code") or "", coupon=coupon)
+    except (SalesOrderError, PromotionError) as exc:
+        raise CheckoutError(" ".join(str(value) for value in getattr(exc, "messages", [str(exc)]))) from exc
     return order, True
