@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import accounting_views, catalog_views, customer_views, expense_views, inventory_views, payment_views, pos_views, purchase_views, return_views, sales_views, shipping_views, views
+from . import accounting_views, catalog_views, customer_views, expense_views, inventory_views, payment_views, pos_views, purchase_views, report_views, return_views, sales_views, shipping_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
@@ -115,9 +115,11 @@ expense_patterns = [
     path("expenses/<int:expense_id>/void/", expense_views.expense_void, name="expense_void"),
 ]
 
-urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + return_patterns + accounting_patterns + expense_patterns + [
+report_patterns = [path("reports/", report_views.reports, name="reports")]
+
+urlpatterns = catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + return_patterns + accounting_patterns + expense_patterns + report_patterns + [
     path(info["path"], views.page, {"page_name": name}, name=name)
     for name, info in PAGES.items()
-    if name not in {"accounts", "expenses", "expense_add", "pos", "payments", "payment_add", "shipping", "shipment_add", "returns", "return_add"}
+    if name not in {"accounts", "expenses", "expense_add", "pos", "payments", "payment_add", "shipping", "shipment_add", "returns", "return_add", "reports"}
 ]
 urlpatterns += [path("<slug:page>.html", views.legacy_page, name="legacy_page")]
