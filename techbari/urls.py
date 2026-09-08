@@ -8,6 +8,7 @@ handler500 = "techbari.views.server_error"
 urlpatterns = [
     path("dashboard/", include("backoffice.urls")),
     path("account/", include("customer_accounts.urls")),
+    path("integrations/", include("integrations.urls")),
     path("", include("storefront.urls")),
 ]
 
