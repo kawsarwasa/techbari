@@ -13,13 +13,12 @@ from inventory.services import get_default_warehouse
 from promotions.services import PromotionError, apply_flash_sale_prices, coupon_discount_for_rows, record_campaign_conversion, redeem_coupon
 from sales.models import SalesOrder, make_order_number
 from sales.services import SalesOrderError, save_sales_order
+from store_settings.services import get_store_settings, shipping_charge_for_subtotal
 from .forms import CHECKOUT_SIGNING_SALT
 
 
 class CheckoutError(ValidationError):
     pass
-
-SHIPPING_CHARGES = {"inside": Decimal("60.00"), "outside": Decimal("120.00")}
 
 
 def create_checkout_token():
@@ -115,11 +114,17 @@ def place_checkout_order(cleaned_data, *, campaign_attribution=None):
         coupon, discount = coupon_discount_for_rows(cleaned_data.get("coupon_code") or "", rows, lock=True)
     except PromotionError as exc:
         raise CheckoutError(" ".join(str(value) for value in getattr(exc, "messages", [str(exc)]))) from exc
-    shipping = SHIPPING_CHARGES.get(cleaned_data["delivery_option"])
+
+    store = get_store_settings()
+    merchandise_subtotal = sum((Decimal(row["unit_price"]) * int(row["quantity"]) for row in rows), Decimal("0.00"))
+    shipping = shipping_charge_for_subtotal(merchandise_subtotal, cleaned_data["delivery_option"], store=store)
     if shipping is None:
         raise CheckoutError("Select a valid delivery option.")
     if cleaned_data.get("payment_method") != "cod":
         raise CheckoutError("Only Cash on Delivery is available in this phase.")
+    if not store.cod_enabled:
+        raise CheckoutError("Cash on Delivery is currently disabled by the store.")
+
     customer = _customer_for_checkout(cleaned_data)
     warehouse = get_default_warehouse()
     shipping_address = cleaned_data["address"].strip()

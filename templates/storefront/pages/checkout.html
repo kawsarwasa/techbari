@@ -1,7 +1,7 @@
 {% extends "storefront/base.html" %}
 {% load static demo %}
-{% block title %}Checkout - TechBari{% endblock %}
-{% block body_attributes %} data-checkout-backend="v1.6.0"{% endblock %}
+{% block title %}Checkout - {{ store_settings.store_name }}{% endblock %}
+{% block body_attributes %} data-checkout-backend="v2.6.0"{% endblock %}
 {% block content %}
 <main class="page"><div class="container">
 <div style="display:flex;justify-content:space-between;gap:16px"><div><h1 class="page-title">Checkout</h1><p class="page-subtitle">Complete your order securely and easily</p></div>{% include "storefront/includes/breadcrumbs/checkout.html" %}</div>
@@ -33,14 +33,14 @@
 <div class="form-section"><h3><i data-icon="truck"></i> Delivery Option</h3>
 {% for error in checkout_form.delivery_option.errors %}<small class="text-red">{{ error }}</small>{% endfor %}
 <div class="option-grid">
-<label class="option{% if checkout_form.delivery_option.value != 'outside' %} active{% endif %}" data-delivery="inside" data-charge="60"><input type="radio" name="delivery_option" value="inside"{% if checkout_form.delivery_option.value != 'outside' %} checked{% endif %}><div><strong>Inside Dhaka</strong><br><span class="muted">Delivery in 1-2 days</span></div><b style="margin-left:auto">৳ 60</b></label>
-<label class="option{% if checkout_form.delivery_option.value == 'outside' %} active{% endif %}" data-delivery="outside" data-charge="120"><input type="radio" name="delivery_option" value="outside"{% if checkout_form.delivery_option.value == 'outside' %} checked{% endif %}><div><strong>Outside Dhaka</strong><br><span class="muted">Delivery in 2-4 days</span></div><b style="margin-left:auto">৳ 120</b></label>
-</div></div>
+<label class="option{% if checkout_form.delivery_option.value != 'outside' %} active{% endif %}" data-delivery="inside" data-charge="{{ delivery.inside_charge }}"><input type="radio" name="delivery_option" value="inside"{% if checkout_form.delivery_option.value != 'outside' %} checked{% endif %}><div><strong>Inside Dhaka</strong><br><span class="muted">Delivery in {{ delivery.inside_days }}</span></div><b style="margin-left:auto">{{ store_settings.currency_symbol }} {{ store_settings.delivery_inside_dhaka_charge }}</b></label>
+<label class="option{% if checkout_form.delivery_option.value == 'outside' %} active{% endif %}" data-delivery="outside" data-charge="{{ delivery.outside_charge }}"><input type="radio" name="delivery_option" value="outside"{% if checkout_form.delivery_option.value == 'outside' %} checked{% endif %}><div><strong>Outside Dhaka</strong><br><span class="muted">Delivery in {{ delivery.outside_days }}</span></div><b style="margin-left:auto">{{ store_settings.currency_symbol }} {{ store_settings.delivery_outside_dhaka_charge }}</b></label>
+</div>{% if store_settings.free_delivery_threshold > 0 %}<small class="muted">Free delivery on eligible merchandise subtotal from {{ store_settings.currency_symbol }} {{ store_settings.free_delivery_threshold }}.</small>{% endif %}</div>
 
 <div class="form-section"><h3><i data-icon="credit"></i> Payment Method</h3>
 {% for error in checkout_form.payment_method.errors %}<small class="text-red">{{ error }}</small>{% endfor %}
 <div class="payment-grid">
-<label class="payment active"><input type="radio" name="payment_method" value="cod" checked><span class="payment-logo cod">COD</span><br><strong>Cash on Delivery</strong><br><span class="muted">Pay when you receive</span></label>
+<label class="payment{% if store_settings.cod_enabled %} active{% endif %}"{% if not store_settings.cod_enabled %} aria-disabled="true"{% endif %}><input type="radio" name="payment_method" value="cod"{% if store_settings.cod_enabled %} checked{% else %} disabled{% endif %}><span class="payment-logo cod">COD</span><br><strong>Cash on Delivery</strong><br><span class="muted">{% if store_settings.cod_enabled %}Pay when you receive{% else %}Currently unavailable{% endif %}</span></label>
 <label class="payment" aria-disabled="true"><input type="radio" disabled><span class="payment-logo bkash">bKash</span><br><strong>bKash</strong><br><span class="muted">Coming in Payment phase</span></label>
 <label class="payment" aria-disabled="true"><input type="radio" disabled><span class="payment-logo nagad">Nagad</span><br><strong>Nagad</strong><br><span class="muted">Coming in Payment phase</span></label>
 <label class="payment" aria-disabled="true"><input type="radio" disabled><span class="payment-logo card">CARD</span><br><strong>Card Payment</strong><br><span class="muted">Coming in Payment phase</span></label>
@@ -53,11 +53,11 @@
 <div class="coupon">{{ checkout_form.coupon_code }}<button type="button" id="checkoutCouponApply" class="btn btn-primary">Apply</button></div>{% for error in checkout_form.coupon_code.errors %}<small class="text-red">{{ error }}</small>{% endfor %}<div id="checkoutCouponFeedback" class="coupon-feedback"></div>
 {% for error in checkout_form.cart_payload.errors %}<div class="coupon-feedback error">{{ error }}</div>{% endfor %}
 {% for error in checkout_form.checkout_token.errors %}<div class="coupon-feedback error">{{ error }}</div>{% endfor %}
-<div class="summary-line"><span>Subtotal (<span id="checkoutSummaryCount">0</span> items)</span><strong id="checkoutSubtotal">৳ 0</strong></div>
-<div class="summary-line discount-row" id="checkoutDiscountRow" hidden><span>Coupon Discount</span><strong class="text-green" id="checkoutDiscount">- ৳ 0</strong></div>
-<div class="summary-line"><span class="shipping-label" id="shippingLabel">Shipping Charge (Inside Dhaka)</span><strong id="shippingCharge" class="shipping-charge">৳ 60</strong></div>
-<div class="summary-line total"><span>Grand Total</span><strong id="checkoutGrand" class="grand-total">৳ 60</strong></div>
-<button type="submit" class="btn btn-primary" id="placeOrder" style="width:100%"><i data-icon="lock"></i> Place Order →</button><p class="muted" style="text-align:center">Prices, coupon, stock and shipping are verified again on the server before your order is created.</p></aside>
+<div class="summary-line"><span>Subtotal (<span id="checkoutSummaryCount">0</span> items)</span><strong id="checkoutSubtotal">{{ store_settings.currency_symbol }} 0</strong></div>
+<div class="summary-line discount-row" id="checkoutDiscountRow" hidden><span>Coupon Discount</span><strong class="text-green" id="checkoutDiscount">- {{ store_settings.currency_symbol }} 0</strong></div>
+<div class="summary-line"><span class="shipping-label" id="shippingLabel">Shipping Charge (Inside Dhaka)</span><strong id="shippingCharge" class="shipping-charge">{{ store_settings.currency_symbol }} {{ store_settings.delivery_inside_dhaka_charge }}</strong></div>
+<div class="summary-line total"><span>Grand Total</span><strong id="checkoutGrand" class="grand-total">{{ store_settings.currency_symbol }} {{ store_settings.delivery_inside_dhaka_charge }}</strong></div>
+<button type="submit" class="btn btn-primary" id="placeOrder" style="width:100%"{% if not store_settings.cod_enabled %} disabled title="Cash on Delivery is currently disabled"{% endif %}><i data-icon="lock"></i> Place Order →</button><p class="muted" style="text-align:center">Prices, coupon, stock and shipping are verified again on the server before your order is created.</p></aside>
 </div>
 </form>
 </div></main>

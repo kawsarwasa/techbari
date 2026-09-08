@@ -2,7 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
 from staff_access import views as staff_views
-from . import accounting_views, catalog_views, customer_views, expense_views, inventory_views, payment_views, pos_views, purchase_views, report_views, return_views, sales_views, shipping_views, views
+from . import accounting_views, catalog_views, customer_views, expense_views, inventory_views, payment_views, pos_views, purchase_views, report_views, return_views, sales_views, shipping_views, store_settings_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
@@ -45,7 +45,18 @@ return_patterns = [path("returns/", return_views.returns, name="returns"), path(
 accounting_patterns = [path("accounts/", accounting_views.accounts, name="accounts"), path("accounts/chart/", accounting_views.chart_accounts, name="chart_accounts"), path("accounts/chart/add/", accounting_views.account_add, name="account_add"), path("accounts/journals/", accounting_views.journals, name="journals"), path("accounts/journals/add/", accounting_views.journal_add, name="journal_add"), path("accounts/journals/<int:journal_id>/", accounting_views.journal_detail, name="journal_detail"), path("accounts/journals/<int:journal_id>/reverse/", accounting_views.journal_reverse, name="journal_reverse"), path("accounts/ledger/", accounting_views.general_ledger, name="general_ledger"), path("accounts/trial-balance/", accounting_views.trial_balance_view, name="trial_balance"), path("accounts/periods/", accounting_views.periods, name="accounting_periods"), path("accounts/periods/<int:period_id>/toggle/", accounting_views.period_toggle, name="accounting_period_toggle")]
 expense_patterns = [path("expenses/", expense_views.expenses, name="expenses"), path("expenses/add/", expense_views.expense_add, name="expense_add"), path("expenses/categories/", expense_views.expense_categories, name="expense_categories"), path("expenses/categories/<int:category_id>/toggle/", expense_views.expense_category_toggle, name="expense_category_toggle"), path("expenses/<int:expense_id>/", expense_views.expense_detail, name="expense_detail"), path("expenses/<int:expense_id>/edit/", expense_views.expense_edit, name="expense_edit"), path("expenses/<int:expense_id>/submit/", expense_views.expense_submit, name="expense_submit"), path("expenses/<int:expense_id>/approve/", expense_views.expense_approve, name="expense_approve"), path("expenses/<int:expense_id>/reject/", expense_views.expense_reject, name="expense_reject"), path("expenses/<int:expense_id>/cancel/", expense_views.expense_cancel, name="expense_cancel"), path("expenses/<int:expense_id>/pay/", expense_views.expense_pay, name="expense_pay"), path("expenses/<int:expense_id>/void/", expense_views.expense_void, name="expense_void")]
 report_patterns = [path("reports/", report_views.reports, name="reports")]
+store_settings_patterns = [
+    path("settings/", store_settings_views.settings_view, name="settings"),
+    path("settings/banners/", store_settings_views.banners, name="cms_banners"),
+    path("settings/banners/add/", store_settings_views.banner_form, name="cms_banner_add"),
+    path("settings/banners/<int:banner_id>/edit/", store_settings_views.banner_form, name="cms_banner_edit"),
+    path("settings/banners/<int:banner_id>/delete/", store_settings_views.banner_delete, name="cms_banner_delete"),
+    path("settings/homepage/", store_settings_views.homepage_sections, name="cms_homepage_sections"),
+    path("settings/homepage/<int:section_id>/update/", store_settings_views.homepage_section_update, name="cms_homepage_section_update"),
+    path("settings/pages/", store_settings_views.content_pages, name="cms_content_pages"),
+    path("settings/pages/<int:page_id>/edit/", store_settings_views.content_page_edit, name="cms_content_page_edit"),
+]
 
-RESERVED = {"accounts", "expenses", "expense_add", "pos", "payments", "payment_add", "shipping", "shipment_add", "returns", "return_add", "reports", "users", "user_add", "audit_log"}
-urlpatterns = auth_patterns + catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + return_patterns + accounting_patterns + expense_patterns + report_patterns + [path(info["path"], views.page, {"page_name": name}, name=name) for name, info in PAGES.items() if name not in RESERVED]
+RESERVED = {"accounts", "expenses", "expense_add", "pos", "payments", "payment_add", "shipping", "shipment_add", "returns", "return_add", "reports", "users", "user_add", "audit_log", "settings"}
+urlpatterns = auth_patterns + catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + return_patterns + accounting_patterns + expense_patterns + report_patterns + store_settings_patterns + [path(info["path"], views.page, {"page_name": name}, name=name) for name, info in PAGES.items() if name not in RESERVED]
 urlpatterns += [path("<slug:page>.html", views.legacy_page, name="legacy_page")]

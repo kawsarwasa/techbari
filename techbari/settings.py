@@ -28,7 +28,7 @@ INSTALLED_APPS = [
     "catalog", "inventory", "serial_tracking", "purchasing", "customers", "sales",
     "payments.apps.PaymentsConfig", "shipping.apps.ShippingConfig", "returns.apps.ReturnsConfig",
     "accounting.apps.AccountingConfig", "expenses.apps.ExpensesConfig", "reports.apps.ReportsConfig",
-    "promotions.apps.PromotionsConfig", "storefront", "backoffice",
+    "promotions.apps.PromotionsConfig", "store_settings.apps.StoreSettingsConfig", "storefront", "backoffice",
 ]
 
 MIDDLEWARE = [
