@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from catalog.models import Product
 from catalog.presentation import catalog_queryset, serialize_product
-from promotions.services import campaign_code_for_request
+from promotions.services import campaign_attribution_for_request
 from sales.models import SalesOrder
 from .checkout_services import CheckoutError, checkout_success_url, create_checkout_token, place_checkout_order, verify_success_token
 from .context import catalog_context
@@ -24,15 +24,16 @@ def page(request, page_name="home"):
 
 def checkout(request):
     context = catalog_context()
+    campaign_attribution = campaign_attribution_for_request(request)
     if request.method == "POST":
         form = CheckoutForm(request.POST)
         if form.is_valid():
             try:
-                order, _created = place_checkout_order(form.cleaned_data); return redirect(checkout_success_url(order))
+                order, _created = place_checkout_order(form.cleaned_data, campaign_attribution=campaign_attribution); return redirect(checkout_success_url(order))
             except CheckoutError as exc:
                 form.add_error(None, " ".join(str(value) for value in getattr(exc, "messages", [str(exc)])))
     else:
-        form = CheckoutForm(initial={"delivery_option": "inside", "payment_method": "cod", "checkout_token": create_checkout_token(), "cart_payload": "[]", "campaign_code": campaign_code_for_request(request)})
+        form = CheckoutForm(initial={"delivery_option": "inside", "payment_method": "cod", "checkout_token": create_checkout_token(), "cart_payload": "[]"})
     context.update(checkout_form=form, checkout_backend=True)
     return render(request, "storefront/pages/checkout.html", context)
 
