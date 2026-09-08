@@ -164,3 +164,16 @@ class StaffAccessTests(TestCase):
         self.client.force_login(user)
         self.assertEqual(self.client.get(reverse("backoffice:accounts")).status_code, 200)
         self.assertEqual(self.client.get(reverse("backoffice:user_add")).status_code, 200)
+
+    def test_admin_role_can_open_every_major_dashboard_module(self):
+        user = self.make_user("adminroutes", "Admin")
+        self.client.force_login(user)
+        routes = (
+            "dashboard", "products", "inventory", "serials", "purchases", "customers", "orders",
+            "pos", "payments", "shipping", "returns", "accounts", "expenses", "reports", "marketing",
+            "users", "roles", "audit_log", "settings",
+        )
+        for route in routes:
+            with self.subTest(route=route):
+                response = self.client.get(reverse(f"backoffice:{route}"))
+                self.assertEqual(response.status_code, 200, route)
