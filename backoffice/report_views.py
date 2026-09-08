@@ -6,13 +6,15 @@ from django.shortcuts import render
 from django.urls import reverse
 
 from reports.after_sales import AFTER_SALES_REPORT_KEYS, AFTER_SALES_TABS, build_after_sales_report
+from reports.financial import FINANCIAL_REPORT_KEYS, FINANCIAL_TABS, build_financial_report
 from reports.services import REPORT_TABS, build_sales_profit_report
 from reports.stock_purchase import OPERATIONAL_REPORT_KEYS, OPERATIONAL_TABS, build_stock_purchase_report
 
 from .context import page_context
 
 
-ALL_REPORT_TABS = [*REPORT_TABS, *OPERATIONAL_TABS, *AFTER_SALES_TABS]
+ALL_REPORT_TABS = [*REPORT_TABS, *OPERATIONAL_TABS, *AFTER_SALES_TABS, *FINANCIAL_TABS]
+NON_SALES_REPORT_KEYS = OPERATIONAL_REPORT_KEYS | AFTER_SALES_REPORT_KEYS | FINANCIAL_REPORT_KEYS
 
 
 def reports(request):
@@ -21,11 +23,13 @@ def reports(request):
         report = build_stock_purchase_report(request.GET)
     elif requested_report in AFTER_SALES_REPORT_KEYS:
         report = build_after_sales_report(request.GET)
+    elif requested_report in FINANCIAL_REPORT_KEYS:
+        report = build_financial_report(request.GET)
     else:
         report = build_sales_profit_report(request.GET)
 
     filters = report["filters"]
-    report.setdefault("show_channel_filter", requested_report not in OPERATIONAL_REPORT_KEYS | AFTER_SALES_REPORT_KEYS)
+    report.setdefault("show_channel_filter", requested_report not in NON_SALES_REPORT_KEYS)
     report.setdefault("show_warehouse_filter", False)
     report.setdefault("show_movement_filter", False)
     report.setdefault("warehouse_choices", [])

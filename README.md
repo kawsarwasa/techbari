@@ -1,6 +1,6 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v2.2.2**
+**Current version: v2.2.3**
 
 TechBari is a MySQL 8-backed commerce platform built around one shared business architecture:
 
@@ -8,55 +8,68 @@ TechBari is a MySQL 8-backed commerce platform built around one shared business 
 
 Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS, Payment, Shipping / Courier, Returns / Refunds, Accounting, Expense Management and Reports are connected to the real business data flow.
 
-## v2.2.2 — Payment + Expense + Returns + Warranty + Serial/IMEI Reports
+## v2.2.3 — Financial Statements
 
-The Reports dashboard now includes the third Reports v2.2.x release:
+The Reports v2.2.x phase is now complete with four General Ledger-backed financial statements:
 
-- Payment Report
-- Expense Report
-- Returns Report
-- Warranty Report
-- Serial / IMEI Report
+- Profit & Loss
+- Balance Sheet
+- Cash Flow
+- Trial Balance
 
-Payment reporting reads the central `PaymentTransaction` ledger and supports Kind, Method and Status filters. Completed Money In / Money Out and Net Cash Flow KPIs are calculated from completed payment-ledger transactions.
+These reports do **not** rebuild accounting from operational tables. They use posted/reversed Accounting Journal Lines as their financial source of truth.
 
-Expense reporting reads the real Expense workflow and supports Status, Category and Payment Method filters. It shows exact payment Asset account, payment date/reference, Active Amount, Paid Amount, Pending Approval and Approved/Unpaid KPIs.
+Profit & Loss separates Revenue, contra-revenue, COGS, Gross Profit, Operating Expenses and Net Profit for a selected date range.
 
-Returns reporting reads Sales Return cases, items and refund links and shows returned/restocked units, credit, actual cash refund and completion outcome. Warranty reporting reads WarrantyClaim records with claim status, warranty coverage and replacement data. Serial/IMEI reporting reads the serialized-unit registry with current Warehouse/Status, identifiers, purchase/sales references and warranty dates.
+Balance Sheet is an As-of statement using cumulative Asset, Liability and Equity balances. Because TechBari does not require a closing journal just to render a report, cumulative Revenue/Expense balances are presented as **Cumulative Earnings from GL**. An Accounting Equation Difference KPI makes any imbalance visible.
 
-All reports reuse the shared responsive Reports UI, KPI cards and UTF-8 CSV export.
+Cash Flow reads actual movement in Cash, Bank, Card Clearing, bKash, Nagad and Other Funds/Clearing GL accounts. It classifies movement into Operating, Investing and Financing sections and verifies Opening Cash + Net Movement = Closing Cash.
+
+Trial Balance reuses the Accounting module's existing as-of trial-balance service and shows account activity, ending debit/credit balances and the debit-credit difference.
+
+All four reports support UTF-8 CSV export from the shared Reports dashboard.
 
 Route: `/dashboard/reports/`
 
-See `REPORTS_PHASE.md` for calculation rules, date semantics, filters and the remaining Reports roadmap.
+See `REPORTS_PHASE.md` for formulas, classification rules, date semantics and validation details.
 
-## v2.2.1 — Stock + Purchase Reports
+## Reports v2.2.x — completed
 
-- Stock Report
-- Stock Valuation
-- Low Stock
-- Stock Movement
-- Purchase Report
-- Supplier Due
-- Customer Due
-
-Stock/valuation/low-stock reporting uses immutable Stock Movement snapshots for historical As-of quantities, with weighted purchase cost for operational valuation. Supplier Due and Customer Due are date-aware historical reports.
-
-## v2.2.0 — Sales + Profit Reports
-
-- Sales Report
-- Daily / Monthly Sales
+### v2.2.0 — Sales + Profit
+- Sales / Daily / Monthly Sales
 - POS vs Online / Manual Sales
 - Product / Category / Brand Sales
 - Profit Report
 - COGS Report
 
-Completed Sales Orders are the operational source. Posted GL COGS is the primary cost source; completed return credits and COGS reversals reduce Net Sales / Net COGS.
+### v2.2.1 — Stock + Purchase
+- Stock
+- Stock Valuation
+- Low Stock
+- Stock Movement
+- Purchase
+- Supplier Due
+- Customer Due
+
+### v2.2.2 — Operational Finance + After-sales
+- Payment
+- Expense
+- Returns
+- Warranty
+- Serial / IMEI
+
+### v2.2.3 — Financial Statements
+- Profit & Loss
+- Balance Sheet
+- Cash Flow
+- Trial Balance
+
+Reports use report-appropriate Date/As-of, Channel, Warehouse, lifecycle and transaction filters, KPI cards, responsive tables and UTF-8 CSV export.
 
 ## Completed business phases
 
-- **v2.1.1 — Expense Management** — category → GL mapping, approval/payment lifecycle, attachment, exact payment account, automatic Accounting posting. See `EXPENSE_MANAGEMENT_PHASE.md`.
-- **v2.0.0 — Accounting / General Ledger** — double-entry Chart of Accounts, automatic journals, periods, ledger and Trial Balance. See `ACCOUNTING_SYSTEM_PHASE.md`.
+- **v2.1.1 — Expense Management** — category → GL mapping, approval/payment lifecycle, attachment, exact payment account and automatic Accounting posting. See `EXPENSE_MANAGEMENT_PHASE.md`.
+- **v2.0.0 — Accounting / General Ledger** — double-entry Chart of Accounts, automatic journals, periods, General Ledger and Trial Balance. See `ACCOUNTING_SYSTEM_PHASE.md`.
 - **v1.10.0 — Returns / Refunds** — controlled customer returns, stock disposition, Serial/IMEI handling and refunds. See `RETURNS_REFUNDS_PHASE.md`.
 - **v1.9.0 — Shipping / Courier** — shipment lifecycle, courier tracking and COD settlement. See `SHIPPING_COURIER_PHASE.md`.
 - **v1.8.0 — Payment System** — central Sale/Supplier payment ledger, refunds, reversals and reconciliation. See `PAYMENT_SYSTEM_PHASE.md`.
@@ -68,65 +81,22 @@ Completed Sales Orders are the operational source. Posted GL COGS is the primary
 - **v1.1.0 — Inventory** — warehouse/SKU ledger, reservations, adjustments and transfers. See `INVENTORY_PHASE1.md`.
 - **v1.0.10 — Catalog** — Categories, Brands, Products, Variants/SKUs/Barcodes, media and specifications. See `CATALOG_DATABASE_PHASE.md`.
 
-## Current database-backed modules
+## Main database-backed modules
 
-### Catalog
-Categories, Brands, Products, Variants / SKUs / Barcodes, pricing, media, specifications, rich descriptions, SEO and Storefront catalog integration.
-
-### Inventory
-Warehouses, warehouse/SKU balances, on-hand/reserved/available stock, immutable Stock Movement ledger, adjustments, transfers and low-stock thresholds.
-
-### Serial / IMEI / Warranty
-Serialized-unit lifecycle, Warehouse + SKU linkage, immutable unit events and Warranty/RMA claims.
-
-### Supplier + Purchase
-Suppliers, Purchase Orders, receiving, Inventory `PURCHASE_IN`, Serial/IMEI receiving, Supplier Payments and Purchase Returns.
-
-### Customer / CRM
-Customer CRUD, groups, source/address, credit/opening due, purchase history, total spent, due balance and repeat-customer tracking.
-
-### Sales Order
-Online / Manual / POS channels, SKU lines, lifecycle/status history, Inventory reservation/deduction, customer linkage and return-credit-aware payable balance.
-
-### Storefront Checkout
-Real GET/POST checkout, server-authoritative pricing/stock/shipping, CRM find/create, Inventory reservation and signed idempotency/confirmation.
-
-### POS
-Warehouse-aware SKU/barcode search, walk-in/CRM customers, hold/resume, discounts, Cash/Card/bKash/Nagad tender snapshots, Inventory issue and printable receipt.
-
-### Payment
-Central Sale/Supplier `PaymentTransaction` ledger, partial/multiple payments, refunds/reversals, reconciliation and payment-method configuration.
-
-### Shipping / Courier
-Courier providers, Shipment lifecycle, tracking timeline, courier handover and COD collection/settlement.
-
-### Returns / Refunds
-Completed-sale returns, partial/full protection, stock disposition, exact Serial/IMEI lifecycle, order return credit and Payment-ledger refund allocation.
-
-### Accounting
-Double-entry Chart of Accounts, balanced immutable journals, automatic business-event posting, AR/AP, Cash/Bank/Card/MFS clearing, Inventory/COGS, Revenue/Expense, periods, General Ledger and Trial Balance.
-
-Routes: `/dashboard/accounts/`, `/dashboard/accounts/chart/`, `/dashboard/accounts/journals/`, `/dashboard/accounts/ledger/`, `/dashboard/accounts/trial-balance/`, `/dashboard/accounts/periods/`.
-
-### Expense Management
-Expense Category → GL mapping, Draft/Pending/Approved/Paid/Rejected/Cancelled/Voided lifecycle, payee/vendor, attachment, exact payment Asset account, audit events, automatic Accounting posting and reversal/void flow.
-
-Routes: `/dashboard/expenses/`, `/dashboard/expenses/add/`, `/dashboard/expenses/categories/`.
-
-### Reports v2.2.2
-
-- Sales / Daily / Monthly / Channel reports
-- Product / Category / Brand Sales
-- Profit / COGS
-- Stock / Valuation / Low Stock / Stock Movement
-- Purchase / Supplier Due / Customer Due
-- Payment / Expense / Returns
-- Warranty / Serial / IMEI
-- report-appropriate Date, Channel, Warehouse, lifecycle and transaction filters
-- KPI summary cards
-- UTF-8 CSV export
-
-Route: `/dashboard/reports/`.
+- **Catalog** — Categories, Brands, Products, Variants/SKUs/Barcodes, pricing, media, specifications and storefront catalog.
+- **Inventory** — Warehouses, on-hand/reserved/available stock, immutable Stock Movement ledger, adjustments and transfers.
+- **Serial / IMEI / Warranty** — serialized-unit lifecycle, Warehouse/SKU linkage, immutable events and warranty claims.
+- **Supplier + Purchase** — Purchase Orders, receiving, supplier payments and Purchase Returns.
+- **Customer / CRM** — Customer groups, addresses, opening due, purchase history and due tracking.
+- **Sales Order** — Online / Manual / POS channels, inventory reservation/deduction and return-credit-aware balance.
+- **Storefront Checkout** — server-authoritative checkout, CRM linkage, stock reservation and idempotency.
+- **POS** — warehouse-aware counter sale, hold/resume, payment tender and printable receipt.
+- **Payment** — central payment transaction ledger with partial payments, refunds, reversals and reconciliation.
+- **Shipping / Courier** — courier providers, shipment lifecycle, tracking and COD settlement.
+- **Returns / Refunds** — controlled returns, inventory disposition and refund allocation.
+- **Accounting** — double-entry Chart of Accounts, immutable journals, AR/AP, cash/payment assets, Inventory/COGS, Revenue/Expense, periods, ledger and Trial Balance.
+- **Expense Management** — expense categories, approval/payment workflow, attachment, exact payment account and GL posting.
+- **Reports** — operational reports plus General Ledger financial statements.
 
 ## Local setup
 
@@ -156,17 +126,25 @@ python manage.py test catalog inventory serial_tracking purchasing customers sal
 python manage.py runserver
 ```
 
-v2.2.2 adds no database migration. Existing business and Reports data are preserved.
+v2.2.3 adds no database migration. Existing business, Accounting and Reports data are preserved.
+
+## Validation
+
+v2.2.3 was validated on GitHub Actions using MySQL 8 and Python 3.12:
+
+- Reports suite: **21/21 passed**
+- Full regression suite: **173/173 passed**
+- Django system check: passed
+- Migration drift: no changes detected
 
 ## Roadmap direction
 
 Next planned phases:
 
-- **v2.2.3 — P&L + Balance Sheet + Cash Flow + Trial Balance**
-- **v2.3.x — Marketing**
-- **v2.4.x — Analytics**
+- **v2.3.x — Promotion / Marketing**
+- **v2.4.x — Dashboard Analytics**
 - **v2.5.x — Users / Roles / Permissions**
-- **v2.6.x — CMS / Settings**
+- **v2.6.x — CMS / Store Settings**
 - **v2.7.x — Customer Account**
 - **v2.8.x — Notifications / Integrations**
-- **v3.0 — Production QA / Release**
+- **v3.0 — Final Production QA / Release**

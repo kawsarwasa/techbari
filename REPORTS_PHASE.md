@@ -1,6 +1,6 @@
 # Reports Phase — v2.2.x
 
-TechBari Reports is being implemented in controlled sub-releases so operational reports remain reconcilable with the Accounting General Ledger.
+TechBari Reports is implemented in controlled sub-releases so operational reporting remains reconcilable with the Accounting General Ledger.
 
 Route: `/dashboard/reports/`
 
@@ -18,9 +18,7 @@ Implemented:
 - Profit Report
 - COGS Report
 
-Only completed Sales Orders are included. Order-level Net Sales is `grand_total - return_credit_amount`. Posted General Ledger COGS is the primary cost source, completed return COGS reversals reduce Net COGS, and Gross Profit is `Net Sales - Net COGS`.
-
-Product/Category/Brand reports exclude shipping revenue and allocate order discounts, return credit and exact order COGS across product lines.
+Completed Sales Orders are the operational source. Net Sales is `grand_total - return_credit_amount`. Posted General Ledger COGS is the primary cost source, completed return COGS reversals reduce Net COGS, and Gross Profit is `Net Sales - Net COGS`.
 
 ## v2.2.1 — Stock + Purchase Reports
 
@@ -34,21 +32,7 @@ Implemented:
 - Supplier Due
 - Customer Due
 
-Stock/Valuation/Low Stock use the latest immutable Stock Movement quantity/reservation snapshot up to the selected As-of date, with current InventoryBalance as a compatibility fallback for current-day legacy/bootstrap rows that have no movement snapshot.
-
-Operational stock value is:
-
-`On Hand × weighted purchase cost as of date`
-
-Supplier Due is:
-
-`Opening Balance + Purchases - Purchase Returns - Supplier Payments`
-
-Customer Due is:
-
-`Opening Due + Sales - Completed Return Credits - Net Customer Payments`
-
-Historical payment activity comes from the central PaymentTransaction ledger.
+Historical Stock/Valuation/Low Stock use immutable Stock Movement snapshots up to the selected As-of date. Operational stock value uses weighted purchase cost. Supplier Due and Customer Due are date-aware and use their underlying purchase/payment/sales ledgers.
 
 ## v2.2.2 — Payment + Expense + Returns + Warranty + Serial/IMEI Reports
 
@@ -60,157 +44,156 @@ Implemented:
 - Warranty Report
 - Serial / IMEI Report
 
-The same Reports dashboard, KPI cards, responsive tables and UTF-8 CSV export are reused.
+These are operational reports. Payment reads `PaymentTransaction`; Expense reads the Expense workflow; Returns reads SalesReturn/items/refunds; Warranty and Serial/IMEI read serialized-unit lifecycle data. Report-specific lifecycle filters, KPI cards, responsive tables and UTF-8 CSV export are supported.
 
-### Payment Report
+## v2.2.3 — Financial Statements
 
-Source of truth: `payments.PaymentTransaction`.
-
-Filters:
-
-- From / To date
-- Kind: Sale Payment / Supplier Payment / Refund / Reversal
-- Method: Cash / Bank / Card / bKash / Nagad / Other
-- Status: Pending / Completed / Failed / Reversed
-
-Rows include transaction date/number, kind, direction, method, status, counterparty, source/reference, amount and reconciliation state.
-
-KPI money totals count **Completed** transactions only:
-
-- Completed Money In
-- Completed Money Out
-- Net Cash Flow
-- Reconciled transaction count
-
-This is an operational payment-ledger report. It does not replace the v2.2.3 Cash Flow financial statement, which will use the General Ledger.
-
-### Expense Report
-
-Source of truth: `expenses.Expense`.
-
-Filters:
-
-- From / To expense date
-- Expense status
-- Expense category
-- Payment method
-
-Rows include expense number/date, category, payee, description, workflow status, amount, payment method, exact payment Asset account, payment date and reference.
-
-KPI rules:
-
-- Active Amount excludes Rejected, Cancelled and Voided expenses
-- Paid Amount counts Paid expenses only
-- Pending Approval and Approved/Unpaid are shown separately
-
-The report reads the Expense workflow directly; v2.2.3 P&L will use posted GL Expense balances instead of recomputing financial statements from Expense records.
-
-### Returns Report
-
-Source of truth: `returns.SalesReturn` plus Return Items and Return Refund links.
-
-The report uses the **requested-date range** and shows both requested and completed dates.
-
-Filters:
-
-- Status
-- Source: Customer / Courier Return / POS / Manual
-- Reason
-
-Rows include return/order/customer, source, reason, status, returned units, restocked units, return credit, cash refund and completion date.
-
-Financial KPI totals for credit/refund use completed returns so open/rejected/cancelled cases do not inflate completed return value.
-
-### Warranty Report
-
-Source of truth: `serial_tracking.WarrantyClaim`.
-
-Filters:
-
-- Claim-date range
-- Claim status
-- current unit warehouse
-
-Rows include claim number/date, Product, SKU, Serial/IMEI, customer, status, warranty-coverage result, issue, resolution date and replacement unit.
-
-Coverage uses the claimed unit's stored warranty start/end dates against the claim date.
-
-The Warehouse filter represents the unit's **current** warehouse location; warehouse history remains available through SerializedUnitEvent rather than being inferred here.
-
-### Serial / IMEI Report
-
-Source of truth: `serial_tracking.SerializedUnit`.
-
-The date range is the unit's database registration/creation date.
-
-Filters:
-
-- current serialized-unit status
-- current warehouse
-
-Rows include Product, SKU, Serial Number, IMEI 1/2, Warehouse, status, purchase reference, sales reference and warranty end date.
-
-KPI cards include serialized unit count, Available, Sold, Warranty Service and currently active warranty counts.
-
-This is a current-state registry for units created in the selected range; it is not a historical status reconstruction. Immutable `SerializedUnitEvent` remains the lifecycle audit source.
-
-## Shared filters and output
-
-Across v2.2.0–v2.2.2 the Reports dashboard supports report-appropriate combinations of:
-
-- From / To date
-- As-of date where applicable
-- Sales Channel
-- Warehouse
-- Stock Movement Type
-- Payment Kind / Method / Status
-- Expense Status / Category / Method
-- Return Status / Source / Reason
-- Warranty Status
-- Serial/IMEI Status
-- KPI summary cards
-- UTF-8 CSV export preserving active filters
-- responsive report tables
-
-Default range is current month through today. Reversed From/To input is normalized automatically.
-
-## Validation
-
-### v2.2.0
-
-- Reports suite: 5/5 passed
-- Full regression: 157/157 passed
-
-### v2.2.1
-
-- Reports suite: 11/11 passed
-- Full regression: 163/163 passed
-- no new migration
-
-### v2.2.2
-
-Validated on GitHub Actions with MySQL 8 and Python 3.12 using:
-
-- `python manage.py check`
-- `python manage.py makemigrations --check --dry-run`
-- `python manage.py migrate --noinput`
-- `python manage.py test reports -v 2`
-- full application regression suite including Reports
-
-Final result:
-
-- Reports suite: **16/16 passed**
-- Full regression suite: **168/168 passed**
-- migration drift: **No changes detected**
-- no new database migration required
-
-## Remaining Reports roadmap
-
-### v2.2.3 — Financial Statements
+Implemented:
 
 - Profit & Loss
 - Balance Sheet
 - Cash Flow
 - Trial Balance
 
-Financial statements will use the Accounting General Ledger as the source of truth rather than rebuilding accounting from operational modules.
+All four financial statements use the **Accounting General Ledger** rather than recomputing accounting from Sales, Payments, Purchases or Expenses.
+
+### Profit & Loss
+
+Date semantics: selected **From / To period**.
+
+Source: posted/reversed General Ledger journal lines belonging to Revenue and Expense accounts.
+
+Structure:
+
+- Revenue
+- Less: contra-revenue such as Sales Returns & Allowances
+- Net Revenue
+- Cost of Goods Sold
+- Gross Profit
+- Operating Expenses
+- Net Profit / Loss
+
+Core formulas:
+
+`Net Revenue = credit-normal Revenue - debit-normal Contra Revenue`
+
+`Gross Profit = Net Revenue - COGS`
+
+`Net Profit = Gross Profit - Operating Expenses`
+
+COGS account `5000` is separated from other Expense accounts so Gross Profit remains visible.
+
+### Balance Sheet
+
+Date semantics: selected **As of** date.
+
+Source: cumulative General Ledger balances through that date.
+
+Sections:
+
+- Assets
+- Liabilities
+- Equity
+- GL-derived Cumulative Earnings
+
+TechBari does not require a closing journal just to render the Balance Sheet. Revenue/Expense temporary-account balances are converted into a synthetic presentation line named **Cumulative Earnings from GL**:
+
+`Cumulative Earnings = cumulative Net Revenue - cumulative Expenses`
+
+The report exposes an Accounting Equation check:
+
+`Assets - Liabilities - Equity - Cumulative Earnings = 0`
+
+An `Equation Difference` KPI makes any ledger inconsistency visible rather than hiding it.
+
+### Cash Flow
+
+Date semantics: selected **From / To period**.
+
+Cash-equivalent General Ledger accounts:
+
+- 1000 Cash
+- 1010 Bank
+- 1020 Card Clearing
+- 1030 bKash
+- 1040 Nagad
+- 1090 Other Funds / Clearing
+
+The statement reads actual debit/credit movement in those GL accounts and reconciles:
+
+`Opening Cash + Net Cash Movement = Closing Cash`
+
+Activity is classified as:
+
+- Operating
+- Investing
+- Financing
+
+Known operational journal sources such as Sale Payment, Supplier Payment, Courier Fee and Expense are classified as Operating. Reversal journals inherit the source classification of the journal being reversed so the original and reversal cancel within the same Cash Flow section.
+
+For Manual Journals, classification is inferred from the non-cash counterpart accounts:
+
+- Equity or Liability counterpart → Financing
+- non-operational Asset counterpart → Investing
+- otherwise → Operating
+
+Because the current Chart of Accounts does not yet store an explicit cash-flow classification field per account, this Manual Journal classification is intentionally rule-based. The report always exposes `Reconciliation Difference`; the amount must remain zero when all cash-equivalent GL movements are included.
+
+### Trial Balance
+
+Date semantics: selected **As of** date.
+
+The Reports version reuses Accounting's existing `trial_balance(as_of=...)` service, so it follows the same Posted/Reversed journal semantics as the Accounting module.
+
+Rows show:
+
+- Account Code
+- Account Name
+- Type
+- Debit Activity
+- Credit Activity
+- Ending Debit
+- Ending Credit
+
+The report exposes Total Debit, Total Credit and Difference. Difference should be zero for a balanced ledger.
+
+## Shared output
+
+Across v2.2.0–v2.2.3 the Reports dashboard provides report-appropriate Date/As-of and operational filters, KPI cards, responsive tables and UTF-8 CSV export.
+
+## Validation
+
+### v2.2.0
+- Reports: 5/5 passed
+- Full regression: 157/157 passed
+
+### v2.2.1
+- Reports: 11/11 passed
+- Full regression: 163/163 passed
+
+### v2.2.2
+- Reports: 16/16 passed
+- Full regression: 168/168 passed
+
+### v2.2.3
+
+Validated on GitHub Actions with MySQL 8 and Python 3.12:
+
+- `python manage.py check` — PASS
+- `python manage.py makemigrations --check --dry-run` — PASS / No changes detected
+- migrations — PASS
+- Reports suite — **21/21 passed**
+- full application regression suite — **173/173 passed**
+- no new database migration required
+
+Dedicated v2.2.3 tests verify:
+
+- P&L is calculated from General Ledger activity
+- Balance Sheet equation difference is zero
+- Cash Flow opening + net movement reconciles to closing cash
+- Trial Balance total debit equals total credit
+- all four financial tabs render and export CSV
+
+## Reports v2.2.x status
+
+Reports v2.2.x is now complete. The next roadmap phase is **v2.3.x — Promotion / Marketing**.
