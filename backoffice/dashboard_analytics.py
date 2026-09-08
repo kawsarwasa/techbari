@@ -10,7 +10,7 @@ from customers.models import Customer
 from expenses.models import Expense
 from inventory.models import InventoryBalance
 from payments.models import PaymentTransaction
-from purchasing.models import PurchaseOrder, PurchasePayment, PurchaseReturn, Supplier
+from purchasing.models import PurchaseOrder, PurchaseReturn, Supplier
 from reports.analytics import build_dashboard_sales_analytics
 from returns.models import SalesReturn
 from sales.models import SalesOrder
@@ -55,8 +55,10 @@ def parse_dashboard_period(params):
 
 def _customer_due():
     opening = Customer.objects.aggregate(total=Sum("opening_due"))["total"] or ZERO
-    orders = SalesOrder.objects.exclude(status__in=[SalesOrder.Status.DRAFT, SalesOrder.Status.CANCELLED]).values(
-        "grand_total", "return_credit_amount", "amount_paid"
+    orders = (
+        SalesOrder.objects.filter(customer__isnull=False)
+        .exclude(status__in=[SalesOrder.Status.DRAFT, SalesOrder.Status.CANCELLED])
+        .values("grand_total", "return_credit_amount", "amount_paid")
     )
     due = _money(opening)
     for row in orders:
@@ -74,14 +76,15 @@ def _purchase_due():
     )
     due = _money(opening)
     for purchase in purchases:
-        due += _money(purchase.outstanding_amount)
+        paid = sum((payment.amount for payment in purchase.payments.all()), ZERO)
+        returned = sum((purchase_return.total_amount for purchase_return in purchase.returns.all()), ZERO)
+        outstanding = _money(purchase.grand_total) - _money(paid) - _money(returned)
+        due += max(outstanding, ZERO)
     return _money(due)
 
 
 def _stock_snapshot():
-    balances = list(
-        InventoryBalance.objects.select_related("warehouse", "variant__product").all()
-    )
+    balances = list(InventoryBalance.objects.select_related("warehouse", "variant__product").all())
     alerts = []
     out_of_stock = 0
     for balance in balances:
@@ -113,13 +116,10 @@ def _with_bars(rows, value_key="net_sales"):
 def _sales_trend(rows):
     rows = list(rows)[-31:]
     maximum = max((_money(row["net_sales"]) for row in rows), default=ZERO)
-    result = []
-    for row in rows:
-        result.append({
-            **row,
-            "bar_percent": int((_money(row["net_sales"]) / maximum) * 100) if maximum > ZERO else 0,
-        })
-    return result
+    return [{
+        **row,
+        "bar_percent": int((_money(row["net_sales"]) / maximum) * 100) if maximum > ZERO else 0,
+    } for row in rows]
 
 
 def _channel_rows(rows, total_sales):
