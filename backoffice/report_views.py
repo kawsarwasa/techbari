@@ -5,28 +5,32 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
 
+from reports.after_sales import AFTER_SALES_REPORT_KEYS, AFTER_SALES_TABS, build_after_sales_report
 from reports.services import REPORT_TABS, build_sales_profit_report
 from reports.stock_purchase import OPERATIONAL_REPORT_KEYS, OPERATIONAL_TABS, build_stock_purchase_report
 
 from .context import page_context
 
 
-ALL_REPORT_TABS = [*REPORT_TABS, *OPERATIONAL_TABS]
+ALL_REPORT_TABS = [*REPORT_TABS, *OPERATIONAL_TABS, *AFTER_SALES_TABS]
 
 
 def reports(request):
     requested_report = str(request.GET.get("report") or "sales").strip().lower()
     if requested_report in OPERATIONAL_REPORT_KEYS:
         report = build_stock_purchase_report(request.GET)
+    elif requested_report in AFTER_SALES_REPORT_KEYS:
+        report = build_after_sales_report(request.GET)
     else:
         report = build_sales_profit_report(request.GET)
 
     filters = report["filters"]
-    report.setdefault("show_channel_filter", requested_report not in OPERATIONAL_REPORT_KEYS)
+    report.setdefault("show_channel_filter", requested_report not in OPERATIONAL_REPORT_KEYS | AFTER_SALES_REPORT_KEYS)
     report.setdefault("show_warehouse_filter", False)
     report.setdefault("show_movement_filter", False)
     report.setdefault("warehouse_choices", [])
     report.setdefault("movement_choices", [])
+    report.setdefault("extra_filters", [])
     report.setdefault("date_scope_label", "Range")
     report.setdefault("empty_message", "No completed sales found for this filter.")
 
@@ -46,6 +50,11 @@ def reports(request):
         "date_to": filters["date_to"].isoformat(),
     }
     for key in ("channel", "warehouse", "movement_type"):
+        value = filters.get(key)
+        if value not in (None, ""):
+            common[key] = str(value)
+    for extra_filter in report["extra_filters"]:
+        key = extra_filter["name"]
         value = filters.get(key)
         if value not in (None, ""):
             common[key] = str(value)
