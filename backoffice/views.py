@@ -15,6 +15,8 @@ MARKETING_PAGE_NAMES = {"marketing", "coupons", "coupon_add"}
 
 def page(request, page_name="dashboard"):
     if page_name not in PAGES: raise Http404("Dashboard page not found")
+    if page_name == "dashboard":
+        from . import dashboard_analytics; return dashboard_analytics.dashboard(request)
     if page_name in CATALOG_PAGE_NAMES:
         from . import catalog_views; return getattr(catalog_views, page_name)(request)
     if page_name in INVENTORY_PAGE_NAMES:
