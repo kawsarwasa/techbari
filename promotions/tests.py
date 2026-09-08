@@ -17,17 +17,19 @@ from .services import PromotionError, apply_flash_sale_prices, coupon_discount_f
 class PromotionMarketingTests(TestCase):
     def setUp(self):
         self.now = timezone.now()
-        self.category = Category.objects.create(name="Audio", slug="audio")
-        self.other_category = Category.objects.create(name="Power", slug="power")
-        self.brand = Brand.objects.create(name="TechBari", slug="techbari")
-        self.product = Product.objects.create(public_id="p-audio", name="TWS", slug="tws", category=self.category, brand=self.brand, regular_price=Decimal("1000.00"), sale_price=Decimal("900.00"), status=Product.Status.ACTIVE)
-        self.variant = ProductVariant.objects.create(product=self.product, name="Default", sku="TWS-1", is_default=True, stock_quantity=10)
-        self.other_product = Product.objects.create(public_id="p-power", name="Power Bank", slug="power-bank", category=self.other_category, brand=self.brand, regular_price=Decimal("2000.00"), status=Product.Status.ACTIVE)
-        self.other_variant = ProductVariant.objects.create(product=self.other_product, name="Default", sku="PB-1", is_default=True, stock_quantity=10)
-        self.warehouse = Warehouse.objects.create(name="Main", code="MAIN", is_default=True)
-        InventoryBalance.objects.create(warehouse=self.warehouse, variant=self.variant, on_hand=20)
-        InventoryBalance.objects.create(warehouse=self.warehouse, variant=self.other_variant, on_hand=20)
-        CustomerGroup.objects.create(name="Retail", code="RETAIL")
+        self.category = Category.objects.create(name="Promo Audio QA", slug="promo-audio-qa")
+        self.other_category = Category.objects.create(name="Promo Power QA", slug="promo-power-qa")
+        self.brand = Brand.objects.create(name="Promo Brand QA", slug="promo-brand-qa")
+        self.product = Product.objects.create(public_id="promo-p-audio", name="Promo TWS", slug="promo-tws", category=self.category, brand=self.brand, regular_price=Decimal("1000.00"), sale_price=Decimal("900.00"), status=Product.Status.ACTIVE)
+        self.variant = ProductVariant.objects.create(product=self.product, name="Default", sku="PROMO-TWS-1", is_default=True, stock_quantity=10)
+        self.other_product = Product.objects.create(public_id="promo-p-power", name="Promo Power Bank", slug="promo-power-bank", category=self.other_category, brand=self.brand, regular_price=Decimal("2000.00"), status=Product.Status.ACTIVE)
+        self.other_variant = ProductVariant.objects.create(product=self.other_product, name="Default", sku="PROMO-PB-1", is_default=True, stock_quantity=10)
+        self.warehouse = Warehouse.objects.filter(is_default=True, is_active=True).order_by("id").first()
+        if self.warehouse is None:
+            self.warehouse = Warehouse.objects.create(name="Promo Main", code="PROMO-MAIN", is_default=True)
+        InventoryBalance.objects.update_or_create(warehouse=self.warehouse, variant=self.variant, defaults={"on_hand": 20})
+        InventoryBalance.objects.update_or_create(warehouse=self.warehouse, variant=self.other_variant, defaults={"on_hand": 20})
+        CustomerGroup.objects.get_or_create(name="Retail", code="RETAIL")
         self.campaign = Campaign.objects.create(code="FB-SEPT", name="Facebook September", source="facebook", medium="paid_social", starts_at=self.now - timedelta(days=1), ends_at=self.now + timedelta(days=7))
 
     def rows(self, variant=None, qty=1, price=None):
