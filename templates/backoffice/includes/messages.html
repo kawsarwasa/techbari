@@ -1,1 +1,3 @@
-<div class="toast" id="toast"></div>{% for message in page_messages %}<div class="inline-info">{{ message.text }}</div>{% endfor %}
+<div class="toast" id="toast"></div>
+{% for message in messages %}<div class="inline-info {{ message.tags }}">{{ message }}</div>{% endfor %}
+{% for message in page_messages %}<div class="inline-info">{{ message.text }}</div>{% endfor %}
