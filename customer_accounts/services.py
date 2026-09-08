@@ -29,6 +29,11 @@ def register_customer_account(*, name, phone, email, password, previous_order_nu
                 raise ValidationError("For security, enter one previous TechBari order number to link your existing purchase history.")
             if not historical_orders.filter(order_number__iexact=previous_order_number).exists():
                 raise ValidationError("The previous order number could not be verified for this mobile number.")
+        elif customer.opening_due and customer.opening_due > 0:
+            # A pre-existing CRM balance is sensitive business history. Without a prior
+            # SalesOrder challenge or a verified OTP channel, do not let self-registration
+            # claim that record merely by knowing its phone number.
+            raise ValidationError("This existing customer record has a balance. Contact TechBari support to activate online account access securely.")
     else:
         if email and Customer.objects.select_for_update().filter(email__iexact=email).exclude(phone=phone).exists():
             raise ValidationError("This email is already linked to another customer record.")
