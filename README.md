@@ -1,92 +1,49 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v2.7.0**
+**Current version: v2.8.0**
 
 TechBari is a MySQL 8-backed commerce platform built around one shared business architecture:
 
 **One Product Database + One Inventory Engine + One Sales Engine + One Accounting Ledger.**
 
-Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS, Payment, Shipping / Courier, Returns / Refunds, Accounting, Expense Management, Reports, Promotion / Marketing, Dashboard Analytics, Staff Access Control, CMS / Store Settings and Customer Account are connected to real database-backed business flows.
+Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS, Payment, Shipping / Courier, Returns / Refunds, Accounting, Expense Management, Reports, Promotion / Marketing, Dashboard Analytics, Staff Access Control, CMS / Store Settings, Customer Account and Notifications / Integrations are connected to real database-backed business flows.
+
+## v2.8.0 — Notifications / Integrations
+
+TechBari now has a database-backed notification center and a shared-hosting-friendly external integration outbox.
+
+Included:
+
+- real staff notifications for orders, payments, low/out-of-stock and shipping events
+- per-user read/unread state and live dashboard bell count
+- database outbox with idempotency, retry state and exponential retry delay
+- email delivery through Django email backend
+- generic SMS and WhatsApp webhook adapters
+- Meta Pixel browser events: PageView, ViewContent, AddToCart, InitiateCheckout and Purchase
+- Meta Conversions API Purchase queue using the same stable event ID as browser Purchase
+- GA4 browser tracking plus server-side Measurement Protocol Purchase
+- generic courier booking adapter configured by courier code and environment variables
+- HMAC-SHA256 signed courier webhook for tracking/status updates
+- integration delivery failure alerts
+- `view_notifications` and `manage_integrations` staff permissions
+- external secrets stay in environment variables rather than database/dashboard fields
+- shared-hosting processor command: `python manage.py process_integrations --limit 100`
+
+See `NOTIFICATIONS_INTEGRATIONS_PHASE.md` for configuration, cron and security details.
 
 ## v2.7.0 — Customer Account
 
-The storefront customer experience is now database-backed and connected to the existing CRM, Sales, Shipping and Serial / Warranty data.
+The storefront customer experience is database-backed and connected to CRM, Sales, Shipping and Serial / Warranty data.
 
-Included:
-
-- customer register, login and logout
-- customer dashboard
-- order history and customer-scoped order details
-- public order tracking with order-number + phone verification
-- owned courier tracking and shipment history
-- database-backed wishlist
-- saved delivery addresses with one-default invariant
-- customer profile editing
-- password change while keeping the session valid
-- warranty / Serial / IMEI lookup scoped to the customer's purchases
-- logged-in checkout reuses the linked CRM Customer instead of creating duplicates
-- guest checkout setting is enforced server-side
-- staff portal users cannot sign in through customer login
-- existing CRM purchase history requires a verified previous order number before self-linking
-- CRM records with opening balances cannot be self-claimed without stronger verification/support activation
-- shipping recipient/destination data does not overwrite the linked CRM customer's identity/profile
-
-Customer accounts use Django authentication users with `is_staff=False`, linked one-to-one to the existing `customers.Customer` CRM record through `CustomerAccount`. See `CUSTOMER_ACCOUNT_PHASE.md`.
-
-Customer routes include:
-
-- `/login/`
-- `/register/`
-- `/wishlist/`
-- `/track-order/`
-- `/account/`
-- `/account/orders/`
-- `/account/addresses/`
-- `/account/profile/`
-- `/account/password/`
-- `/account/warranty/`
+Included customer register/login, dashboard, order history/tracking, database wishlist, saved addresses, profile/password, owned warranty/Serial/IMEI lookup, safe existing-CRM linking and logged-in checkout CRM reuse. See `CUSTOMER_ACCOUNT_PHASE.md`.
 
 ## v2.6.0 — CMS / Store Settings
 
-The previous static Settings demo and hardcoded storefront business content are now database-backed.
-
-Included:
-
-- shop name, tagline and business/contact information
-- logo and favicon uploads
-- Facebook / YouTube / Instagram / TikTok / WhatsApp settings
-- editable storefront top-bar and footer copy
-- scheduled/reorderable Hero Banners
-- enabled/disabled/reorderable Homepage Sections
-- Inside/Outside Dhaka delivery charges and delivery estimates
-- free-delivery threshold
-- COD enable/disable rule
-- Terms & Conditions
-- Privacy Policy
-- Return & Refund Policy
-- Shipping Policy
-- default and homepage SEO metadata
-- server-side `manage_store_settings` permission enforcement
-
-Checkout uses the database delivery settings as a server-side source of truth; browser values cannot override the configured final shipping charge. See `CMS_STORE_SETTINGS_PHASE.md`.
-
-CMS routes:
-
-- `/dashboard/settings/`
-- `/dashboard/settings/banners/`
-- `/dashboard/settings/homepage/`
-- `/dashboard/settings/pages/`
-
-Public policy routes:
-
-- `/terms-and-conditions/`
-- `/privacy-policy/`
-- `/return-refund-policy/`
-- `/shipping-policy/`
+Database-backed branding, contact/social links, Hero Banners, Homepage Sections, delivery rules, policies and SEO. Checkout uses CMS delivery settings as a server-side source of truth. See `CMS_STORE_SETTINGS_PHASE.md`.
 
 ## v2.5.0 — Users / Roles / Permissions
 
-Dashboard staff authentication uses Django auth/session with Admin, Manager, Cashier, Inventory Manager, Accountant and Sales Staff roles; fine-grained permissions, password reset/change, idle-session expiry and database-backed Audit Log are implemented. Default Cashier cannot access Accounting or edit Accounting settings. See `STAFF_ACCESS_PHASE.md`.
+Dashboard staff authentication uses Django auth/session with Admin, Manager, Cashier, Inventory Manager, Accountant and Sales Staff roles; fine-grained permissions, password reset/change, idle-session expiry and database-backed Audit Log are implemented. See `STAFF_ACCESS_PHASE.md`.
 
 ## v2.4.0 — Dashboard Analytics
 
@@ -107,14 +64,15 @@ Financial statements use the Accounting General Ledger as their source of truth.
 
 ## Completed business phases
 
-- **v2.7.0 — Customer Account** — customer auth, CRM-safe linking, account dashboard, order/tracking, wishlist, addresses, profile/password and warranty lookup. See `CUSTOMER_ACCOUNT_PHASE.md`.
-- **v2.6.0 — CMS / Store Settings** — branding, contact/social, hero/homepage CMS, delivery rules, policies and SEO. See `CMS_STORE_SETTINGS_PHASE.md`.
-- **v2.5.0 — Users / Roles / Permissions** — staff authentication, six roles, fine-grained RBAC, password reset/session security and Audit Log. See `STAFF_ACCESS_PHASE.md`.
-- **v2.4.0 — Dashboard Analytics** — real management KPIs, trends, due balances, stock alerts and recent activity. See `DASHBOARD_ANALYTICS_PHASE.md`.
-- **v2.3.0 — Promotion / Marketing** — Coupons, Flash Sales, Featured Products and Campaign tracking. See `PROMOTION_MARKETING_PHASE.md`.
-- **v2.2.x — Reports** — operational reports plus GL-backed financial statements. See `REPORTS_PHASE.md`.
-- **v2.1.1 — Expense Management** — expense workflow and GL posting. See `EXPENSE_MANAGEMENT_PHASE.md`.
-- **v2.0.0 — Accounting / General Ledger** — double-entry accounting and ledger. See `ACCOUNTING_SYSTEM_PHASE.md`.
+- **v2.8.0 — Notifications / Integrations** — operational notification center, outbox/retry, Email/SMS/WhatsApp hooks, Meta Pixel/CAPI, GA4 and courier adapter/webhook. See `NOTIFICATIONS_INTEGRATIONS_PHASE.md`.
+- **v2.7.0 — Customer Account** — customer auth, CRM-safe linking, account dashboard, order/tracking, wishlist, addresses, profile/password and warranty lookup.
+- **v2.6.0 — CMS / Store Settings** — branding, contact/social, hero/homepage CMS, delivery rules, policies and SEO.
+- **v2.5.0 — Users / Roles / Permissions** — staff authentication, six roles, fine-grained RBAC and Audit Log.
+- **v2.4.0 — Dashboard Analytics** — real management KPIs, trends, due balances and stock alerts.
+- **v2.3.0 — Promotion / Marketing** — Coupons, Flash Sales, Featured Products and Campaign tracking.
+- **v2.2.x — Reports** — operational reports plus GL-backed financial statements.
+- **v2.1.1 — Expense Management**
+- **v2.0.0 — Accounting / General Ledger**
 - **v1.10.0 — Returns / Refunds**
 - **v1.9.0 — Shipping / Courier**
 - **v1.8.0 — Payment System**
@@ -141,25 +99,32 @@ Configure MySQL 8, then:
 python manage.py migrate
 python manage.py bootstrap_admin --email admin@example.com
 python manage.py check
-python manage.py test catalog inventory serial_tracking purchasing customers sales payments shipping returns accounting expenses reports promotions storefront backoffice.test_dashboard_analytics staff_access store_settings customer_accounts
+python manage.py test catalog inventory serial_tracking purchasing customers sales payments shipping returns accounting expenses reports promotions storefront store_settings customer_accounts staff_access backoffice.test_dashboard_analytics integrations
 python manage.py runserver
 ```
 
-v2.7.0 introduces `customer_accounts/0001_initial.py`; `python manage.py migrate` is required.
+v2.8.0 introduces `integrations/0001_initial.py` and `staff_access/0002_v280_integration_permissions.py`; `python manage.py migrate` is required.
+
+To process queued external integrations manually:
+
+```powershell
+python manage.py process_integrations --limit 100
+```
+
+On shared hosting, schedule the same command from cron after configuring the required environment secrets.
 
 ## Validation
 
-v2.7.0 is validated on MySQL 8.0.46 / Python 3.12.14 with:
+v2.8.0 is validated on MySQL 8.0.46 / Python 3.12.14 with:
 
-- Customer Account dedicated suite: **20/20 PASS**
-- full project regression: **243/243 PASS**
+- Notifications / Integrations dedicated suite: **13/13 PASS**
+- full project regression: **256/256 PASS**
 - Django system check: **PASS**
 - migration drift: **PASS / No changes detected**
 - migration application: **PASS**
 
 ## Roadmap direction
 
-Next planned phases:
+Next planned phase:
 
-- **v2.8.x — Notifications + Integrations**
 - **v3.0 — Final Production Phase**
