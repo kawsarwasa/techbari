@@ -1,14 +1,14 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{{ report_title }} | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/reports-v220.css' %}?v=2.2.2">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/reports-v220.css' %}?v=2.2.3">{% endblock %}
 {% block content %}
 <section class="page reports-page">
   <div class="page-head reports-head">
     <div>
-      <span class="report-eyebrow">Reports v2.2.2</span>
+      <span class="report-eyebrow">Reports v2.2.3</span>
       <h1>Business Reports</h1>
-      <p>Sales, profit, inventory, purchasing, payments, expenses, returns, warranty and Serial/IMEI reporting from live business data.</p>
+      <p>Operational reporting plus General Ledger-backed P&amp;L, Balance Sheet, Cash Flow and Trial Balance.</p>
     </div>
     <a class="btn btn-primary" href="{{ export_url }}">Export CSV</a>
   </div>
