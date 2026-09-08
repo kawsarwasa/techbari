@@ -42,11 +42,15 @@ MARKETING_MANAGE = {"coupon_add"}
 STORE_SETTINGS_ROUTES = {"settings", "cms_banners", "cms_banner_add", "cms_banner_edit", "cms_banner_delete", "cms_homepage_sections", "cms_homepage_section_update", "cms_content_pages", "cms_content_page_edit"}
 USER_VIEW = {"users", "roles"}
 USER_MANAGE = {"user_add", "user_edit", "user_toggle", "role_edit"}
+NOTIFICATION_ROUTES = {"notifications", "notification_read", "notifications_read_all"}
+INTEGRATION_ROUTES = {"integration_settings", "integration_retry", "integration_process"}
 
 
 def _permission(route_name, method):
     write = method in MUTATING_METHODS
-    if route_name in {"dashboard", "notifications"}: return "staff_access.view_dashboard"
+    if route_name == "dashboard": return "staff_access.view_dashboard"
+    if route_name in NOTIFICATION_ROUTES: return "staff_access.view_notifications"
+    if route_name in INTEGRATION_ROUTES: return "staff_access.manage_integrations"
     if route_name in CATALOG_MANAGE or (route_name in CATALOG_LIST and write): return "staff_access.manage_catalog"
     if route_name in CATALOG_LIST: return "staff_access.view_catalog"
     if route_name in INVENTORY_ADJUST: return "staff_access.adjust_inventory"

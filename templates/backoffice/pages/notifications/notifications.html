@@ -1,6 +1,40 @@
 {% extends "backoffice/base.html" %}
-{% load static demo %}
 {% block title %}Notifications | TechBari Admin{% endblock %}
 {% block content %}
-<section class="page"><div class="page-head"><div><h1>Notifications</h1><p>Review operational alerts and activity.</p></div><div class="head-actions"><a class="btn" href="#" data-demo-alert="All notifications marked read."><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg> Mark All Read</a></div></div><div class="notification-list">{% for notification in notifications %}{% include "backoffice/components/notification.html" %}{% endfor %}</div></section>
+<section class="page">
+  <div class="page-head">
+    <div><h1>Notifications</h1><p>Real order, payment, stock, shipping and integration alerts.</p></div>
+    <div class="head-actions">
+      {% if perms.staff_access.manage_integrations %}<a class="btn" href="{% url 'integration_admin:integration_settings' %}">Integration Settings</a>{% endif %}
+      <form method="post" action="{% url 'integration_admin:notifications_read_all' %}">{% csrf_token %}<button class="btn" type="submit">Mark All Read</button></form>
+    </div>
+  </div>
+
+  <form method="get" class="filters" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    <select class="control" name="kind"><option value="">All types</option>{% for value,label in notification_kinds %}<option value="{{ value }}" {% if selected_kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select class="control" name="state"><option value="">All states</option><option value="unread" {% if selected_state == 'unread' %}selected{% endif %}>Unread</option><option value="read" {% if selected_state == 'read' %}selected{% endif %}>Read</option></select>
+    <button class="btn" type="submit">Filter</button>
+  </form>
+
+  <div class="notification-list">
+    {% for notification in notifications %}
+      <article class="card" style="padding:16px;margin-bottom:12px;opacity:{% if notification.is_read_for_user %}.68{% else %}1{% endif %}">
+        <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><strong>{{ notification.title }}</strong><span class="badge">{{ notification.get_kind_display }}</span><span class="badge">{{ notification.get_severity_display }}</span>{% if not notification.is_read_for_user %}<span class="badge">Unread</span>{% endif %}</div>
+            <p class="muted" style="margin:7px 0 0">{{ notification.message }}</p>
+            <small class="muted">{{ notification.created_at|date:"M d, Y H:i" }}</small>
+          </div>
+          <div style="display:flex;gap:8px">
+            {% if notification.link %}<a class="btn" href="{{ notification.link }}">Open</a>{% endif %}
+            {% if not notification.is_read_for_user %}<form method="post" action="{% url 'integration_admin:notification_read' notification.id %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn" type="submit">Mark read</button></form>{% endif %}
+          </div>
+        </div>
+      </article>
+    {% empty %}
+      <div class="empty-state"><h3>No notifications</h3><p>Operational alerts will appear here automatically.</p></div>
+    {% endfor %}
+  </div>
+  {% if page_obj.has_other_pages %}<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">{% if page_obj.has_previous %}<a class="btn" href="?page={{ page_obj.previous_page_number }}&kind={{ selected_kind }}&state={{ selected_state }}">Previous</a>{% endif %}<span class="btn">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a class="btn" href="?page={{ page_obj.next_page_number }}&kind={{ selected_kind }}&state={{ selected_state }}">Next</a>{% endif %}</div>{% endif %}
+</section>
 {% endblock %}

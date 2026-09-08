@@ -1,5 +1,7 @@
 ACCESS_PERMISSIONS = (
     ("view_dashboard", "View dashboard"),
+    ("view_notifications", "View notifications"),
+    ("manage_integrations", "Manage notifications and integrations"),
     ("view_catalog", "View catalog"),
     ("manage_catalog", "Manage catalog"),
     ("view_inventory", "View inventory"),
@@ -42,21 +44,21 @@ ROLE_DEFAULTS = {
     "Admin": set(PERMISSION_CODES),
     "Manager": set(PERMISSION_CODES) - {"manage_users", "manage_accounting_settings"},
     "Cashier": {
-        "view_dashboard", "view_catalog", "view_customers", "manage_customers",
+        "view_dashboard", "view_notifications", "view_catalog", "view_customers", "manage_customers",
         "view_sales", "manage_sales", "use_pos", "view_payments", "manage_payments", "view_returns",
     },
     "Inventory Manager": {
-        "view_dashboard", "view_catalog", "manage_catalog", "view_inventory", "manage_inventory",
+        "view_dashboard", "view_notifications", "view_catalog", "manage_catalog", "view_inventory", "manage_inventory",
         "adjust_inventory", "view_serial", "manage_serial", "view_purchasing", "manage_purchasing",
         "view_returns", "manage_returns", "view_reports",
     },
     "Accountant": {
-        "view_dashboard", "view_purchasing", "view_customers", "view_sales", "view_payments",
+        "view_dashboard", "view_notifications", "view_purchasing", "view_customers", "view_sales", "view_payments",
         "manage_payments", "view_accounting", "manage_accounting", "manage_accounting_settings",
         "view_expenses", "manage_expenses", "approve_expenses", "view_reports", "view_audit_log",
     },
     "Sales Staff": {
-        "view_dashboard", "view_catalog", "view_customers", "manage_customers", "view_sales",
+        "view_dashboard", "view_notifications", "view_catalog", "view_customers", "manage_customers", "view_sales",
         "manage_sales", "view_payments", "view_shipping", "view_returns",
     },
 }

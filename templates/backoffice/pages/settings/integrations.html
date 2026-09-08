@@ -1,0 +1,43 @@
+{% extends "backoffice/base.html" %}
+{% block title %}Notifications & Integrations | TechBari Admin{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head">
+    <div><h1>Notifications & Integrations</h1><p>Configure delivery hooks and monitor the database outbox. Secrets stay in environment variables.</p></div>
+    <div class="head-actions"><a class="btn" href="{% url 'backoffice:notifications' %}">Notifications</a><form method="post" action="{% url 'integration_admin:integration_process' %}">{% csrf_token %}<button class="btn" type="submit">Process 20 Now</button></form></div>
+  </div>
+
+  <form method="post" class="card" style="padding:20px;margin-bottom:20px">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <h2>Operational notifications</h2>
+    <div class="form-grid">
+      <label>{{ form.email_enabled }} Email enabled</label><label>{{ form.sms_enabled }} SMS enabled</label><label>{{ form.whatsapp_enabled }} WhatsApp enabled</label>
+      <label>{{ form.notify_order_events }} Order events</label><label>{{ form.notify_payment_events }} Payment events</label><label>{{ form.notify_low_stock }} Low-stock alerts</label><label>{{ form.notify_shipping_events }} Shipping events</label>
+      <label>Admin alert email{{ form.admin_email }}{{ form.admin_email.errors }}</label><label>Admin phone{{ form.admin_phone }}{{ form.admin_phone.errors }}</label>
+      <label>SMS webhook URL{{ form.sms_webhook_url }}{{ form.sms_webhook_url.errors }}</label><label>WhatsApp webhook URL{{ form.whatsapp_webhook_url }}{{ form.whatsapp_webhook_url.errors }}</label>
+    </div>
+    <hr style="margin:24px 0">
+    <h2>Analytics</h2>
+    <div class="form-grid">
+      <label>{{ form.meta_pixel_enabled }} Meta Pixel</label><label>Meta Pixel ID{{ form.meta_pixel_id }}{{ form.meta_pixel_id.errors }}</label><label>{{ form.meta_capi_enabled }} Meta Conversions API</label>
+      <label>{{ form.ga4_enabled }} GA4 browser tracking</label><label>GA4 Measurement ID{{ form.ga4_measurement_id }}{{ form.ga4_measurement_id.errors }}</label><label>{{ form.ga4_server_enabled }} GA4 server Measurement Protocol purchase</label>
+      <label>{{ form.courier_api_enabled }} Courier API booking</label>
+    </div>
+    <div class="card" style="padding:14px;margin:18px 0;background:var(--surface-2,#f7f8fa)"><strong>Secrets are not stored here.</strong><p class="muted" style="margin:6px 0 0">Use .env for SMTP password, SMS/WhatsApp tokens, META_CAPI_ACCESS_TOKEN, GA4_API_SECRET and courier API/webhook secrets.</p></div>
+    <button class="btn btn-primary" type="submit">Save Integration Settings</button>
+  </form>
+
+  <div class="card" style="padding:20px;margin-bottom:20px">
+    <h2>Courier API providers</h2>
+    <p class="muted">Enable a courier in Shipping → Courier Providers. Configure environment variables as <code>COURIER_&lt;CODE&gt;_API_BASE_URL</code>, <code>COURIER_&lt;CODE&gt;_API_TOKEN</code>, optional <code>COURIER_&lt;CODE&gt;_CREATE_PATH</code>, and <code>COURIER_&lt;CODE&gt;_WEBHOOK_SECRET</code>.</p>
+    {% for courier in api_couriers %}<div class="summary-line"><span><strong>{{ courier.name }}</strong> ({{ courier.code }})</span><span class="badge">API enabled{% if courier.is_test_mode %} · test mode{% endif %}</span></div>{% empty %}<p class="muted">No courier provider has API enabled yet.</p>{% endfor %}
+  </div>
+
+  <div class="card" style="padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><h2>Recent delivery queue</h2><p class="muted">Cron command: <code>python manage.py process_integrations --limit 100</code></p></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Created</th><th>Channel</th><th>Event</th><th>Reference</th><th>Status</th><th>Attempts</th><th>Error</th><th></th></tr></thead><tbody>
+      {% for row in recent_deliveries %}<tr><td>{{ row.created_at|date:"M d H:i" }}</td><td>{{ row.get_channel_display }}</td><td>{{ row.event_type }}</td><td>{{ row.reference_id|default:"—" }}</td><td><span class="badge">{{ row.get_status_display }}</span></td><td>{{ row.attempts }}</td><td style="max-width:320px;white-space:normal">{{ row.last_error|default:"—" }}</td><td>{% if row.status != 'sent' %}<form method="post" action="{% url 'integration_admin:integration_retry' row.id %}">{% csrf_token %}<button class="btn" type="submit">Retry</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="8" class="muted">No outbound deliveries yet.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</section>
+{% endblock %}
