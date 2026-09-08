@@ -3,7 +3,6 @@ from urllib.parse import quote
 
 from django.conf import settings
 from django.contrib.auth import logout
-from django.http import HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 
@@ -40,6 +39,7 @@ EXPENSE_MANAGE = {"expense_add", "expense_edit", "expense_submit", "expense_canc
 EXPENSE_APPROVE = {"expense_approve", "expense_reject"}
 MARKETING_VIEW = {"marketing", "coupons"}
 MARKETING_MANAGE = {"coupon_add"}
+STORE_SETTINGS_ROUTES = {"settings", "cms_banners", "cms_banner_add", "cms_banner_edit", "cms_banner_delete", "cms_homepage_sections", "cms_homepage_section_update", "cms_content_pages", "cms_content_page_edit"}
 USER_VIEW = {"users", "roles"}
 USER_MANAGE = {"user_add", "user_edit", "user_toggle", "role_edit"}
 
@@ -76,7 +76,7 @@ def _permission(route_name, method):
     if route_name == "reports": return "staff_access.view_reports"
     if route_name in MARKETING_MANAGE or (route_name in MARKETING_VIEW and write): return "staff_access.manage_marketing"
     if route_name in MARKETING_VIEW: return "staff_access.view_marketing"
-    if route_name == "settings": return "staff_access.manage_store_settings"
+    if route_name in STORE_SETTINGS_ROUTES: return "staff_access.manage_store_settings"
     if route_name == "audit_log": return "staff_access.view_audit_log"
     if route_name in USER_MANAGE or (route_name in USER_VIEW and write): return "staff_access.manage_users"
     if route_name in USER_VIEW: return "staff_access.view_users"
