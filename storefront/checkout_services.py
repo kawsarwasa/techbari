@@ -80,14 +80,19 @@ def _customer_for_checkout(data, customer_account=None):
             raise CheckoutError("For a signed-in account, use the mobile number linked to your profile.")
         if email and Customer.objects.filter(email__iexact=email).exclude(pk=customer.pk).exists():
             raise CheckoutError("This email is linked to another customer record.")
-        updates = {"name": data["full_name"], "source": Customer.Source.ONLINE, "address": latest_address, "city": data.get("upazila") or "", "district": data.get("district") or "", "is_active": True}
-        if email:
-            updates["email"] = email
+
+        # A checkout address is a shipping destination, not the customer's CRM profile.
+        # Keep identity/profile fields stable; explicit profile edits belong to /account/profile/.
         changed = []
-        for field, value in updates.items():
-            if getattr(customer, field) != value:
-                setattr(customer, field, value)
-                changed.append(field)
+        if customer.source != Customer.Source.ONLINE:
+            customer.source = Customer.Source.ONLINE
+            changed.append("source")
+        if not customer.is_active:
+            customer.is_active = True
+            changed.append("is_active")
+        if email and customer.email != email:
+            customer.email = email
+            changed.append("email")
         if changed:
             changed.append("updated_at")
             customer.save(update_fields=changed)
