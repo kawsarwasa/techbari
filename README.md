@@ -1,33 +1,55 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v2.1.0**
+**Current version: v2.2.0**
 
 TechBari is a MySQL 8-backed commerce platform being built phase-by-phase around one shared business architecture:
 
 **One Product Database + One Inventory Engine + One Sales Engine + One Accounting Ledger.**
 
-Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS, Payment, Shipping / Courier, Returns / Refunds, Accounting and Expense Management are now connected to the real business data flow.
+Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS, Payment, Shipping / Courier, Returns / Refunds, Accounting, Expense Management and the first Reports release are connected to the real business data flow.
 
-## v2.1.0 — Expense Management System
+## v2.2.0 — Sales + Profit Reports
 
-Business expenses are now real database records with category/GL mapping, payee/vendor, date, amount, receipt/invoice number, preferred and actual payment method, notes and an auditable Draft → Pending Approval → Approved → Paid lifecycle.
+The Reports dashboard is now database-backed and provides the first Reports v2.2.x release:
 
-Expense categories map directly to Expense-type Chart of Accounts accounts. The migration seeds dedicated operating-expense accounts and categories for Rent, Utilities, Marketing, Office Supplies, Internet/Communication, Transport/Travel, Repairs, Bank/MFS Charges, Professional Services, Staff Welfare and Other Expense.
+- Sales Report
+- Daily Sales
+- Monthly Sales
+- POS vs Online / Manual Sales
+- Product Sales
+- Category Sales
+- Brand Sales
+- Profit Report
+- COGS Report
+
+Reports support From/To date filtering, sales-channel filtering, KPI cards and UTF-8 CSV export. Only Completed Sales Orders are counted.
+
+Order-level COGS uses posted General Ledger COGS entries as the primary source of truth. Completed sales-return COGS reversals reduce net COGS, while return credits reduce net sales. Gross Profit is calculated as Net Sales minus Net COGS.
+
+Product, Category and Brand reports focus on product revenue and therefore exclude shipping revenue. Order-level discounts and return credits are allocated to product rows, and exact order COGS is allocated across the sold items. Category and Brand grouping use the product's current Catalog classification because those values are not currently snapshotted on Sales Order items.
+
+Route: `/dashboard/reports/`
+
+See `REPORTS_PHASE.md` for report definitions, calculation rules, filters and the remaining v2.2.x roadmap.
+
+## v2.1.1 — Expense Management System
+
+Business expenses are real database records with category/GL mapping, payee/vendor, date, amount, receipt/invoice number, attachment, preferred and actual payment method, exact payment account, notes and an auditable Draft → Pending Approval → Approved → Paid lifecycle.
+
+Expense categories map directly to Expense-type Chart of Accounts accounts. The Expense roadmap includes Rent, Utilities, Marketing, Office Supplies, Internet/Communication, Transport/Travel, Repairs, Bank/MFS Charges, Professional Services, Staff Welfare, Salary & Wages, Courier Expense and Other Expense.
 
 When an Approved expense is paid, TechBari posts a balanced Accounting journal atomically:
 
 - Debit the mapped Expense account
-- Credit Cash / Bank / Card / bKash / Nagad / Other Funds
+- Credit the exact selected Cash / Bank / Card / bKash / Nagad / Other Asset account
 
-Closed Accounting periods block payment without leaving a partial Paid state. Paid expenses are not edited or deleted; a correction uses a reversing journal and marks the Expense Voided while preserving original history.
-
-Expense Management includes immutable workflow events, approval/rejection/cancellation, paid-expense void/reversal, category management, search/filtering and operational KPIs.
+Attachments support PDF/JPG/JPEG/PNG/WebP up to 5 MB. Closed Accounting periods block payment without leaving a partial Paid state. Paid expenses are corrected through reversal/void instead of destructive editing.
 
 See `EXPENSE_MANAGEMENT_PHASE.md` for the workflow, GL mapping, safety rules and routes.
 
 ## v2.0.0 — Accounting System / General Ledger
 
-TechBari has a real double-entry Accounting Ledger. Sales, Payments, Purchase Receipts, Supplier Payments, Purchase Returns, completed Sales Returns, Courier COD deductions and now paid business Expenses generate balanced, idempotent journals without replacing the operational source modules.
+TechBari has a real double-entry Accounting Ledger. Sales, Payments, Purchase Receipts, Supplier Payments, Purchase Returns, completed Sales Returns, Courier COD deductions and paid business Expenses generate balanced, idempotent journals without replacing the operational source modules.
 
 The Accounting domain includes Chart of Accounts, immutable Posted journals, debit/credit Journal Lines, source-key duplicate protection, journal reversal, Open/Closed Accounting Periods, General Ledger, Trial Balance, Accounting overview and migration/backfill of v1.x business history.
 
@@ -42,7 +64,7 @@ See `ACCOUNTING_SYSTEM_PHASE.md`.
 - **v1.6.0 — Storefront Checkout Backend** — real Online Sales Orders, CRM linkage, server-authoritative totals and stock reservation. See `CHECKOUT_BACKEND_PHASE.md`.
 - **v1.5.0 — Customer CRM + Sales Order Engine** — CRM and shared Sales lifecycle. See `CRM_SALES_PHASE.md`.
 - **v1.3.0 — Supplier + Purchase** — Supplier, Purchase Order, receiving, payments and Purchase Returns. See `SUPPLIER_PURCHASE_PHASE.md`.
-- **v1.2.0 — Serial / IMEI / Warranty** — unit-level tracking and Warranty/RMA. See `SERIAL_IMEI_WARRANTY_PHASE.md`.
+- **v1.2.0 — Serial / IMEI / Warranty** — unit-level tracking and Warranty/RMA claims. See `SERIAL_IMEI_WARRANTY_PHASE.md`.
 - **v1.1.0 — Inventory** — warehouse/SKU ledger, adjustments, transfers and reservations. See `INVENTORY_PHASE1.md`.
 - **v1.0.10 — Catalog** — Categories, Brands, Products, Variants/SKUs/Barcodes, media, specifications and Storefront catalog. See `CATALOG_DATABASE_PHASE.md`.
 
@@ -99,18 +121,29 @@ Routes: `/dashboard/accounts/`, `/dashboard/accounts/chart/`, `/dashboard/accoun
 
 ### Expense Management
 - Expense Category → GL Expense account mapping
-- seeded operating expense categories/accounts
+- seeded operating expense categories including Salary and Courier
 - Draft / Pending / Approved / Paid / Rejected / Cancelled / Voided lifecycle
-- payee/vendor, receipt/invoice, notes and payment reference
+- payee/vendor, receipt/invoice, notes and attachment
+- explicit payment Asset account selection
 - approval and payment audit snapshots
 - immutable Expense events
-- Cash / Bank / Card / bKash / Nagad / Other payment
 - atomic Accounting posting on payment
 - closed-period protection
 - paid-expense reversal/void flow
 - search/filtering and expense KPIs
 
 Routes: `/dashboard/expenses/`, `/dashboard/expenses/add/`, `/dashboard/expenses/categories/`, `/dashboard/expenses/<id>/`, `/dashboard/expenses/<id>/pay/`.
+
+### Reports v2.2.0
+- completed-sales reporting
+- Daily and Monthly Sales
+- POS vs Online / Manual comparison
+- Product / Category / Brand sales
+- return-aware COGS and Gross Profit
+- From/To date and Channel filters
+- CSV export
+
+Route: `/dashboard/reports/`.
 
 ## Local setup
 
@@ -136,26 +169,21 @@ Apply migrations and verify:
 ```powershell
 python manage.py migrate
 python manage.py check
-python manage.py test catalog inventory serial_tracking purchasing customers sales payments shipping returns accounting expenses storefront
+python manage.py test catalog inventory serial_tracking purchasing customers sales payments shipping returns accounting expenses reports storefront
 python manage.py runserver
 ```
 
-Upgrading from v2.0.0 to v2.1.0 applies:
-
-```text
-accounting.0003_expense_source
-expenses.0001_initial
-```
-
-Existing operational and Accounting data are preserved. No catalog seed command is required.
+v2.2.0 adds no database migration. Existing operational, Accounting and Expense data are preserved.
 
 ## Roadmap direction
 
-Accounting + Expense Management are now the financial source of truth for the reporting phase.
+Reports v2.2.x is being released in controlled sub-phases so operational reports can be reconciled to the Accounting ledger.
 
 Next planned phases:
 
-- **v2.2.x — Reports**
+- **v2.2.1 — Stock + Purchase Reports**
+- **v2.2.2 — Payment + Expense + Returns + Warranty + Serial/IMEI Reports**
+- **v2.2.3 — P&L + Balance Sheet + Cash Flow + Trial Balance**
 - **v2.3.x — Marketing**
 - **v2.4.x — Analytics**
 - **v2.5.x — Users / Roles / Permissions**
