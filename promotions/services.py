@@ -182,12 +182,34 @@ def decode_campaign_cookie(value):
 
 
 def campaign_code_for_request(request):
-    direct = (request.GET.get("campaign") or request.GET.get("utm_campaign") or "").strip().upper()
-    if direct and campaign_for_code(direct, require_live=True):
-        return direct
+    attribution = campaign_attribution_for_request(request)
+    return attribution["campaign"].code if attribution else ""
+
+
+def campaign_attribution_for_request(request):
     payload = decode_campaign_cookie(request.COOKIES.get(CAMPAIGN_COOKIE, ""))
     code = str(payload.get("code") or "").strip().upper()
-    return code if campaign_for_code(code) else ""
+    token = str(payload.get("token") or "").strip()
+    if not code or not token:
+        return None
+    campaign = campaign_for_code(code)
+    if campaign is None:
+        return None
+    visit = CampaignEvent.objects.filter(
+        campaign=campaign,
+        event_type=CampaignEvent.EventType.VISIT,
+        tracking_token=token,
+    ).order_by("-created_at", "-id").first()
+    if visit is None:
+        return None
+    return {
+        "campaign": campaign,
+        "tracking_token": visit.tracking_token,
+        "source": visit.source,
+        "medium": visit.medium,
+        "landing_path": visit.landing_path,
+        "referrer": visit.referrer,
+    }
 
 
 def capture_campaign_request(request):
@@ -202,11 +224,20 @@ def capture_campaign_request(request):
     return campaign, tracking_token
 
 
-def record_campaign_conversion(*, order, campaign_code="", coupon=None):
-    campaign = campaign_for_code(campaign_code)
+def record_campaign_conversion(*, order, attribution=None, coupon=None):
+    campaign = attribution.get("campaign") if attribution else None
     if campaign is None and coupon is not None and coupon.campaign_id:
         campaign = coupon.campaign
     if campaign is None:
         return None
-    event, _ = CampaignEvent.objects.get_or_create(campaign=campaign, order=order, event_type=CampaignEvent.EventType.CONVERSION, defaults={"coupon": coupon, "source": campaign.source, "medium": campaign.medium, "amount": _money(order.grand_total)})
+    defaults = {
+        "coupon": coupon,
+        "tracking_token": (attribution or {}).get("tracking_token", ""),
+        "source": (attribution or {}).get("source", campaign.source),
+        "medium": (attribution or {}).get("medium", campaign.medium),
+        "landing_path": (attribution or {}).get("landing_path", ""),
+        "referrer": (attribution or {}).get("referrer", ""),
+        "amount": _money(order.grand_total),
+    }
+    event, _ = CampaignEvent.objects.get_or_create(campaign=campaign, order=order, event_type=CampaignEvent.EventType.CONVERSION, defaults=defaults)
     return event
