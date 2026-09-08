@@ -1,12 +1,50 @@
 # TechBari — Django E-commerce + Admin
 
-**Current version: v2.6.0**
+**Current version: v2.7.0**
 
 TechBari is a MySQL 8-backed commerce platform built around one shared business architecture:
 
 **One Product Database + One Inventory Engine + One Sales Engine + One Accounting Ledger.**
 
-Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS, Payment, Shipping / Courier, Returns / Refunds, Accounting, Expense Management, Reports, Promotion / Marketing, Dashboard Analytics, Staff Access Control and CMS / Store Settings are connected to real database-backed business flows.
+Catalog, Inventory, Serial / IMEI / Warranty, Supplier / Purchase, Customer / CRM, Sales Order, Storefront Checkout, POS, Payment, Shipping / Courier, Returns / Refunds, Accounting, Expense Management, Reports, Promotion / Marketing, Dashboard Analytics, Staff Access Control, CMS / Store Settings and Customer Account are connected to real database-backed business flows.
+
+## v2.7.0 — Customer Account
+
+The storefront customer experience is now database-backed and connected to the existing CRM, Sales, Shipping and Serial / Warranty data.
+
+Included:
+
+- customer register, login and logout
+- customer dashboard
+- order history and customer-scoped order details
+- public order tracking with order-number + phone verification
+- owned courier tracking and shipment history
+- database-backed wishlist
+- saved delivery addresses with one-default invariant
+- customer profile editing
+- password change while keeping the session valid
+- warranty / Serial / IMEI lookup scoped to the customer's purchases
+- logged-in checkout reuses the linked CRM Customer instead of creating duplicates
+- guest checkout setting is enforced server-side
+- staff portal users cannot sign in through customer login
+- existing CRM purchase history requires a verified previous order number before self-linking
+- CRM records with opening balances cannot be self-claimed without stronger verification/support activation
+- shipping recipient/destination data does not overwrite the linked CRM customer's identity/profile
+
+Customer accounts use Django authentication users with `is_staff=False`, linked one-to-one to the existing `customers.Customer` CRM record through `CustomerAccount`. See `CUSTOMER_ACCOUNT_PHASE.md`.
+
+Customer routes include:
+
+- `/login/`
+- `/register/`
+- `/wishlist/`
+- `/track-order/`
+- `/account/`
+- `/account/orders/`
+- `/account/addresses/`
+- `/account/profile/`
+- `/account/password/`
+- `/account/warranty/`
 
 ## v2.6.0 — CMS / Store Settings
 
@@ -69,6 +107,7 @@ Financial statements use the Accounting General Ledger as their source of truth.
 
 ## Completed business phases
 
+- **v2.7.0 — Customer Account** — customer auth, CRM-safe linking, account dashboard, order/tracking, wishlist, addresses, profile/password and warranty lookup. See `CUSTOMER_ACCOUNT_PHASE.md`.
 - **v2.6.0 — CMS / Store Settings** — branding, contact/social, hero/homepage CMS, delivery rules, policies and SEO. See `CMS_STORE_SETTINGS_PHASE.md`.
 - **v2.5.0 — Users / Roles / Permissions** — staff authentication, six roles, fine-grained RBAC, password reset/session security and Audit Log. See `STAFF_ACCESS_PHASE.md`.
 - **v2.4.0 — Dashboard Analytics** — real management KPIs, trends, due balances, stock alerts and recent activity. See `DASHBOARD_ANALYTICS_PHASE.md`.
@@ -102,18 +141,18 @@ Configure MySQL 8, then:
 python manage.py migrate
 python manage.py bootstrap_admin --email admin@example.com
 python manage.py check
-python manage.py test catalog inventory serial_tracking purchasing customers sales payments shipping returns accounting expenses reports promotions storefront backoffice.test_dashboard_analytics staff_access store_settings
+python manage.py test catalog inventory serial_tracking purchasing customers sales payments shipping returns accounting expenses reports promotions storefront backoffice.test_dashboard_analytics staff_access store_settings customer_accounts
 python manage.py runserver
 ```
 
-v2.6.0 introduces `store_settings/0001_initial.py`; `python manage.py migrate` is required.
+v2.7.0 introduces `customer_accounts/0001_initial.py`; `python manage.py migrate` is required.
 
 ## Validation
 
-v2.6.0 is validated on MySQL 8 / Python 3.12 with:
+v2.7.0 is validated on MySQL 8.0.46 / Python 3.12.14 with:
 
-- CMS / Store Settings dedicated suite: **11/11 PASS**
-- full project regression: **223/223 PASS**
+- Customer Account dedicated suite: **20/20 PASS**
+- full project regression: **243/243 PASS**
 - Django system check: **PASS**
 - migration drift: **PASS / No changes detected**
 - migration application: **PASS**
@@ -122,6 +161,5 @@ v2.6.0 is validated on MySQL 8 / Python 3.12 with:
 
 Next planned phases:
 
-- **v2.7.x — Customer Account**
 - **v2.8.x — Notifications + Integrations**
 - **v3.0 — Final Production Phase**
