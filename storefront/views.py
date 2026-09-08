@@ -77,9 +77,9 @@ def checkout(request):
             initial.update(full_name=customer.name, phone=customer.phone, email=customer.email)
             default_address = account.addresses.filter(is_default=True).first()
             if default_address:
+                # Saved addresses supply the destination. Customer identity remains the
+                # linked CRM name/phone so checkout cannot silently alter the profile.
                 initial.update(
-                    full_name=default_address.recipient_name,
-                    phone=default_address.phone,
                     division=default_address.division,
                     district=default_address.district,
                     upazila=default_address.upazila,
