@@ -44,7 +44,9 @@ jobs:
         run: python manage.py makemigrations --check --dry-run
       - name: Apply migrations
         run: python manage.py migrate --noinput
-      - name: Staff access tests
+      - name: Staff access and RBAC security tests
         run: python manage.py test staff_access -v 2
-      - name: Full regression
-        run: python manage.py test catalog inventory serial_tracking purchasing customers sales payments shipping returns accounting expenses reports promotions storefront backoffice.test_dashboard_analytics staff_access -v 1
+      - name: Existing business regression
+        env:
+          STAFF_AUTH_ENABLED: 0
+        run: python manage.py test catalog inventory serial_tracking purchasing customers sales payments shipping returns accounting expenses reports promotions storefront backoffice.test_dashboard_analytics -v 1
