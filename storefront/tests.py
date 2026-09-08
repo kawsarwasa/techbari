@@ -1,12 +1,15 @@
 import json
+from datetime import timedelta
 from decimal import Decimal
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from catalog.models import Brand, Category, Product, ProductVariant
 from customers.models import Customer
 from inventory.models import InventoryBalance, Warehouse
+from promotions.models import Coupon
 from sales.models import SalesOrder
 
 
@@ -91,6 +94,19 @@ class CheckoutBackendTests(TestCase):
         self.assertEqual(order.items.get().reserved_quantity, 2)
 
     def test_checkout_uses_database_price_and_server_coupon_calculation(self):
+        now = timezone.now()
+        Coupon.objects.create(
+            code="TECH10",
+            name="Checkout 10%",
+            discount_type=Coupon.DiscountType.PERCENTAGE,
+            value=Decimal("10.00"),
+            minimum_order_amount=Decimal("0.00"),
+            starts_at=now - timedelta(hours=1),
+            ends_at=now + timedelta(days=1),
+            usage_limit=100,
+            scope=Coupon.Scope.ALL,
+            is_active=True,
+        )
         response = self.client.post(
             reverse("storefront:checkout"),
             self.payload(coupon_code="TECH10", fake_price="1.00"),
