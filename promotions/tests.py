@@ -1,3 +1,4 @@
+import json
 from decimal import Decimal
 from datetime import timedelta
 
@@ -41,6 +42,26 @@ class PromotionMarketingTests(TestCase):
         data.update(overrides)
         return Coupon.objects.create(**data)
 
+    def checkout_post_data(self, token, *, coupon_code="", extra=None):
+        data = {
+            "checkout_token": token,
+            "cart_payload": json.dumps([{"variant_id": self.variant.pk, "qty": 1}]),
+            "coupon_code": coupon_code,
+            "delivery_option": "inside",
+            "payment_method": "cod",
+            "full_name": "Promo Buyer",
+            "phone": "01700000000",
+            "email": "",
+            "division": "Dhaka",
+            "district": "Dhaka",
+            "upazila": "Dhanmondi",
+            "address": "Road 1",
+            "landmark": "",
+            "order_note": "",
+        }
+        data.update(extra or {})
+        return data
+
     def test_percentage_coupon_discount(self):
         coupon = self.make_coupon()
         resolved, discount = coupon_discount_for_rows(coupon.code, self.rows(qty=2))
@@ -63,6 +84,17 @@ class PromotionMarketingTests(TestCase):
         with self.assertRaisesMessage(PromotionError, "usage limit"):
             coupon_discount_for_rows(coupon.code, self.rows())
 
+    def test_coupon_scheduled_expired_and_inactive_rules(self):
+        scheduled = self.make_coupon(code="FUTURE", starts_at=self.now + timedelta(hours=1), ends_at=self.now + timedelta(hours=2))
+        with self.assertRaisesMessage(PromotionError, "not active yet"):
+            coupon_discount_for_rows(scheduled.code, self.rows())
+        expired = self.make_coupon(code="OLD", starts_at=self.now - timedelta(days=2), ends_at=self.now - timedelta(days=1))
+        with self.assertRaisesMessage(PromotionError, "expired"):
+            coupon_discount_for_rows(expired.code, self.rows())
+        inactive = self.make_coupon(code="OFF", is_active=False)
+        with self.assertRaisesMessage(PromotionError, "not valid"):
+            coupon_discount_for_rows(inactive.code, self.rows())
+
     def test_product_and_category_scopes(self):
         coupon = self.make_coupon(code="PRODUCT", scope=Coupon.Scope.PRODUCTS)
         coupon.products.add(self.other_product)
@@ -72,6 +104,15 @@ class PromotionMarketingTests(TestCase):
         category_coupon.categories.add(self.category)
         _, discount = coupon_discount_for_rows(category_coupon.code, self.rows())
         self.assertEqual(discount, Decimal("90.00"))
+
+    def test_browser_coupon_preview_contains_scope_and_minimum_rules(self):
+        coupon = self.make_coupon(code="SCOPED", scope=Coupon.Scope.CATEGORIES, minimum_order_amount=Decimal("1500.00"))
+        coupon.categories.add(self.category)
+        response = Client().get("/cart/")
+        preview = response.context["store_data"]["coupons"][coupon.code]
+        self.assertEqual(preview["scope"], Coupon.Scope.CATEGORIES)
+        self.assertEqual(preview["minimum"], 1500.0)
+        self.assertEqual(preview["product_ids"], [self.product.public_id])
 
     def test_flash_sale_uses_best_price_without_bad_stacking(self):
         weak = FlashSale.objects.create(name="5% Flash", discount_type=FlashSale.DiscountType.PERCENTAGE, value=Decimal("5.00"), starts_at=self.now - timedelta(hours=1), ends_at=self.now + timedelta(hours=1))
@@ -97,8 +138,9 @@ class PromotionMarketingTests(TestCase):
 
     def test_campaign_conversion_is_idempotent(self):
         order = SalesOrder.objects.create(warehouse=self.warehouse, grand_total=Decimal("500.00"))
-        first = record_campaign_conversion(order=order, campaign_code=self.campaign.code)
-        second = record_campaign_conversion(order=order, campaign_code=self.campaign.code)
+        attribution = {"campaign": self.campaign, "tracking_token": "visit-token", "source": "facebook", "medium": "cpc"}
+        first = record_campaign_conversion(order=order, attribution=attribution)
+        second = record_campaign_conversion(order=order, attribution=attribution)
         self.assertEqual(first.pk, second.pk)
         self.assertEqual(CampaignEvent.objects.filter(event_type=CampaignEvent.EventType.CONVERSION).count(), 1)
 
@@ -111,9 +153,35 @@ class PromotionMarketingTests(TestCase):
         self.assertEqual(event.source, "facebook")
         self.assertEqual(event.medium, "cpc")
 
+    def test_signed_visit_attribution_flows_to_conversion_and_ignores_posted_campaign(self):
+        other_campaign = Campaign.objects.create(code="OTHER", name="Other Campaign", starts_at=self.now - timedelta(days=1), ends_at=self.now + timedelta(days=7))
+        client = Client()
+        landing = client.get("/products/?campaign=FB-SEPT&utm_source=facebook&utm_medium=retargeting", HTTP_REFERER="https://facebook.example/ad")
+        self.assertEqual(landing.status_code, 200)
+        visit = CampaignEvent.objects.get(event_type=CampaignEvent.EventType.VISIT)
+        checkout = client.get("/checkout/")
+        token = checkout.context["checkout_form"].initial["checkout_token"]
+        response = client.post("/checkout/", self.checkout_post_data(token, extra={"campaign_code": other_campaign.code}))
+        self.assertEqual(response.status_code, 302)
+        conversion = CampaignEvent.objects.get(event_type=CampaignEvent.EventType.CONVERSION)
+        self.assertEqual(conversion.campaign, self.campaign)
+        self.assertEqual(conversion.tracking_token, visit.tracking_token)
+        self.assertEqual(conversion.source, "facebook")
+        self.assertEqual(conversion.medium, "retargeting")
+        self.assertEqual(conversion.referrer, "https://facebook.example/ad")
+
+    def test_tampered_campaign_cookie_does_not_create_conversion(self):
+        client = Client()
+        client.cookies["tb_campaign"] = "tampered-value"
+        checkout = client.get("/checkout/")
+        token = checkout.context["checkout_form"].initial["checkout_token"]
+        response = client.post("/checkout/", self.checkout_post_data(token, extra={"campaign_code": self.campaign.code}))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(CampaignEvent.objects.filter(event_type=CampaignEvent.EventType.CONVERSION).exists())
+
     def test_checkout_uses_real_coupon_and_records_redemption(self):
-        coupon = self.make_coupon(code="CHECKOUT", discount_type=Coupon.DiscountType.FIXED, value=Decimal("100.00"))
-        cleaned = {"checkout_token": {"order_number": "TB-TEST-CHECKOUT"}, "cart_payload": [{"variant_id": self.variant.pk, "qty": 1}], "coupon_code": coupon.code, "campaign_code": self.campaign.code, "delivery_option": "inside", "payment_method": "cod", "full_name": "Test Buyer", "phone": "01700000000", "email": "", "division": "Dhaka", "district": "Dhaka", "upazila": "Dhanmondi", "address": "Road 1", "landmark": "", "order_note": ""}
+        coupon = self.make_coupon(code="CHECKOUT", discount_type=Coupon.DiscountType.FIXED, value=Decimal("100.00"), campaign=self.campaign)
+        cleaned = {"checkout_token": {"order_number": "TB-TEST-CHECKOUT"}, "cart_payload": [{"variant_id": self.variant.pk, "qty": 1}], "coupon_code": coupon.code, "delivery_option": "inside", "payment_method": "cod", "full_name": "Test Buyer", "phone": "01700000000", "email": "", "division": "Dhaka", "district": "Dhaka", "upazila": "Dhanmondi", "address": "Road 1", "landmark": "", "order_note": ""}
         order, created = place_checkout_order(cleaned)
         self.assertTrue(created)
         self.assertEqual(order.subtotal, Decimal("900.00"))
@@ -121,6 +189,13 @@ class PromotionMarketingTests(TestCase):
         self.assertEqual(order.grand_total, Decimal("860.00"))
         self.assertTrue(CouponRedemption.objects.filter(order=order, coupon=coupon).exists())
         self.assertTrue(CampaignEvent.objects.filter(order=order, event_type=CampaignEvent.EventType.CONVERSION).exists())
+
+    def test_featured_product_can_be_toggled_from_marketing_dashboard(self):
+        self.assertFalse(self.product.is_featured)
+        response = Client().post("/dashboard/marketing/", {"action": "toggle-featured", "product_id": self.product.pk})
+        self.assertEqual(response.status_code, 302)
+        self.product.refresh_from_db()
+        self.assertTrue(self.product.is_featured)
 
     def test_dashboard_marketing_pages_are_database_backed(self):
         self.make_coupon()
