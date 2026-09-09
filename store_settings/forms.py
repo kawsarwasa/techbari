@@ -118,7 +118,7 @@ class ContentPageForm(forms.ModelForm):
         widgets = {
             "body": forms.Textarea(attrs={
                 "rows": 16,
-                "class": "control techbari-editor-source",
+                "class": "control cms-content-editor-source",
                 "data-editor-source": "",
             })
         }
