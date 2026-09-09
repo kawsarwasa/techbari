@@ -57,7 +57,6 @@
         {% if content_pages %}
         <div class="cp-selected-top">
           <div class="cp-selected-title"><h3 data-cp-title>{{ content_pages.0.title }}</h3><p data-cp-slug>/{{ content_pages.0.slug }}/</p></div>
-          <a class="cp-btn-primary" data-cp-edit-top href="{% url 'backoffice:cms_content_page_edit' content_pages.0.id %}"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>Edit Page</a>
         </div>
 
         <div class="cp-meta-grid">
@@ -89,14 +88,14 @@
   const items=[...root.querySelectorAll('[data-cp-item]')];
   if(!items.length)return;
   const out={
-    title:root.querySelector('[data-cp-title]'),slug:root.querySelector('[data-cp-slug]'),status:root.querySelector('[data-cp-status]'),seo:root.querySelector('[data-cp-seo]'),updated:root.querySelector('[data-cp-updated]'),previewTitle:root.querySelector('[data-cp-preview-title]'),body:root.querySelector('[data-cp-body]'),editTop:root.querySelector('[data-cp-edit-top]'),edit:root.querySelector('[data-cp-edit]'),storefront:root.querySelector('[data-cp-storefront]')
+    title:root.querySelector('[data-cp-title]'),slug:root.querySelector('[data-cp-slug]'),status:root.querySelector('[data-cp-status]'),seo:root.querySelector('[data-cp-seo]'),updated:root.querySelector('[data-cp-updated]'),previewTitle:root.querySelector('[data-cp-preview-title]'),body:root.querySelector('[data-cp-body]'),edit:root.querySelector('[data-cp-edit]'),storefront:root.querySelector('[data-cp-storefront]')
   };
   function pick(item){
     items.forEach(x=>x.classList.toggle('active',x===item));
     const src=item.querySelector('.cp-source');
     const read=k=>src.querySelector(`[data-${k}]`)?.textContent.trim()||'';
     const title=read('title'),slug=read('slug'),status=read('status'),editUrl=read('edit-url'),storefrontUrl=read('storefront-url');
-    out.title.textContent=title;out.slug.textContent=`/${slug}/`;out.status.textContent=status;out.status.classList.toggle('hidden',status!=='Published');out.seo.textContent=read('seo-title')||title;out.updated.textContent=read('updated');out.previewTitle.textContent=title;out.body.textContent=read('body')||'No page content has been added yet.';out.editTop.href=editUrl;out.edit.href=editUrl;out.storefront.href=storefrontUrl;
+    out.title.textContent=title;out.slug.textContent=`/${slug}/`;out.status.textContent=status;out.status.classList.toggle('hidden',status!=='Published');out.seo.textContent=read('seo-title')||title;out.updated.textContent=read('updated');out.previewTitle.textContent=title;out.body.textContent=read('body')||'No page content has been added yet.';out.edit.href=editUrl;out.storefront.href=storefrontUrl;
   }
   items.forEach(item=>item.addEventListener('click',()=>pick(item)));
   pick(items[0]);
