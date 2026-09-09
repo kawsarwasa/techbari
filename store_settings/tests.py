@@ -74,6 +74,32 @@ class StoreSettingsCMSTests(TestCase):
         self.assertEqual(delete.status_code, 302)
         self.assertFalse(HeroBanner.objects.filter(pk=banner.pk).exists())
 
+    def test_banner_status_toggle_updates_existing_active_flag(self):
+        banner = HeroBanner.objects.order_by("sort_order", "id").first()
+        original_sort_order = banner.sort_order
+        banner.is_active = True
+        banner.save(update_fields=["is_active"])
+
+        response = self.client.post(reverse("backoffice:cms_banner_toggle", args=[banner.pk]))
+        self.assertRedirects(response, reverse("backoffice:cms_banners"))
+        banner.refresh_from_db()
+        self.assertFalse(banner.is_active)
+        self.assertEqual(banner.sort_order, original_sort_order)
+
+        response = self.client.post(reverse("backoffice:cms_banner_toggle", args=[banner.pk]))
+        self.assertRedirects(response, reverse("backoffice:cms_banners"))
+        banner.refresh_from_db()
+        self.assertTrue(banner.is_active)
+        self.assertEqual(banner.sort_order, original_sort_order)
+
+    def test_banner_status_toggle_rejects_get(self):
+        banner = HeroBanner.objects.order_by("sort_order", "id").first()
+        initial_status = banner.is_active
+        response = self.client.get(reverse("backoffice:cms_banner_toggle", args=[banner.pk]))
+        self.assertEqual(response.status_code, 405)
+        banner.refresh_from_db()
+        self.assertEqual(banner.is_active, initial_status)
+
     def test_homepage_section_visibility_and_order_are_database_backed(self):
         hero = HomeSection.objects.get(key=HomeSection.Key.HERO)
         hero.sort_order = 90
@@ -92,7 +118,6 @@ class StoreSettingsCMSTests(TestCase):
         page.seo_description = "QA privacy description"
         page.save()
         response = self.client.get(reverse("storefront:privacy_policy"))
-        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "QA Privacy")
         self.assertContains(response, "QA Privacy SEO")
         self.assertContains(response, 'meta name="description" content="QA privacy description"', html=False)
@@ -136,12 +161,23 @@ class StoreSettingsPermissionTests(TestCase):
         return user
 
     def test_cashier_is_denied_but_manager_can_manage_store_settings(self):
+        banner = HeroBanner.objects.order_by("sort_order", "id").first()
+        banner.is_active = True
+        banner.save(update_fields=["is_active"])
+
         cashier = self.make_user("cmscashier", "Cashier")
         self.client.force_login(cashier)
         self.assertEqual(self.client.get(reverse("backoffice:settings")).status_code, 403)
         self.assertEqual(self.client.get(reverse("backoffice:cms_banners")).status_code, 403)
+        self.assertEqual(self.client.post(reverse("backoffice:cms_banner_toggle", args=[banner.pk])).status_code, 403)
+        banner.refresh_from_db()
+        self.assertTrue(banner.is_active)
 
         manager = self.make_user("cmsmanager", "Manager")
         self.client.force_login(manager)
         self.assertEqual(self.client.get(reverse("backoffice:settings")).status_code, 200)
         self.assertEqual(self.client.get(reverse("backoffice:cms_content_pages")).status_code, 200)
+        response = self.client.post(reverse("backoffice:cms_banner_toggle", args=[banner.pk]))
+        self.assertRedirects(response, reverse("backoffice:cms_banners"))
+        banner.refresh_from_db()
+        self.assertFalse(banner.is_active)

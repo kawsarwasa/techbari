@@ -52,6 +52,17 @@ def banner_form(request, banner_id=None):
     return render(request, "backoffice/pages/settings/banner_form.html", _context(banner_form=form, banner=banner))
 
 
+def banner_toggle(request, banner_id):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+    banner = get_object_or_404(HeroBanner, pk=banner_id)
+    banner.is_active = not banner.is_active
+    banner.save(update_fields=["is_active", "updated_at"])
+    state = "activated" if banner.is_active else "deactivated"
+    messages.success(request, f"Hero banner {state}: {banner.title}")
+    return redirect("backoffice:cms_banners")
+
+
 def banner_delete(request, banner_id):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
