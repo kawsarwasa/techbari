@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Hero Banners | TechBari Admin{% endblock %}
-{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-hero-banners.css' %}?v=3.0.2">{% endblock %}
+{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-hero-banners.css' %}?v=3.0.3">{% endblock %}
 {% block content %}
 <section class="page hero-banners-ui">
   <div class="hb-breadcrumbs">
@@ -26,7 +26,7 @@
         Store Settings
       </a>
       <a class="hb-btn" href="{% url 'storefront:home' %}" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1 2-2h5"/></svg>
+        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
         Preview Storefront
       </a>
       <a class="hb-btn hb-btn-primary" href="{% url 'backoffice:cms_banner_add' %}">
@@ -89,9 +89,8 @@
             <td>
               <form class="hb-status-form" method="post" action="{% url 'backoffice:cms_banner_toggle' banner.id %}">
                 {% csrf_token %}
-                <button class="hb-status-toggle{% if not banner.is_active %} inactive{% endif %}" type="submit" title="{% if banner.is_active %}Deactivate{% else %}Activate{% endif %} {{ banner.title }}" aria-label="{% if banner.is_active %}Deactivate{% else %}Activate{% endif %} {{ banner.title }}" aria-pressed="{{ banner.is_active|yesno:'true,false' }}">
-                  <span class="hb-status-dot" aria-hidden="true"></span>
-                  {% if banner.is_active %}Active{% else %}Inactive{% endif %}
+                <button class="hb-switch{% if not banner.is_active %} is-off{% endif %}" type="submit" title="{% if banner.is_active %}Turn off{% else %}Turn on{% endif %} {{ banner.title }}" aria-label="{% if banner.is_active %}Deactivate{% else %}Activate{% endif %} {{ banner.title }}" aria-pressed="{{ banner.is_active|yesno:'true,false' }}">
+                  <span class="hb-switch-track" aria-hidden="true"><span class="hb-switch-thumb"></span></span>
                 </button>
               </form>
             </td>
@@ -143,13 +142,15 @@
           <div class="hb-mobile-title">
             <strong>{{ banner.title }}</strong>
             <small>{{ banner.eyebrow|default:banner.description|truncatechars:50 }}</small>
-            <form class="hb-status-form hb-mobile-status" method="post" action="{% url 'backoffice:cms_banner_toggle' banner.id %}">
-              {% csrf_token %}
-              <button class="hb-status-toggle{% if not banner.is_active %} inactive{% endif %}" type="submit" aria-label="{% if banner.is_active %}Deactivate{% else %}Activate{% endif %} {{ banner.title }}" aria-pressed="{{ banner.is_active|yesno:'true,false' }}">
-                <span class="hb-status-dot" aria-hidden="true"></span>
-                {% if banner.is_active %}Active{% else %}Inactive{% endif %}
-              </button>
-            </form>
+            <div class="hb-mobile-status-row">
+              <span class="hb-mobile-status-label">Status</span>
+              <form class="hb-status-form" method="post" action="{% url 'backoffice:cms_banner_toggle' banner.id %}">
+                {% csrf_token %}
+                <button class="hb-switch{% if not banner.is_active %} is-off{% endif %}" type="submit" aria-label="{% if banner.is_active %}Deactivate{% else %}Activate{% endif %} {{ banner.title }}" aria-pressed="{{ banner.is_active|yesno:'true,false' }}">
+                  <span class="hb-switch-track" aria-hidden="true"><span class="hb-switch-thumb"></span></span>
+                </button>
+              </form>
+            </div>
           </div>
         </div>
         <div class="hb-mobile-meta">
