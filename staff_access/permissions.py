@@ -70,7 +70,7 @@ def staff_permissions_queryset():
 
 
 def sync_system_roles(sender=None, **kwargs):
-    from django.contrib.auth.models import Group
+    from django.contrib.auth.models import Group, User
     permissions = {p.codename: p for p in staff_permissions_queryset()}
     if not permissions:
         return
@@ -79,3 +79,4 @@ def sync_system_roles(sender=None, **kwargs):
         desired = [permissions[code] for code in ROLE_DEFAULTS[role_name] if code in permissions]
         if role_name == "Admin" or created:
             group.permissions.set(desired)
+    User.objects.filter(groups__name__in=SYSTEM_ROLE_NAMES, is_staff=False).distinct().update(is_staff=True)
