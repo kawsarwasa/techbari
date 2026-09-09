@@ -1,5 +1,5 @@
 {% extends "storefront/base.html" %}
 {% block title %}{{ seo_title }}{% endblock %}
 {% block content %}
-<main class="page"><div class="container"><section class="card" style="max-width:980px;margin:0 auto;padding:32px"><div class="page-head"><div><h1>{{ content_page.title }}</h1><p>Last updated {{ content_page.updated_at|date:"F j, Y" }}</p></div></div><div class="content-page-body" style="line-height:1.8">{{ content_page.body|linebreaks }}</div></section></div></main>
+<main class="page"><div class="container"><section class="card" style="max-width:980px;margin:0 auto;padding:32px"><div class="page-head"><div><h1>{{ content_page.title }}</h1><p>Last updated {{ content_page.updated_at|date:"F j, Y" }}</p></div></div><div class="content-page-body" style="line-height:1.8">{{ content_page_body_html }}</div></section></div></main>
 {% endblock %}
