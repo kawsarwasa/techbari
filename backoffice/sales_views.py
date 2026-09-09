@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import Http404, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
@@ -78,7 +79,7 @@ def orders(request):
     if customer_id.isdigit():
         qs = qs.filter(customer_id=int(customer_id))
 
-    all_orders = list(SalesOrder.objects.prefetch_related("items").all())
+    all_orders = list(SalesOrder.objects.all())
     status_counts = {
         value: sum(1 for order in all_orders if order.status == value)
         for value, _ in SalesOrder.Status.choices
@@ -92,14 +93,14 @@ def orders(request):
         {
             "label": "Total Orders",
             "value": str(len(all_orders)),
-            "trend": "All sales orders",
+            "trend": "Live total",
             "icon": "backoffice/components/icons/icon_13.html",
-            "color": "blue",
+            "color": "purple",
         },
         {
             "label": "Pending",
             "value": str(status_counts.get(SalesOrder.Status.PENDING, 0)),
-            "trend": "Awaiting confirmation",
+            "trend": "Awaiting action",
             "icon": "backoffice/components/icons/icon_14.html",
             "color": "orange",
         },
@@ -108,14 +109,14 @@ def orders(request):
             "value": str(status_counts.get(SalesOrder.Status.CONFIRMED, 0)),
             "trend": "Ready to process",
             "icon": "backoffice/components/icons/icon_13.html",
-            "color": "cyan",
+            "color": "blue",
         },
         {
             "label": "Processing",
             "value": str(status_counts.get(SalesOrder.Status.PROCESSING, 0)),
             "trend": "In progress",
             "icon": "backoffice/components/icons/icon_14.html",
-            "color": "purple",
+            "color": "cyan",
         },
         {
             "label": "Completed",
@@ -132,17 +133,31 @@ def orders(request):
             "color": "red",
         },
     ]
+
+    tab_order = [
+        SalesOrder.Status.PENDING,
+        SalesOrder.Status.CONFIRMED,
+        SalesOrder.Status.PROCESSING,
+        SalesOrder.Status.COMPLETED,
+        SalesOrder.Status.CANCELLED,
+    ]
+    labels = dict(SalesOrder.Status.choices)
     order_status_tabs = [
-        {
-            "value": value,
-            "label": label,
-            "count": status_counts.get(value, 0),
-        }
-        for value, label in SalesOrder.Status.choices
+        {"value": value, "label": labels[value], "count": status_counts.get(value, 0)}
+        for value in tab_order
     ]
 
+    ordered_qs = qs.order_by("-order_date", "-id")
+    paginator = Paginator(ordered_qs, 10)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
+
     context.update(
-        order_rows=qs.order_by("-order_date", "-id"),
+        order_rows=page_obj.object_list,
+        order_page=page_obj,
+        order_filtered_count=paginator.count,
+        order_querystring=query_params.urlencode(),
         order_query=query,
         order_status=status,
         order_payment=payment,
