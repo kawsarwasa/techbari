@@ -50,6 +50,7 @@ store_settings_patterns = [
     path("settings/banners/", store_settings_views.banners, name="cms_banners"),
     path("settings/banners/add/", store_settings_views.banner_form, name="cms_banner_add"),
     path("settings/banners/<int:banner_id>/edit/", store_settings_views.banner_form, name="cms_banner_edit"),
+    path("settings/banners/<int:banner_id>/toggle/", store_settings_views.banner_toggle, name="cms_banner_toggle"),
     path("settings/banners/<int:banner_id>/delete/", store_settings_views.banner_delete, name="cms_banner_delete"),
     path("settings/homepage/", store_settings_views.homepage_sections, name="cms_homepage_sections"),
     path("settings/homepage/<int:section_id>/update/", store_settings_views.homepage_section_update, name="cms_homepage_section_update"),
