@@ -7,8 +7,9 @@ SYSTEM_ROLES = ("Admin", "Manager", "Cashier", "Inventory Manager", "Accountant"
 
 def mark_role_users_as_staff(apps, schema_editor):
     User = apps.get_model("auth", "User")
-    ids = User.objects.filter(groups__name__in=SYSTEM_ROLES).values_list("pk", flat=True)
-    User.objects.filter(pk__in=ids).update(is_staff=True)
+    ids = list(User.objects.filter(groups__name__in=SYSTEM_ROLES).values_list("pk", flat=True).distinct())
+    if ids:
+        User.objects.filter(pk__in=ids).update(is_staff=True)
 
 
 class Migration(migrations.Migration):
