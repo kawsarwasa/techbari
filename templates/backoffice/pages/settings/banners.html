@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Hero Banners | TechBari Admin{% endblock %}
-{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-hero-banners.css' %}?v=3.0.1">{% endblock %}
+{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-hero-banners.css' %}?v=3.0.2">{% endblock %}
 {% block content %}
 <section class="page hero-banners-ui">
   <div class="hb-breadcrumbs">
@@ -26,7 +26,7 @@
         Store Settings
       </a>
       <a class="hb-btn" href="{% url 'storefront:home' %}" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1 2-2h5"/></svg>
         Preview Storefront
       </a>
       <a class="hb-btn hb-btn-primary" href="{% url 'backoffice:cms_banner_add' %}">
@@ -87,13 +87,13 @@
               <small>{{ banner.eyebrow|default:banner.description|truncatechars:58 }}</small>
             </td>
             <td>
-              {% if banner.is_live %}
-                <span class="hb-status live">Active</span>
-              {% elif banner.is_active %}
-                <span class="hb-status scheduled">Scheduled</span>
-              {% else %}
-                <span class="hb-status inactive">Inactive</span>
-              {% endif %}
+              <form class="hb-status-form" method="post" action="{% url 'backoffice:cms_banner_toggle' banner.id %}">
+                {% csrf_token %}
+                <button class="hb-status-toggle{% if not banner.is_active %} inactive{% endif %}" type="submit" title="{% if banner.is_active %}Deactivate{% else %}Activate{% endif %} {{ banner.title }}" aria-label="{% if banner.is_active %}Deactivate{% else %}Activate{% endif %} {{ banner.title }}" aria-pressed="{{ banner.is_active|yesno:'true,false' }}">
+                  <span class="hb-status-dot" aria-hidden="true"></span>
+                  {% if banner.is_active %}Active{% else %}Inactive{% endif %}
+                </button>
+              </form>
             </td>
             <td><span class="hb-order-box">{{ banner.sort_order }}</span></td>
             <td><span class="hb-cta">{{ banner.cta_label|default:"—" }}</span></td>
@@ -112,7 +112,7 @@
             </td>
             <td>
               <div class="hb-actions">
-                <a class="hb-icon-btn" href="{% url 'backoffice:cms_banner_edit' banner.id %}" title="Edit banner" aria-label="Edit {{ banner.title }}">
+                <a class="hb-icon-btn edit" href="{% url 'backoffice:cms_banner_edit' banner.id %}" title="Edit banner" aria-label="Edit {{ banner.title }}">
                   <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
                 </a>
                 <form method="post" action="{% url 'backoffice:cms_banner_delete' banner.id %}" onsubmit="return confirm('Delete this banner?')">
@@ -143,15 +143,13 @@
           <div class="hb-mobile-title">
             <strong>{{ banner.title }}</strong>
             <small>{{ banner.eyebrow|default:banner.description|truncatechars:50 }}</small>
-            <div style="margin-top:8px">
-              {% if banner.is_live %}
-                <span class="hb-status live">Active</span>
-              {% elif banner.is_active %}
-                <span class="hb-status scheduled">Scheduled</span>
-              {% else %}
-                <span class="hb-status inactive">Inactive</span>
-              {% endif %}
-            </div>
+            <form class="hb-status-form hb-mobile-status" method="post" action="{% url 'backoffice:cms_banner_toggle' banner.id %}">
+              {% csrf_token %}
+              <button class="hb-status-toggle{% if not banner.is_active %} inactive{% endif %}" type="submit" aria-label="{% if banner.is_active %}Deactivate{% else %}Activate{% endif %} {{ banner.title }}" aria-pressed="{{ banner.is_active|yesno:'true,false' }}">
+                <span class="hb-status-dot" aria-hidden="true"></span>
+                {% if banner.is_active %}Active{% else %}Inactive{% endif %}
+              </button>
+            </form>
           </div>
         </div>
         <div class="hb-mobile-meta">
@@ -161,7 +159,7 @@
           <div><span>Ends</span><strong>{{ banner.ends_at|date:"M d, Y"|default:"No end" }}</strong></div>
         </div>
         <div class="hb-mobile-actions">
-          <a class="hb-btn" href="{% url 'backoffice:cms_banner_edit' banner.id %}">
+          <a class="hb-btn hb-mobile-edit" href="{% url 'backoffice:cms_banner_edit' banner.id %}">
             <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
             Edit
           </a>
