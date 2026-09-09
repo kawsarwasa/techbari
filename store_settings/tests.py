@@ -74,6 +74,32 @@ class StoreSettingsCMSTests(TestCase):
         self.assertEqual(delete.status_code, 302)
         self.assertFalse(HeroBanner.objects.filter(pk=banner.pk).exists())
 
+    def test_banner_status_toggle_updates_existing_active_flag(self):
+        banner = HeroBanner.objects.order_by("sort_order", "id").first()
+        original_sort_order = banner.sort_order
+        banner.is_active = True
+        banner.save(update_fields=["is_active"])
+
+        response = self.client.post(reverse("backoffice:cms_banner_toggle", args=[banner.pk]))
+        self.assertRedirects(response, reverse("backoffice:cms_banners"))
+        banner.refresh_from_db()
+        self.assertFalse(banner.is_active)
+        self.assertEqual(banner.sort_order, original_sort_order)
+
+        response = self.client.post(reverse("backoffice:cms_banner_toggle", args=[banner.pk]))
+        self.assertRedirects(response, reverse("backoffice:cms_banners"))
+        banner.refresh_from_db()
+        self.assertTrue(banner.is_active)
+        self.assertEqual(banner.sort_order, original_sort_order)
+
+    def test_banner_status_toggle_rejects_get(self):
+        banner = HeroBanner.objects.order_by("sort_order", "id").first()
+        initial_status = banner.is_active
+        response = self.client.get(reverse("backoffice:cms_banner_toggle", args=[banner.pk]))
+        self.assertEqual(response.status_code, 405)
+        banner.refresh_from_db()
+        self.assertEqual(banner.is_active, initial_status)
+
     def test_homepage_section_visibility_and_order_are_database_backed(self):
         hero = HomeSection.objects.get(key=HomeSection.Key.HERO)
         hero.sort_order = 90
