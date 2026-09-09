@@ -1,3 +1,184 @@
 {% extends "backoffice/base.html" %}
+{% load static %}
 {% block title %}Hero Banners | TechBari Admin{% endblock %}
-{% block content %}<section class="page"><div class="page-head"><div><h1>Hero Banners</h1><p>Manage scheduled storefront hero slides.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:settings' %}">Store Settings</a><a class="btn btn-primary" href="{% url 'backoffice:cms_banner_add' %}">+ Add Banner</a></div></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Order</th><th>Banner</th><th>CTA</th><th>Schedule</th><th>Status</th><th>Action</th></tr></thead><tbody>{% for banner in banners %}<tr><td>{{ banner.sort_order }}</td><td><strong>{{ banner.title }}</strong><br><small>{{ banner.eyebrow }}</small></td><td>{{ banner.cta_label }}</td><td><small>{{ banner.starts_at|default:"Immediate" }} → {{ banner.ends_at|default:"No end" }}</small></td><td>{% if banner.is_live %}<span class="badge green">Live</span>{% elif banner.is_active %}<span class="badge">Scheduled</span>{% else %}<span class="badge red">Inactive</span>{% endif %}</td><td><a class="btn btn-small" href="{% url 'backoffice:cms_banner_edit' banner.id %}">Edit</a><form method="post" action="{% url 'backoffice:cms_banner_delete' banner.id %}" style="display:inline" onsubmit="return confirm('Delete this banner?')">{% csrf_token %}<button class="btn btn-small" type="submit">Delete</button></form></td></tr>{% empty %}<tr><td colspan="6">No hero banners configured.</td></tr>{% endfor %}</tbody></table></div></div></section>{% endblock %}
+{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-hero-banners.css' %}?v=3.0.1">{% endblock %}
+{% block content %}
+<section class="page hero-banners-ui">
+  <div class="hb-breadcrumbs">
+    <a href="{% url 'backoffice:dashboard' %}">Home</a><span>›</span>
+    <a href="{% url 'backoffice:settings' %}">CMS / Store Settings</a><span>›</span>
+    <span>Hero Banners</span>
+  </div>
+
+  <div class="hb-head">
+    <div class="hb-title-wrap">
+      <span class="hb-title-icon">
+        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></svg>
+      </span>
+      <div>
+        <h1>Hero Banners</h1>
+        <p>Manage your homepage banners. Add, edit and organize the banners shown on your storefront.</p>
+      </div>
+    </div>
+    <div class="hb-head-actions">
+      <a class="hb-btn" href="{% url 'backoffice:settings' %}">
+        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        Store Settings
+      </a>
+      <a class="hb-btn" href="{% url 'storefront:home' %}" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+        Preview Storefront
+      </a>
+      <a class="hb-btn hb-btn-primary" href="{% url 'backoffice:cms_banner_add' %}">
+        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Add Banner
+      </a>
+    </div>
+  </div>
+
+  <article class="hb-panel">
+    <div class="hb-panel-head">
+      <div class="hb-panel-title">
+        <span class="hb-panel-title-icon">
+          <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>
+        </span>
+        <div>
+          <h2>Banner List</h2>
+          <p>Banners are displayed by their saved sort order.</p>
+        </div>
+      </div>
+      <span class="hb-count">{{ banners|length }} banner{{ banners|length|pluralize }}</span>
+    </div>
+
+    {% if banners %}
+    <div class="hb-table-wrap">
+      <table class="hb-table">
+        <thead>
+          <tr>
+            <th style="width:28px"></th>
+            <th style="width:48px">#</th>
+            <th>Banner Preview</th>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Sort Order</th>
+            <th>CTA Label</th>
+            <th>Visibility Window</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for banner in banners %}
+          <tr>
+            <td><span class="hb-grip" aria-hidden="true">⠿</span></td>
+            <td><strong>{{ forloop.counter }}</strong></td>
+            <td>
+              <div class="hb-preview">
+                {% if banner.image %}
+                  <img src="{{ banner.image.url }}" alt="{{ banner.alt_text|default:banner.title }}">
+                {% elif banner.fallback_static %}
+                  <img src="{% static banner.fallback_static %}" alt="{{ banner.alt_text|default:banner.title }}">
+                {% else %}
+                  <div class="hb-preview-placeholder">No banner image</div>
+                {% endif %}
+              </div>
+            </td>
+            <td class="hb-title-cell">
+              <strong>{{ banner.title }}</strong>
+              <small>{{ banner.eyebrow|default:banner.description|truncatechars:58 }}</small>
+            </td>
+            <td>
+              {% if banner.is_live %}
+                <span class="hb-status live">Active</span>
+              {% elif banner.is_active %}
+                <span class="hb-status scheduled">Scheduled</span>
+              {% else %}
+                <span class="hb-status inactive">Inactive</span>
+              {% endif %}
+            </td>
+            <td><span class="hb-order-box">{{ banner.sort_order }}</span></td>
+            <td><span class="hb-cta">{{ banner.cta_label|default:"—" }}</span></td>
+            <td>
+              <div class="hb-schedule">
+                <div>{{ banner.starts_at|date:"M d, Y"|default:"Immediate" }}</div>
+                <div>– {{ banner.ends_at|date:"M d, Y"|default:"No end" }}</div>
+                {% if banner.is_live %}
+                  <span class="hb-window-state live">Active</span>
+                {% elif banner.is_active %}
+                  <span class="hb-window-state scheduled">Scheduled</span>
+                {% else %}
+                  <span class="hb-window-state inactive">Inactive</span>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <div class="hb-actions">
+                <a class="hb-icon-btn" href="{% url 'backoffice:cms_banner_edit' banner.id %}" title="Edit banner" aria-label="Edit {{ banner.title }}">
+                  <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+                </a>
+                <form method="post" action="{% url 'backoffice:cms_banner_delete' banner.id %}" onsubmit="return confirm('Delete this banner?')">
+                  {% csrf_token %}
+                  <button class="hb-icon-btn danger" type="submit" title="Delete banner" aria-label="Delete {{ banner.title }}">
+                    <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 11v6M14 11v6"/></svg>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="hb-mobile-list">
+      {% for banner in banners %}
+      <div class="hb-mobile-card">
+        <div class="hb-mobile-top">
+          <div class="hb-mobile-preview">
+            {% if banner.image %}
+              <img src="{{ banner.image.url }}" alt="{{ banner.alt_text|default:banner.title }}">
+            {% elif banner.fallback_static %}
+              <img src="{% static banner.fallback_static %}" alt="{{ banner.alt_text|default:banner.title }}">
+            {% endif %}
+          </div>
+          <div class="hb-mobile-title">
+            <strong>{{ banner.title }}</strong>
+            <small>{{ banner.eyebrow|default:banner.description|truncatechars:50 }}</small>
+            <div style="margin-top:8px">
+              {% if banner.is_live %}
+                <span class="hb-status live">Active</span>
+              {% elif banner.is_active %}
+                <span class="hb-status scheduled">Scheduled</span>
+              {% else %}
+                <span class="hb-status inactive">Inactive</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="hb-mobile-meta">
+          <div><span>Sort Order</span><strong>{{ banner.sort_order }}</strong></div>
+          <div><span>CTA</span><strong>{{ banner.cta_label|default:"—" }}</strong></div>
+          <div><span>Starts</span><strong>{{ banner.starts_at|date:"M d, Y"|default:"Immediate" }}</strong></div>
+          <div><span>Ends</span><strong>{{ banner.ends_at|date:"M d, Y"|default:"No end" }}</strong></div>
+        </div>
+        <div class="hb-mobile-actions">
+          <a class="hb-btn" href="{% url 'backoffice:cms_banner_edit' banner.id %}">
+            <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+            Edit
+          </a>
+          <form method="post" action="{% url 'backoffice:cms_banner_delete' banner.id %}" onsubmit="return confirm('Delete this banner?')">
+            {% csrf_token %}
+            <button class="hb-btn" type="submit">
+              <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 11v6M14 11v6"/></svg>
+              Delete
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <div class="hb-empty">No hero banners configured yet.</div>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}
