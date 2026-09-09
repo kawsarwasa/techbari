@@ -7,6 +7,7 @@ from catalog.presentation import catalog_queryset, serialize_product
 from customer_accounts.models import CustomerAccount
 from promotions.services import campaign_attribution_for_request
 from sales.models import SalesOrder
+from store_settings.content import render_content_page_body
 from store_settings.models import ContentPage
 
 from .checkout_services import CheckoutError, checkout_success_url, create_checkout_token, place_checkout_order, verify_success_token
@@ -50,7 +51,12 @@ def page(request, page_name="home"):
 def content_page(request, slug):
     page_obj = get_object_or_404(ContentPage, slug=slug, is_published=True)
     context = catalog_context()
-    context.update(content_page=page_obj, seo_title=page_obj.seo_title or page_obj.title, page_seo_description=page_obj.seo_description or context["store_settings"].seo_description)
+    context.update(
+        content_page=page_obj,
+        content_page_body_html=render_content_page_body(page_obj.body),
+        seo_title=page_obj.seo_title or page_obj.title,
+        page_seo_description=page_obj.seo_description or context["store_settings"].seo_description,
+    )
     return render(request, "storefront/pages/content_page.html", context)
 
 
