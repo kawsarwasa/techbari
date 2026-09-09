@@ -1,3 +1,111 @@
 {% extends "backoffice/base.html" %}
+{% load static %}
 {% block title %}Edit {{ content_page.title }} | TechBari Admin{% endblock %}
-{% block content %}<section class="page"><div class="page-head"><div><h1>Edit {{ content_page.title }}</h1><p>/{{ content_page.slug }}/ — plain text is escaped on the storefront.</p></div><a class="btn" href="{% url 'backoffice:cms_content_pages' %}">Back to Pages</a></div><form method="post" class="card form-card">{% csrf_token %}{{ content_page_form.non_field_errors }}<div class="form-grid one"><label class="field"><span>Title</span>{{ content_page_form.title }}</label><label class="field"><span>Content</span>{{ content_page_form.body }}</label><label class="field"><span>SEO Title</span>{{ content_page_form.seo_title }}</label><label class="field"><span>SEO Description</span>{{ content_page_form.seo_description }}</label><label class="field"><span>{{ content_page_form.is_published }} Published</span></label></div><button class="btn btn-primary" type="submit">Save Page</button></form></section>{% endblock %}
+{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-content-page-edit.css' %}?v=3.0.2">{% endblock %}
+{% block content %}
+<section class="page content-page-edit-ui">
+  <div class="cpe-breadcrumbs">
+    <a href="{% url 'backoffice:dashboard' %}">Home</a><span>›</span>
+    <a href="{% url 'backoffice:settings' %}">CMS / Store Settings</a><span>›</span>
+    <a href="{% url 'backoffice:cms_content_pages' %}">Content Pages</a><span>›</span>
+    <span>Edit Page</span>
+  </div>
+
+  <div class="cpe-head">
+    <div class="cpe-head-copy">
+      <span class="cpe-title-icon"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6"/></svg></span>
+      <div>
+        <h1>Edit {{ content_page.title }}</h1>
+        <p>Update the content, SEO settings and other details for this page. Slug: <strong>/{{ content_page.slug }}/</strong></p>
+      </div>
+    </div>
+    <div class="cpe-head-actions">
+      <a class="cpe-btn" href="{% url 'backoffice:cms_content_pages' %}"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back to Pages</a>
+      <a class="cpe-btn" href="/{{ content_page.slug }}/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>Open Storefront</a>
+      <button class="cpe-btn cpe-btn-primary" type="submit" form="content-page-form"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Save Page</button>
+    </div>
+  </div>
+
+  <form id="content-page-form" method="post" class="cpe-layout">
+    {% csrf_token %}
+    <div class="cpe-main">
+      <article class="cpe-card">
+        <div class="cpe-card-head"><h2>Page Information</h2></div>
+        <div class="cpe-card-body">
+          {{ content_page_form.non_field_errors }}
+          <div class="cpe-form-grid">
+            <label class="cpe-field">
+              <span>Title <em>*</em></span>
+              {{ content_page_form.title }}
+              <small>This title will be shown on your website, breadcrumbs and page title.</small>
+              {{ content_page_form.title.errors }}
+            </label>
+
+            <div class="cpe-field">
+              <span>Slug <em>*</em></span>
+              <div class="cpe-slug">/{{ content_page.slug }}/</div>
+              <small>The slug is the storefront URL for this policy page.</small>
+            </div>
+
+            <div class="cpe-publish-row">
+              <div class="cpe-publish-title">Published</div>
+              <div class="cpe-toggle-wrap">
+                <label class="cpe-switch">{{ content_page_form.is_published }}<span class="cpe-switch-slider"></span></label>
+                <span class="cpe-muted">Page is published and visible on the storefront.</span>
+              </div>
+              {{ content_page_form.is_published.errors }}
+            </div>
+
+            <label class="cpe-field cpe-editor-wrap">
+              <span>Content <em>*</em></span>
+              {{ content_page_form.body }}
+              {{ content_page_form.body.errors }}
+            </label>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <aside class="cpe-side">
+      <article class="cpe-card">
+        <div class="cpe-card-head"><h2>SEO Settings</h2></div>
+        <div class="cpe-card-body cpe-side-stack">
+          <label class="cpe-field">
+            <span>SEO Title</span>
+            {{ content_page_form.seo_title }}
+            <small>Recommended length: 50–60 characters.</small>
+            {{ content_page_form.seo_title.errors }}
+          </label>
+          <label class="cpe-field">
+            <span>SEO Description</span>
+            {{ content_page_form.seo_description }}
+            <small>Recommended length: 150–160 characters.</small>
+            {{ content_page_form.seo_description.errors }}
+          </label>
+        </div>
+      </article>
+
+      <article class="cpe-card">
+        <div class="cpe-card-head">
+          <h2>Page Status</h2>
+          <span class="cpe-status{% if not content_page.is_published %} hidden{% endif %}">{% if content_page.is_published %}Published{% else %}Hidden{% endif %}</span>
+        </div>
+        <div class="cpe-card-body">
+          <p class="cpe-muted" style="margin:0 0 14px">{% if content_page.is_published %}This page is currently live on your storefront.{% else %}This page is currently hidden from customers.{% endif %}</p>
+          <div class="cpe-info-box">
+            <span class="cpe-info-icon"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/></svg></span>
+            <div><strong>Last Updated</strong><p>{{ content_page.updated_at|date:"M d, Y, h:i A" }}</p></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="cpe-card">
+        <div class="cpe-card-head"><h2>Quick Actions</h2></div>
+        <div class="cpe-card-body cpe-quick-actions">
+          <a class="cpe-btn" href="/{{ content_page.slug }}/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>Open Storefront</a>
+        </div>
+      </article>
+    </aside>
+  </form>
+</section>
+{% endblock %}
