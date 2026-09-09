@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
 from PIL import Image, UnidentifiedImageError
 
+from .content import sanitize_content_page_input
 from .models import ContentPage, HeroBanner, HomeSection, StoreSettings
 
 
@@ -114,8 +115,17 @@ class ContentPageForm(forms.ModelForm):
     class Meta:
         model = ContentPage
         fields = ("title", "body", "seo_title", "seo_description", "is_published")
-        widgets = {"body": forms.Textarea(attrs={"rows": 16})}
+        widgets = {
+            "body": forms.Textarea(attrs={
+                "rows": 16,
+                "class": "control techbari-editor-source",
+                "data-editor-source": "",
+            })
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         _style(self)
+
+    def clean_body(self):
+        return sanitize_content_page_input(self.cleaned_data.get("body"))
