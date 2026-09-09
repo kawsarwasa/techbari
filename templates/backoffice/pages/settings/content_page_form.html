@@ -1,7 +1,10 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Edit {{ content_page.title }} | TechBari Admin{% endblock %}
-{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-content-page-edit.css' %}?v=3.0.2">{% endblock %}
+{% block page_theme_css %}
+<link rel="stylesheet" href="{% static 'admin/css/cms-content-page-edit.css' %}?v=3.0.3">
+<link rel="stylesheet" href="{% static 'admin/css/techbari-rich-editor-v109.css' %}?v=1.0.9">
+{% endblock %}
 {% block content %}
 <section class="page content-page-edit-ui">
   <div class="cpe-breadcrumbs">
@@ -56,11 +59,29 @@
               {{ content_page_form.is_published.errors }}
             </div>
 
-            <label class="cpe-field cpe-editor-wrap">
+            <div class="cpe-field cpe-editor-wrap">
               <span>Content <em>*</em></span>
-              {{ content_page_form.body }}
+              <div class="techbari-editor" data-techbari-editor>
+                <div class="techbari-editor-toolbar" aria-label="Content formatting toolbar">
+                  <select data-editor-block aria-label="Text style">
+                    <option value="P">Paragraph</option>
+                    <option value="H2">Heading 2</option>
+                    <option value="H3">Heading 3</option>
+                    <option value="BLOCKQUOTE">Quote</option>
+                  </select>
+                  <button type="button" data-editor-command="bold" title="Bold" aria-label="Bold"><strong>B</strong></button>
+                  <button type="button" data-editor-command="italic" title="Italic" aria-label="Italic"><em>I</em></button>
+                  <button type="button" data-editor-command="underline" title="Underline" aria-label="Underline"><u>U</u></button>
+                  <span class="cpe-editor-divider" aria-hidden="true"></span>
+                  <button type="button" data-editor-command="ul" title="Bulleted list" aria-label="Bulleted list">•≡</button>
+                  <button type="button" data-editor-command="ol" title="Numbered list" aria-label="Numbered list">1≡</button>
+                </div>
+                <div class="techbari-editor-surface" data-editor-surface contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Write the policy page content here..."></div>
+                {{ content_page_form.body }}
+              </div>
+              <small>Use headings, bold, italic, underline and lists to structure the policy clearly. Unsafe HTML is removed automatically when the page is saved.</small>
               {{ content_page_form.body.errors }}
-            </label>
+            </div>
           </div>
         </div>
       </article>
@@ -108,4 +129,7 @@
     </aside>
   </form>
 </section>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'admin/js/techbari-rich-editor-v109.js' %}?v=1.0.9"></script>
 {% endblock %}
