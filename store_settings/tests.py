@@ -6,7 +6,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from staff_access.permissions import sync_system_roles
-from .forms import StoreSettingsForm
+from .forms import ContentPageForm, StoreSettingsForm
 from .models import ContentPage, HeroBanner, HomeSection, StoreSettings
 from .services import serialize_hero_banner, shipping_charge_for_subtotal
 
@@ -99,6 +99,35 @@ class StoreSettingsCMSTests(TestCase):
         page.is_published = False
         page.save()
         self.assertEqual(self.client.get(reverse("storefront:privacy_policy")).status_code, 404)
+
+    def test_content_page_form_sanitizes_rich_html_and_storefront_renders_formatting(self):
+        page = ContentPage.objects.get(slug="privacy-policy")
+        form = ContentPageForm(data={
+            "title": "Privacy Policy",
+            "body": '<h2>Privacy Matters</h2><p onclick="alert(1)">Safe <strong>content</strong>.</p><script>alert(1)</script>',
+            "seo_title": "Privacy Policy | TechBari",
+            "seo_description": "Safe privacy page",
+            "is_published": "on",
+        }, instance=page)
+        self.assertTrue(form.is_valid(), form.errors)
+        saved = form.save()
+        self.assertIn("<h2>Privacy Matters</h2>", saved.body)
+        self.assertIn("<strong>content</strong>", saved.body)
+        self.assertNotIn("onclick", saved.body)
+        self.assertNotIn("<script", saved.body)
+
+        response = self.client.get(reverse("storefront:privacy_policy"))
+        self.assertContains(response, "<h2>Privacy Matters</h2>", html=False)
+        self.assertContains(response, "<strong>content</strong>", html=False)
+        self.assertNotContains(response, "<script", html=False)
+
+    def test_content_page_plain_text_remains_linebreak_formatted(self):
+        page = ContentPage.objects.get(slug="shipping-policy")
+        page.body = "First paragraph\n\nSecond paragraph"
+        page.save()
+        response = self.client.get(reverse("storefront:shipping_policy"))
+        self.assertContains(response, "<p>First paragraph</p>", html=False)
+        self.assertContains(response, "<p>Second paragraph</p>", html=False)
 
     def test_homepage_branding_and_seo_use_store_settings(self):
         store = StoreSettings.get_solo()
