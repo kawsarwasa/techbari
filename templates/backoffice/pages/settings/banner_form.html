@@ -1,3 +1,273 @@
 {% extends "backoffice/base.html" %}
+{% load static %}
 {% block title %}{% if banner %}Edit{% else %}Add{% endif %} Hero Banner | TechBari Admin{% endblock %}
-{% block content %}<section class="page"><div class="page-head"><div><h1>{% if banner %}Edit{% else %}Add{% endif %} Hero Banner</h1><p>Uploaded image is used first; fallback static image keeps existing assets working.</p></div><a class="btn" href="{% url 'backoffice:cms_banners' %}">Back to Banners</a></div><form method="post" enctype="multipart/form-data" class="card form-card">{% csrf_token %}{{ banner_form.non_field_errors }}<div class="form-grid"><label class="field"><span>Eyebrow</span>{{ banner_form.eyebrow }}</label><label class="field"><span>Sort Order</span>{{ banner_form.sort_order }}</label><label class="field field-full"><span>Title</span>{{ banner_form.title }}<small>Use a line break for a two-line headline; HTML is escaped.</small></label><label class="field field-full"><span>Description</span>{{ banner_form.description }}</label><label class="field"><span>CTA Label</span>{{ banner_form.cta_label }}</label><label class="field"><span>CTA URL</span>{{ banner_form.cta_url }}{{ banner_form.cta_url.errors }}</label><label class="field"><span>Image</span>{{ banner_form.image }}</label><label class="field"><span>Fallback Static Path</span>{{ banner_form.fallback_static }}</label><label class="field field-full"><span>Alt Text</span>{{ banner_form.alt_text }}</label><label class="field"><span>Starts At</span>{{ banner_form.starts_at }}</label><label class="field"><span>Ends At</span>{{ banner_form.ends_at }}{{ banner_form.ends_at.errors }}</label><label class="field"><span>{{ banner_form.is_active }} Active</span></label></div><div class="head-actions"><button class="btn btn-primary" type="submit">Save Banner</button></div></form></section>{% endblock %}
+{% if not banner %}
+{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-hero-banner-add.css' %}?v=3.0.1">{% endblock %}
+{% endif %}
+{% block content %}
+{% if banner %}
+<section class="page"><div class="page-head"><div><h1>Edit Hero Banner</h1><p>Uploaded image is used first; fallback static image keeps existing assets working.</p></div><a class="btn" href="{% url 'backoffice:cms_banners' %}">Back to Banners</a></div><form method="post" enctype="multipart/form-data" class="card form-card">{% csrf_token %}{{ banner_form.non_field_errors }}<div class="form-grid"><label class="field"><span>Eyebrow</span>{{ banner_form.eyebrow }}</label><label class="field"><span>Sort Order</span>{{ banner_form.sort_order }}</label><label class="field field-full"><span>Title</span>{{ banner_form.title }}<small>Use a line break for a two-line headline; HTML is escaped.</small></label><label class="field field-full"><span>Description</span>{{ banner_form.description }}</label><label class="field"><span>CTA Label</span>{{ banner_form.cta_label }}</label><label class="field"><span>CTA URL</span>{{ banner_form.cta_url }}{{ banner_form.cta_url.errors }}</label><label class="field"><span>Image</span>{{ banner_form.image }}</label><label class="field"><span>Fallback Static Path</span>{{ banner_form.fallback_static }}</label><label class="field field-full"><span>Alt Text</span>{{ banner_form.alt_text }}</label><label class="field"><span>Starts At</span>{{ banner_form.starts_at }}</label><label class="field"><span>Ends At</span>{{ banner_form.ends_at }}{{ banner_form.ends_at.errors }}</label><label class="field"><span>{{ banner_form.is_active }} Active</span></label></div><div class="head-actions"><button class="btn btn-primary" type="submit">Save Banner</button></div></form></section>
+{% else %}
+<section class="page hero-banner-add-ui" data-hero-banner-add>
+  <div class="hba-breadcrumbs">
+    <a href="{% url 'backoffice:dashboard' %}">Home</a><span>›</span>
+    <a href="{% url 'backoffice:settings' %}">CMS / Store Settings</a><span>›</span>
+    <a href="{% url 'backoffice:cms_banners' %}">Hero Banners</a><span>›</span>
+    <span>Add Banner</span>
+  </div>
+
+  <div class="hba-page-head">
+    <div class="hba-title-wrap">
+      <span class="hba-title-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" class="svg"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></svg>
+      </span>
+      <div>
+        <h1>Add Hero Banner</h1>
+        <p>Create a new homepage banner. Fill in the details below and publish when ready.</p>
+      </div>
+    </div>
+    <div class="hba-head-actions">
+      <a class="hba-btn hba-btn-outline" href="{% url 'backoffice:cms_banners' %}">
+        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        Back to Banners
+      </a>
+      <button class="hba-btn hba-btn-primary" type="submit" form="hero-banner-add-form">
+        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+        Save Banner
+      </button>
+    </div>
+  </div>
+
+  <form id="hero-banner-add-form" method="post" enctype="multipart/form-data" class="hba-layout">
+    {% csrf_token %}
+
+    <div class="hba-main-column">
+      {% if banner_form.non_field_errors %}
+        <div class="hba-alert">{{ banner_form.non_field_errors }}</div>
+      {% endif %}
+
+      <article class="hba-card">
+        <div class="hba-card-head">
+          <span class="hba-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="svg"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6"/></svg>
+          </span>
+          <div>
+            <h2>Banner Information</h2>
+            <p>Basic details and content for your homepage banner.</p>
+          </div>
+        </div>
+        <div class="hba-card-body hba-fields">
+          <label class="hba-field full">
+            <span>Eyebrow <small>(Optional)</small></span>
+            {{ banner_form.eyebrow }}
+            <em>A small line shown above the main title, such as “New Arrival” or “Limited Time”.</em>
+            {{ banner_form.eyebrow.errors }}
+          </label>
+
+          <label class="hba-field full">
+            <span>Banner Title <b>*</b></span>
+            {{ banner_form.title }}
+            <em>The main heading for your banner.</em>
+            {{ banner_form.title.errors }}
+          </label>
+
+          <label class="hba-field full">
+            <span>Short Description</span>
+            {{ banner_form.description }}
+            <em>A brief description shown below the title.</em>
+            {{ banner_form.description.errors }}
+          </label>
+        </div>
+      </article>
+
+      <article class="hba-card">
+        <div class="hba-card-head">
+          <span class="hba-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="svg"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.1-1.1"/></svg>
+          </span>
+          <div>
+            <h2>Call to Action (CTA)</h2>
+            <p>Add a call-to-action button and destination for this banner.</p>
+          </div>
+        </div>
+        <div class="hba-card-body hba-fields two-col">
+          <label class="hba-field">
+            <span>CTA Label</span>
+            {{ banner_form.cta_label }}
+            <em>Button text such as Shop Now, Explore, or Discover.</em>
+            {{ banner_form.cta_label.errors }}
+          </label>
+          <label class="hba-field">
+            <span>CTA URL</span>
+            {{ banner_form.cta_url }}
+            <em>Use a site path starting with / or a full http/https URL.</em>
+            {{ banner_form.cta_url.errors }}
+          </label>
+        </div>
+      </article>
+
+      <article class="hba-card">
+        <div class="hba-card-head">
+          <span class="hba-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="svg"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></svg>
+          </span>
+          <div>
+            <h2>Upload Image</h2>
+            <p>Upload a high-quality banner image. Recommended size: 1920 × 600 px.</p>
+          </div>
+        </div>
+        <div class="hba-card-body">
+          <div class="hba-upload-grid">
+            <div class="hba-upload-zone">
+              <div class="hba-upload-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" class="svg"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M20 15v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4"/></svg>
+              </div>
+              <strong>Click to upload banner image</strong>
+              <span>or drag and drop</span>
+              <small>JPG, PNG or WebP · Max 2MB</small>
+              <label class="hba-upload-btn" for="{{ banner_form.image.id_for_label }}">Choose Image</label>
+              <div class="hba-file-input">{{ banner_form.image }}</div>
+              {{ banner_form.image.errors }}
+            </div>
+            <div class="hba-image-preview-box" data-image-preview-box>
+              <div class="hba-image-empty" data-image-empty>
+                <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></svg>
+                <span>Image preview will appear here</span>
+              </div>
+              <img data-image-preview alt="Selected banner preview" hidden>
+              <div class="hba-image-meta" data-image-meta hidden>
+                <strong data-image-name>Selected image</strong>
+                <span data-image-size></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hba-fields two-col hba-secondary-fields">
+            <label class="hba-field">
+              <span>Fallback Static Path <small>(Optional)</small></span>
+              {{ banner_form.fallback_static }}
+              <em>Used when no uploaded banner image is available.</em>
+              {{ banner_form.fallback_static.errors }}
+            </label>
+            <label class="hba-field">
+              <span>Alt Text</span>
+              {{ banner_form.alt_text }}
+              <em>Describe the image for accessibility and search engines.</em>
+              {{ banner_form.alt_text.errors }}
+            </label>
+          </div>
+        </div>
+      </article>
+
+      <article class="hba-card">
+        <div class="hba-card-head">
+          <span class="hba-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="svg"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>
+          </span>
+          <div>
+            <h2>Display Options</h2>
+            <p>Set banner order and accessibility details.</p>
+          </div>
+        </div>
+        <div class="hba-card-body hba-fields two-col">
+          <label class="hba-field">
+            <span>Sort Order</span>
+            {{ banner_form.sort_order }}
+            <em>Lower numbers appear first.</em>
+            {{ banner_form.sort_order.errors }}
+          </label>
+          <div class="hba-tip-box">
+            <strong>Recommended banner setup</strong>
+            <span>Use a wide 1920 × 600 image, short copy, and a clear CTA for the best storefront result.</span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <aside class="hba-side-column">
+      <article class="hba-card hba-side-card">
+        <div class="hba-card-head compact">
+          <span class="hba-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="svg"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/></svg>
+          </span>
+          <div><h2>Banner Preview</h2><p>See how this banner will look on the homepage.</p></div>
+        </div>
+        <div class="hba-card-body">
+          <div class="hba-preview-tabs" role="group" aria-label="Preview size">
+            <button type="button" class="active" data-preview-mode="desktop">Desktop Preview</button>
+            <button type="button" data-preview-mode="mobile">Mobile Preview</button>
+          </div>
+          <div class="hba-live-preview" data-live-preview>
+            <img data-live-image alt="Banner live preview" hidden>
+            <div class="hba-live-overlay">
+              <small data-preview-eyebrow>Eyebrow</small>
+              <h3 data-preview-title>Your banner title</h3>
+              <p data-preview-description>Add a short description to preview it here.</p>
+              <span class="hba-preview-cta" data-preview-cta>CTA</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="hba-card hba-side-card">
+        <div class="hba-card-head compact">
+          <span class="hba-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="svg"><path d="M4 6h16M7 3v6M17 3v6M5 10h14v10H5z"/></svg>
+          </span>
+          <div><h2>Visibility Window</h2><p>Control when this banner can appear.</p></div>
+        </div>
+        <div class="hba-card-body hba-fields">
+          <label class="hba-field full">
+            <span>Start Date & Time</span>
+            {{ banner_form.starts_at }}
+            <em>Leave empty to start immediately.</em>
+            {{ banner_form.starts_at.errors }}
+          </label>
+          <label class="hba-field full">
+            <span>End Date & Time</span>
+            {{ banner_form.ends_at }}
+            <em>Leave empty for no end date.</em>
+            {{ banner_form.ends_at.errors }}
+          </label>
+        </div>
+      </article>
+
+      <article class="hba-card hba-side-card">
+        <div class="hba-card-head compact">
+          <span class="hba-card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="svg"><path d="M4 4h16v16H4z"/><path d="M8 12h8M12 8v8"/></svg>
+          </span>
+          <div><h2>Publishing Status</h2><p>Control whether this banner is enabled.</p></div>
+        </div>
+        <div class="hba-card-body">
+          <div class="hba-publish-row">
+            <label class="hba-switch">
+              {{ banner_form.is_active }}
+              <span class="hba-switch-track"><span></span></span>
+            </label>
+            <div>
+              <strong data-status-label>Active</strong>
+              <p data-status-copy>Banner can be shown when its visibility window is valid.</p>
+            </div>
+          </div>
+          {{ banner_form.is_active.errors }}
+        </div>
+      </article>
+
+      <article class="hba-card hba-side-card hba-save-card">
+        <div class="hba-card-body">
+          <button class="hba-btn hba-btn-primary full" type="submit">
+            <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+            Save Banner
+          </button>
+          <a class="hba-btn hba-btn-outline full" href="{% url 'backoffice:cms_banners' %}">Cancel</a>
+        </div>
+      </article>
+    </aside>
+  </form>
+</section>
+{% endif %}
+{% endblock %}
+{% if not banner %}
+{% block extra_js %}<script src="{% static 'admin/js/cms-hero-banner-add.js' %}?v=3.0.1"></script>{% endblock %}
+{% endif %}
