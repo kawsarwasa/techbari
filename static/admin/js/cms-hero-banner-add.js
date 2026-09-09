@@ -29,6 +29,9 @@
   const imageSize = root.querySelector('[data-image-size]');
   const uploadZone = root.querySelector('.hba-upload-zone');
 
+  const existingImageUrl = (root.dataset.existingImageUrl || '').trim();
+  const existingImageName = (root.dataset.existingImageName || '').trim();
+
   let uploadedObjectUrl = null;
 
   function textOr(input, fallback) {
@@ -55,6 +58,20 @@
     }
   }
 
+  function setImagePreview(src, name, sizeText) {
+    if (!src) return false;
+    if (imagePreview) {
+      imagePreview.src = src;
+      imagePreview.hidden = false;
+    }
+    if (imageEmpty) imageEmpty.hidden = true;
+    if (imageMeta) imageMeta.hidden = false;
+    if (imageName) imageName.textContent = name || 'Current image';
+    if (imageSize) imageSize.textContent = sizeText || 'Current image';
+    setLiveImage(src);
+    return true;
+  }
+
   function humanFileSize(bytes) {
     if (!Number.isFinite(bytes)) return '';
     if (bytes < 1024) return bytes + ' B';
@@ -67,30 +84,30 @@
 
     if (uploadedObjectUrl) URL.revokeObjectURL(uploadedObjectUrl);
     uploadedObjectUrl = URL.createObjectURL(file);
+    setImagePreview(uploadedObjectUrl, file.name || 'Selected image', humanFileSize(file.size));
+  }
 
-    if (imagePreview) {
-      imagePreview.src = uploadedObjectUrl;
-      imagePreview.hidden = false;
-    }
-    if (imageEmpty) imageEmpty.hidden = true;
-    if (imageMeta) imageMeta.hidden = false;
-    if (imageName) imageName.textContent = file.name || 'Selected image';
-    if (imageSize) imageSize.textContent = humanFileSize(file.size);
-    setLiveImage(uploadedObjectUrl);
+  function fallbackUrl() {
+    const path = textOr(fallbackInput, '');
+    if (!path) return '';
+    if (/^https?:\/\//i.test(path) || path.startsWith('/')) return path;
+    return '/static/' + path.replace(/^\/+/, '');
   }
 
   function updateFallbackPreview() {
     if (imageInput && imageInput.files && imageInput.files.length) return;
-    const path = textOr(fallbackInput, '');
-    if (!path) {
+
+    if (existingImageUrl) {
+      setImagePreview(existingImageUrl, existingImageName || 'Current image', 'Current image');
+      return;
+    }
+
+    const src = fallbackUrl();
+    if (src) {
+      setLiveImage(src);
+    } else {
       setLiveImage('');
-      return;
     }
-    if (/^https?:\/\//i.test(path) || path.startsWith('/')) {
-      setLiveImage(path);
-      return;
-    }
-    setLiveImage('/static/' + path.replace(/^\/+/, ''));
   }
 
   function updateStatus() {
@@ -115,7 +132,9 @@
     });
   }
 
-  if (fallbackInput) fallbackInput.addEventListener('input', updateFallbackPreview);
+  if (fallbackInput) fallbackInput.addEventListener('input', function () {
+    if (!existingImageUrl) updateFallbackPreview();
+  });
   if (activeInput) activeInput.addEventListener('change', updateStatus);
 
   if (uploadZone && imageInput) {
@@ -159,5 +178,9 @@
 
   updateCopyPreview();
   updateStatus();
-  updateFallbackPreview();
+  if (existingImageUrl) {
+    setImagePreview(existingImageUrl, existingImageName || 'Current image', 'Current image');
+  } else {
+    updateFallbackPreview();
+  }
 })();
