@@ -121,6 +121,21 @@ class StoreSettingsCMSTests(TestCase):
         self.assertContains(response, "<strong>content</strong>", html=False)
         self.assertNotContains(response, "<script", html=False)
 
+    def test_content_page_browser_div_blocks_are_normalized_to_paragraphs(self):
+        page = ContentPage.objects.get(slug="privacy-policy")
+        form = ContentPageForm(data={
+            "title": page.title,
+            "body": "<div>First block</div><div><strong>Second block</strong></div>",
+            "seo_title": page.seo_title,
+            "seo_description": page.seo_description,
+            "is_published": "on",
+        }, instance=page)
+        self.assertTrue(form.is_valid(), form.errors)
+        saved = form.save()
+        self.assertIn("<p>First block</p>", saved.body)
+        self.assertIn("<p><strong>Second block</strong></p>", saved.body)
+        self.assertNotIn("<div", saved.body)
+
     def test_content_page_plain_text_remains_linebreak_formatted(self):
         page = ContentPage.objects.get(slug="shipping-policy")
         page.body = "First paragraph\n\nSecond paragraph"
