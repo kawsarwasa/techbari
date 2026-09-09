@@ -29,9 +29,14 @@ class _ContentPageHTMLSanitizer(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.parts = []
+        self.div_depth = 0
 
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
+        if tag == "div":
+            self.parts.append("<p>")
+            self.div_depth += 1
+            return
         if tag in ALLOWED_CONTENT_TAGS:
             self.parts.append("<br>" if tag == "br" else f"<{tag}>")
 
@@ -41,6 +46,10 @@ class _ContentPageHTMLSanitizer(HTMLParser):
 
     def handle_endtag(self, tag):
         tag = tag.lower()
+        if tag == "div" and self.div_depth:
+            self.parts.append("</p>")
+            self.div_depth -= 1
+            return
         if tag in ALLOWED_CONTENT_TAGS and tag != "br":
             self.parts.append(f"</{tag}>")
 
@@ -51,6 +60,9 @@ class _ContentPageHTMLSanitizer(HTMLParser):
         return
 
     def html(self):
+        while self.div_depth:
+            self.parts.append("</p>")
+            self.div_depth -= 1
         return "".join(self.parts)
 
 
