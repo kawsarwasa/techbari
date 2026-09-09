@@ -156,6 +156,7 @@ def orders(request):
     context.update(
         order_rows=page_obj.object_list,
         order_page=page_obj,
+        order_page_range=paginator.get_elided_page_range(page_obj.number, on_each_side=2, on_ends=1),
         order_filtered_count=paginator.count,
         order_querystring=query_params.urlencode(),
         order_query=query,
