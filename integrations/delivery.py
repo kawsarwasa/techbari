@@ -11,7 +11,7 @@ from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
 
-from .models import OutboundMessage
+from .models import CourierWebhookReceipt, OutboundMessage
 from .security import validate_outbound_url
 from .services import enqueue_integration_failure, get_integration_settings
 
@@ -145,6 +145,8 @@ def deliver_message(message):
 
 
 def process_outbound(*, limit=100, max_attempts=5):
+    retention_days = int(getattr(settings, "COURIER_WEBHOOK_RECEIPT_DAYS", 7))
+    CourierWebhookReceipt.objects.filter(received_at__lt=timezone.now() - timedelta(days=retention_days)).delete()
     limit = max(1, min(int(limit or 100), 500))
     ids = list(OutboundMessage.objects.filter(status__in=[OutboundMessage.Status.PENDING, OutboundMessage.Status.FAILED], attempts__lt=max_attempts, available_at__lte=timezone.now()).order_by("available_at", "id").values_list("id", flat=True)[:limit])
     summary = {"sent": 0, "failed": 0, "skipped": 0}
