@@ -43,13 +43,7 @@ class SalesOrder(models.Model):
         OTHER = "other", "Other"
 
     order_number = models.CharField(max_length=50, unique=True, default=make_order_number)
-    customer = models.ForeignKey(
-        Customer,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        related_name="sales_orders",
-    )
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, null=True, blank=True, related_name="sales_orders")
     warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT, related_name="sales_orders")
     channel = models.CharField(max_length=20, choices=Channel.choices, default=Channel.ONLINE)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
@@ -59,7 +53,6 @@ class SalesOrder(models.Model):
     tendered_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     change_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     order_date = models.DateField(default=timezone.localdate)
-
     shipping_name = models.CharField(max_length=180, blank=True)
     shipping_phone = models.CharField(max_length=40, blank=True)
     shipping_email = models.EmailField(blank=True)
@@ -67,7 +60,6 @@ class SalesOrder(models.Model):
     shipping_city = models.CharField(max_length=120, blank=True)
     shipping_district = models.CharField(max_length=120, blank=True)
     shipping_postal_code = models.CharField(max_length=20, blank=True)
-
     subtotal = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     discount_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
     shipping_charge = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
@@ -86,33 +78,20 @@ class SalesOrder(models.Model):
             models.Index(fields=("payment_status", "order_date"), name="sales_order_pay_date_idx"),
             models.Index(fields=("customer", "order_date"), name="sales_order_customer_idx"),
             models.Index(fields=("warehouse", "status"), name="sales_order_wh_status_idx"),
+            models.Index(fields=("created_at",), name="sales_order_created_idx"),
         ]
 
-    def __str__(self):
-        return self.order_number
-
+    def __str__(self): return self.order_number
     @property
-    def payable_total(self):
-        value = (self.grand_total or Decimal("0.00")) - (self.return_credit_amount or Decimal("0.00"))
-        return max(value, Decimal("0.00"))
-
+    def payable_total(self): return max((self.grand_total or Decimal("0.00")) - (self.return_credit_amount or Decimal("0.00")), Decimal("0.00"))
     @property
-    def outstanding_amount(self):
-        value = self.payable_total - (self.amount_paid or Decimal("0.00"))
-        return max(value, Decimal("0.00"))
-
+    def outstanding_amount(self): return max(self.payable_total - (self.amount_paid or Decimal("0.00")), Decimal("0.00"))
     @property
-    def customer_name(self):
-        return self.customer.name if self.customer_id else (self.shipping_name or "Guest Customer")
-
+    def customer_name(self): return self.customer.name if self.customer_id else (self.shipping_name or "Guest Customer")
     @property
-    def customer_phone(self):
-        return self.customer.phone if self.customer_id else self.shipping_phone
-
+    def customer_phone(self): return self.customer.phone if self.customer_id else self.shipping_phone
     @property
-    def item_count(self):
-        return sum(item.quantity for item in self.items.all())
-
+    def item_count(self): return sum(item.quantity for item in self.items.all())
     @property
     def shipping_summary(self):
         parts = [self.shipping_address, self.shipping_city, self.shipping_district, self.shipping_postal_code]
@@ -141,15 +120,10 @@ class SalesOrderItem(models.Model):
         ]
 
     @property
-    def gross_total(self):
-        return self.unit_price * self.quantity
-
+    def gross_total(self): return self.unit_price * self.quantity
     @property
-    def line_total(self):
-        return max(self.gross_total - self.discount_amount, Decimal("0.00"))
-
-    def __str__(self):
-        return f"{self.order.order_number} / {self.sku_snapshot} x {self.quantity}"
+    def line_total(self): return max(self.gross_total - self.discount_amount, Decimal("0.00"))
+    def __str__(self): return f"{self.order.order_number} / {self.sku_snapshot} x {self.quantity}"
 
 
 class SalesOrderHistory(models.Model):
@@ -173,12 +147,7 @@ class SalesOrderHistory(models.Model):
         indexes = [models.Index(fields=("order", "created_at"), name="sales_history_order_idx")]
 
     def save(self, *args, **kwargs):
-        if self.pk and not self._state.adding:
-            raise ValidationError("Sales order history is immutable and cannot be edited.")
+        if self.pk and not self._state.adding: raise ValidationError("Sales order history is immutable and cannot be edited.")
         return super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        raise ValidationError("Sales order history is immutable and cannot be deleted.")
-
-    def __str__(self):
-        return f"{self.order.order_number}: {self.get_event_display()}"
+    def delete(self, *args, **kwargs): raise ValidationError("Sales order history is immutable and cannot be deleted.")
+    def __str__(self): return f"{self.order.order_number}: {self.get_event_display()}"
