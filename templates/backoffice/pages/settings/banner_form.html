@@ -1,19 +1,14 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{% if banner %}Edit{% else %}Add{% endif %} Hero Banner | TechBari Admin{% endblock %}
-{% if not banner %}
-{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-hero-banner-add.css' %}?v=3.0.1">{% endblock %}
-{% endif %}
+{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-hero-banner-add.css' %}?v=3.0.2">{% endblock %}
 {% block content %}
-{% if banner %}
-<section class="page"><div class="page-head"><div><h1>Edit Hero Banner</h1><p>Uploaded image is used first; fallback static image keeps existing assets working.</p></div><a class="btn" href="{% url 'backoffice:cms_banners' %}">Back to Banners</a></div><form method="post" enctype="multipart/form-data" class="card form-card">{% csrf_token %}{{ banner_form.non_field_errors }}<div class="form-grid"><label class="field"><span>Eyebrow</span>{{ banner_form.eyebrow }}</label><label class="field"><span>Sort Order</span>{{ banner_form.sort_order }}</label><label class="field field-full"><span>Title</span>{{ banner_form.title }}<small>Use a line break for a two-line headline; HTML is escaped.</small></label><label class="field field-full"><span>Description</span>{{ banner_form.description }}</label><label class="field"><span>CTA Label</span>{{ banner_form.cta_label }}</label><label class="field"><span>CTA URL</span>{{ banner_form.cta_url }}{{ banner_form.cta_url.errors }}</label><label class="field"><span>Image</span>{{ banner_form.image }}</label><label class="field"><span>Fallback Static Path</span>{{ banner_form.fallback_static }}</label><label class="field field-full"><span>Alt Text</span>{{ banner_form.alt_text }}</label><label class="field"><span>Starts At</span>{{ banner_form.starts_at }}</label><label class="field"><span>Ends At</span>{{ banner_form.ends_at }}{{ banner_form.ends_at.errors }}</label><label class="field"><span>{{ banner_form.is_active }} Active</span></label></div><div class="head-actions"><button class="btn btn-primary" type="submit">Save Banner</button></div></form></section>
-{% else %}
-<section class="page hero-banner-add-ui" data-hero-banner-add>
+<section class="page hero-banner-add-ui" data-hero-banner-add data-existing-image-url="{% if banner %}{% if banner.image %}{{ banner.image.url }}{% elif banner.fallback_static %}{% static banner.fallback_static %}{% endif %}{% endif %}" data-existing-image-name="{% if banner %}{% if banner.image %}{{ banner.image.name }}{% elif banner.fallback_static %}{{ banner.fallback_static }}{% endif %}{% endif %}">
   <div class="hba-breadcrumbs">
     <a href="{% url 'backoffice:dashboard' %}">Home</a><span>›</span>
     <a href="{% url 'backoffice:settings' %}">CMS / Store Settings</a><span>›</span>
     <a href="{% url 'backoffice:cms_banners' %}">Hero Banners</a><span>›</span>
-    <span>Add Banner</span>
+    <span>{% if banner %}Edit Banner{% else %}Add Banner{% endif %}</span>
   </div>
 
   <div class="hba-page-head">
@@ -22,8 +17,8 @@
         <svg viewBox="0 0 24 24" class="svg"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></svg>
       </span>
       <div>
-        <h1>Add Hero Banner</h1>
-        <p>Create a new homepage banner. Fill in the details below and publish when ready.</p>
+        <h1>{% if banner %}Edit Hero Banner{% else %}Add Hero Banner{% endif %}</h1>
+        <p>{% if banner %}Update this homepage banner while keeping its existing content, schedule and display settings.{% else %}Create a new homepage banner. Fill in the details below and publish when ready.{% endif %}</p>
       </div>
     </div>
     <div class="hba-head-actions">
@@ -31,14 +26,14 @@
         <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
         Back to Banners
       </a>
-      <button class="hba-btn hba-btn-primary" type="submit" form="hero-banner-add-form">
+      <button class="hba-btn hba-btn-primary" type="submit" form="hero-banner-form">
         <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
-        Save Banner
+        {% if banner %}Save Changes{% else %}Save Banner{% endif %}
       </button>
     </div>
   </div>
 
-  <form id="hero-banner-add-form" method="post" enctype="multipart/form-data" class="hba-layout">
+  <form id="hero-banner-form" method="post" enctype="multipart/form-data" class="hba-layout">
     {% csrf_token %}
 
     <div class="hba-main-column">
@@ -112,8 +107,8 @@
             <svg viewBox="0 0 24 24" class="svg"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></svg>
           </span>
           <div>
-            <h2>Upload Image</h2>
-            <p>Upload a high-quality banner image. Recommended size: 1920 × 600 px.</p>
+            <h2>{% if banner %}Banner Image{% else %}Upload Image{% endif %}</h2>
+            <p>{% if banner %}Keep the current image or upload a replacement. Recommended size: 1920 × 600 px.{% else %}Upload a high-quality banner image. Recommended size: 1920 × 600 px.{% endif %}</p>
           </div>
         </div>
         <div class="hba-card-body">
@@ -122,10 +117,10 @@
               <div class="hba-upload-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" class="svg"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M20 15v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4"/></svg>
               </div>
-              <strong>Click to upload banner image</strong>
+              <strong>{% if banner %}Upload a replacement image{% else %}Click to upload banner image{% endif %}</strong>
               <span>or drag and drop</span>
               <small>JPG, PNG or WebP · Max 2MB</small>
-              <label class="hba-upload-btn" for="{{ banner_form.image.id_for_label }}">Choose Image</label>
+              <label class="hba-upload-btn" for="{{ banner_form.image.id_for_label }}">{% if banner %}Choose New Image{% else %}Choose Image{% endif %}</label>
               <div class="hba-file-input">{{ banner_form.image }}</div>
               {{ banner_form.image.errors }}
             </div>
@@ -134,9 +129,9 @@
                 <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></svg>
                 <span>Image preview will appear here</span>
               </div>
-              <img data-image-preview alt="Selected banner preview" hidden>
+              <img data-image-preview alt="Banner image preview" hidden>
               <div class="hba-image-meta" data-image-meta hidden>
-                <strong data-image-name>Selected image</strong>
+                <strong data-image-name>{% if banner %}Current image{% else %}Selected image{% endif %}</strong>
                 <span data-image-size></span>
               </div>
             </div>
@@ -258,7 +253,7 @@
         <div class="hba-card-body">
           <button class="hba-btn hba-btn-primary full" type="submit">
             <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
-            Save Banner
+            {% if banner %}Save Changes{% else %}Save Banner{% endif %}
           </button>
           <a class="hba-btn hba-btn-outline full" href="{% url 'backoffice:cms_banners' %}">Cancel</a>
         </div>
@@ -266,8 +261,5 @@
     </aside>
   </form>
 </section>
-{% endif %}
 {% endblock %}
-{% if not banner %}
-{% block extra_js %}<script src="{% static 'admin/js/cms-hero-banner-add.js' %}?v=3.0.1"></script>{% endblock %}
-{% endif %}
+{% block extra_js %}<script src="{% static 'admin/js/cms-hero-banner-add.js' %}?v=3.0.2"></script>{% endblock %}
