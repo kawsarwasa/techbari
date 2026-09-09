@@ -14,33 +14,45 @@ from backoffice.context import page_context
 from .forms import RolePermissionForm, StaffUserForm
 from .models import AuditLog
 from .permissions import SYSTEM_ROLE_NAMES, staff_permissions_queryset, sync_system_roles
+from .security import clear_auth_throttle, register_auth_failure, throttle_seconds_remaining
 from .services import ensure_profile, record_audit, user_role
 
 
+def _staff_users():
+    return User.objects.filter(Q(is_staff=True) | Q(is_superuser=True) | Q(groups__name__in=SYSTEM_ROLE_NAMES)).distinct()
+
+
 def login_view(request):
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
         return redirect("backoffice:dashboard")
     error = ""
     if request.method == "POST":
         identity = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
-        username = identity
-        if "@" in identity:
-            matches = User.objects.filter(email__iexact=identity, is_active=True)[:2]
-            if len(matches) == 1:
-                username = matches[0].username
-        user = authenticate(request, username=username, password=password)
-        if user is not None and user.is_active:
-            login(request, user)
-            request.session["staff_last_activity"] = int(__import__("time").time())
-            ensure_profile(user)
-            record_audit(request, AuditLog.Action.LOGIN, user=user, summary="Staff login successful")
-            next_url = request.POST.get("next") or request.GET.get("next") or reverse("backoffice:dashboard")
-            if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
-                next_url = reverse("backoffice:dashboard")
-            return redirect(next_url)
-        record_audit(request, AuditLog.Action.LOGIN_FAILED, summary=f"Failed login for {identity[:120]}", status_code=401)
-        error = "Invalid username/email or password."
+        wait_seconds = throttle_seconds_remaining("staff_login", request, identity)
+        if wait_seconds:
+            record_audit(request, AuditLog.Action.LOGIN_FAILED, summary="Staff login rate limited", status_code=429)
+            error = "Too many sign-in attempts. Try again later."
+        else:
+            username = identity
+            if "@" in identity:
+                matches = _staff_users().filter(email__iexact=identity, is_active=True)[:2]
+                if len(matches) == 1:
+                    username = matches[0].username
+            user = authenticate(request, username=username, password=password)
+            if user is not None and user.is_active and (user.is_staff or user.is_superuser):
+                clear_auth_throttle("staff_login", request, identity)
+                login(request, user)
+                request.session["staff_last_activity"] = int(__import__("time").time())
+                ensure_profile(user)
+                record_audit(request, AuditLog.Action.LOGIN, user=user, summary="Staff login successful")
+                next_url = request.POST.get("next") or request.GET.get("next") or reverse("backoffice:dashboard")
+                if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+                    next_url = reverse("backoffice:dashboard")
+                return redirect(next_url)
+            register_auth_failure("staff_login", request, identity)
+            record_audit(request, AuditLog.Action.LOGIN_FAILED, summary=f"Failed staff login for {identity[:120]}", status_code=401)
+            error = "Invalid username/email or password."
     return render(request, "backoffice/auth/login.html", {"error_message": error, "next": request.GET.get("next", "")})
 
 
@@ -53,7 +65,7 @@ def logout_view(request):
 
 
 def users(request):
-    qs = User.objects.prefetch_related("groups", "user_permissions").select_related("staff_profile").order_by("username")
+    qs = _staff_users().prefetch_related("groups", "user_permissions").select_related("staff_profile").order_by("username")
     q = request.GET.get("q", "").strip()
     role = request.GET.get("role", "").strip()
     status = request.GET.get("status", "").strip()
@@ -61,22 +73,37 @@ def users(request):
         qs = qs.filter(Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q))
     if role in SYSTEM_ROLE_NAMES:
         qs = qs.filter(groups__name=role)
-    if status == "active": qs = qs.filter(is_active=True)
-    elif status == "inactive": qs = qs.filter(is_active=False)
+    if status == "active":
+        qs = qs.filter(is_active=True)
+    elif status == "inactive":
+        qs = qs.filter(is_active=False)
     qs = qs.distinct()
     page = Paginator(qs, 20).get_page(request.GET.get("page"))
     rows = []
     for user in page.object_list:
         profile = ensure_profile(user)
         rows.append({"user": user, "role": user_role(user), "branch": profile.branch, "extra_permissions": user.user_permissions.filter(content_type__app_label="staff_access").count()})
+    base_staff = _staff_users()
     context = page_context("users")
-    context.update(user_rows=rows, user_page=page, role_choices=SYSTEM_ROLE_NAMES, q=q, role_filter=role, status_filter=status,
-                   user_kpis={"total": User.objects.count(), "active": User.objects.filter(is_active=True).count(), "roles": Group.objects.filter(name__in=SYSTEM_ROLE_NAMES).count(), "admins": User.objects.filter(Q(is_superuser=True) | Q(groups__name="Admin")).distinct().count()})
+    context.update(
+        user_rows=rows,
+        user_page=page,
+        role_choices=SYSTEM_ROLE_NAMES,
+        q=q,
+        role_filter=role,
+        status_filter=status,
+        user_kpis={
+            "total": base_staff.count(),
+            "active": base_staff.filter(is_active=True).count(),
+            "roles": Group.objects.filter(name__in=SYSTEM_ROLE_NAMES).count(),
+            "admins": base_staff.filter(Q(is_superuser=True) | Q(groups__name="Admin")).distinct().count(),
+        },
+    )
     return render(request, "backoffice/pages/users/users.html", context)
 
 
 def user_form(request, user_id=None):
-    instance = get_object_or_404(User, pk=user_id) if user_id else None
+    instance = get_object_or_404(_staff_users(), pk=user_id) if user_id else None
     form = StaffUserForm(request.POST or None, instance=instance)
     if request.method == "POST" and form.is_valid():
         user = form.save()
@@ -90,7 +117,7 @@ def user_form(request, user_id=None):
 
 @require_POST
 def user_toggle(request, user_id):
-    target = get_object_or_404(User, pk=user_id)
+    target = get_object_or_404(_staff_users(), pk=user_id)
     if target.pk == request.user.pk and target.is_active:
         messages.error(request, "You cannot deactivate your own account.")
         return redirect("backoffice:users")
@@ -103,7 +130,7 @@ def user_toggle(request, user_id):
 def roles(request):
     sync_system_roles()
     groups = Group.objects.filter(name__in=SYSTEM_ROLE_NAMES).prefetch_related("permissions").order_by("name")
-    role_rows = [{"group": group, "staff_count": group.user_set.count(), "permission_count": group.permissions.filter(content_type__app_label="staff_access").count()} for group in groups]
+    role_rows = [{"group": group, "staff_count": group.user_set.filter(is_staff=True).count(), "permission_count": group.permissions.filter(content_type__app_label="staff_access").count()} for group in groups]
     context = page_context("users")
     context.update(role_rows=role_rows, permission_total=staff_permissions_queryset().count())
     return render(request, "backoffice/pages/users/roles.html", context)
