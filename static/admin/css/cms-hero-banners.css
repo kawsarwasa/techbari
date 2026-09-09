@@ -102,6 +102,18 @@
 .hero-banners-ui .hb-mobile-actions .hb-mobile-edit{background:#eef7ff;border-color:#cfe3ff;color:#0878ff}
 .hero-banners-ui .hb-mobile-actions form{flex:1}
 .hero-banners-ui .hb-mobile-actions form .hb-btn{width:100%;color:#e33e50;border-color:#ffd4da;background:#fff5f6}
+
+/* Reference-style on/off switch for the Status column. */
+.hero-banners-ui .hb-switch{width:54px;height:30px;padding:0;border:0;background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border-radius:999px}
+.hero-banners-ui .hb-switch-track{position:relative;display:block;width:52px;height:28px;border-radius:999px;background:linear-gradient(180deg,#2d8cff,#0d73ee);box-shadow:inset 0 0 0 1px rgba(8,105,225,.35),0 3px 8px rgba(22,119,255,.16);transition:background .18s ease,box-shadow .18s ease}
+.hero-banners-ui .hb-switch-thumb{position:absolute;top:4px;left:28px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(16,45,80,.24);transition:left .18s ease,transform .18s ease}
+.hero-banners-ui .hb-switch:hover .hb-switch-thumb{transform:scale(1.04)}
+.hero-banners-ui .hb-switch:focus-visible{outline:3px solid rgba(22,119,255,.18);outline-offset:3px}
+.hero-banners-ui .hb-switch.is-off .hb-switch-track{background:#aebfd4;box-shadow:inset 0 0 0 1px #9fb2c9}
+.hero-banners-ui .hb-switch.is-off .hb-switch-thumb{left:4px}
+.hero-banners-ui .hb-mobile-status-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+.hero-banners-ui .hb-mobile-status-label{font-size:11px;font-weight:800;color:#6e829f;text-transform:uppercase;letter-spacing:.04em}
+
 @media(max-width:1100px){
   .hero-banners-ui .hb-preview{width:140px;height:62px}
   .hero-banners-ui .hb-table{min-width:900px}
