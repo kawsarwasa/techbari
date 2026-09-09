@@ -3,7 +3,7 @@
 {% block title %}Edit {{ content_page.title }} | TechBari Admin{% endblock %}
 {% block page_theme_css %}
 <link rel="stylesheet" href="{% static 'admin/css/cms-content-page-edit.css' %}?v=3.0.4">
-<link rel="stylesheet" href="{% static 'admin/css/cms-content-page-editor.css' %}?v=1.0.1">
+<link rel="stylesheet" href="{% static 'admin/css/cms-content-page-editor.css' %}?v=1.0.2">
 {% endblock %}
 {% block content %}
 <section class="page content-page-edit-ui">
@@ -24,7 +24,7 @@
     </div>
     <div class="cpe-head-actions">
       <a class="cpe-btn" href="{% url 'backoffice:cms_content_pages' %}"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back to Pages</a>
-      <a class="cpe-btn" href="/{{ content_page.slug }}/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>Open Storefront</a>
+      <a class="cpe-btn" href="/{{ content_page.slug }}/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1 2-2h5"/></svg>Open Storefront</a>
       <button class="cpe-btn cpe-btn-primary" type="submit" form="content-page-form"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Save Page</button>
     </div>
   </div>
@@ -131,7 +131,7 @@
       <article class="cpe-card">
         <div class="cpe-card-head"><h2>Quick Actions</h2></div>
         <div class="cpe-card-body cpe-quick-actions">
-          <a class="cpe-btn" href="/{{ content_page.slug }}/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>Open Storefront</a>
+          <a class="cpe-btn" href="/{{ content_page.slug }}/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1 2-2h5"/></svg>Open Storefront</a>
         </div>
       </article>
     </aside>
@@ -139,5 +139,5 @@
 </section>
 {% endblock %}
 {% block extra_js %}
-<script src="{% static 'admin/js/cms-content-page-editor.js' %}?v=1.0.1"></script>
+<script src="{% static 'admin/js/cms-content-page-editor.js' %}?v=1.0.2"></script>
 {% endblock %}
