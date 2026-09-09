@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
@@ -105,12 +106,12 @@ class OutboundSecurityTests(TestCase):
 class CmsUploadSecurityTests(TestCase):
     def test_corrupted_cms_image_is_rejected(self):
         upload = SimpleUploadedFile("banner.png", b"not-a-real-image", content_type="image/png")
-        with self.assertRaisesMessage(Exception, "invalid or corrupted image"):
+        with self.assertRaisesMessage(ValidationError, "invalid or corrupted image"):
             validate_cms_image(upload)
 
     def test_oversized_cms_image_is_rejected_before_processing(self):
         upload = SimpleUploadedFile("banner.jpg", b"x" * (2 * 1024 * 1024 + 1), content_type="image/jpeg")
-        with self.assertRaisesMessage(Exception, "2MB or smaller"):
+        with self.assertRaisesMessage(ValidationError, "2MB or smaller"):
             validate_cms_image(upload)
 
 
@@ -126,7 +127,6 @@ class ProductionCheckTests(TestCase):
         SECURE_HSTS_SECONDS=3600,
         EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
         ALLOWED_HOSTS=["shop.example.com"],
-        DATABASES={"default": {"ENGINE": "django.db.backends.mysql", "NAME": "x", "USER": "x", "PASSWORD": "x", "HOST": "127.0.0.1", "PORT": "3306"}},
     )
     def test_project_production_checks_have_no_errors_for_safe_settings(self):
         issues = production_security_checks(None)
