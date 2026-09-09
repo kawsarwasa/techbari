@@ -130,3 +130,17 @@ class OutboundMessage(models.Model):
 
     def __str__(self):
         return f"{self.get_channel_display()} / {self.event_type} / {self.status}"
+
+
+class CourierWebhookReceipt(models.Model):
+    provider_code = models.CharField(max_length=64)
+    digest = models.CharField(max_length=64, unique=True)
+    received_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-received_at", "-id")
+        indexes = [models.Index(fields=("provider_code", "received_at"), name="int_hook_provider_time_idx")]
+
+    def __str__(self):
+        return f"{self.provider_code}:{self.digest[:12]}"

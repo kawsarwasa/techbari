@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from .permissions import ACCESS_PERMISSIONS
 
@@ -58,3 +59,21 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"{self.created_at:%Y-%m-%d %H:%M} {self.username_snapshot or 'anonymous'} {self.action}"
+
+
+class AuthThrottle(models.Model):
+    """Privacy-preserving, DB-backed login throttle for shared-hosting deployments."""
+
+    scope = models.CharField(max_length=32)
+    key_hash = models.CharField(max_length=64)
+    failures = models.PositiveSmallIntegerField(default=0)
+    window_started_at = models.DateTimeField(default=timezone.now)
+    locked_until = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=("scope", "key_hash"), name="uniq_auth_throttle_scope_key")]
+        indexes = [models.Index(fields=("locked_until",), name="staff_auth_locked_idx")]
+
+    def __str__(self):
+        return f"{self.scope}:{self.key_hash[:10]} ({self.failures})"

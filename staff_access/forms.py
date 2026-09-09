@@ -70,6 +70,7 @@ class StaffUserForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
+        user.is_staff = True
         password = self.cleaned_data.get("password1")
         if password:
             user.set_password(password)

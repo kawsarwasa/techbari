@@ -2,10 +2,13 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
 
+from . import views
+
 handler404 = "techbari.views.not_found"
 handler500 = "techbari.views.server_error"
 
 urlpatterns = [
+    path("health/", views.health, name="health"),
     path("dashboard/integrations/", include("integrations.dashboard_urls")),
     path("dashboard/", include("backoffice.urls")),
     path("account/", include("customer_accounts.urls")),

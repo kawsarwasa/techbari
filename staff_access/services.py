@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import Group
 
 from .models import AuditLog, StaffProfile
@@ -5,9 +6,12 @@ from .permissions import SYSTEM_ROLE_NAMES
 
 
 def get_client_ip(request):
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    value = forwarded.split(",")[0].strip() if forwarded else request.META.get("REMOTE_ADDR", "")
-    return value or None
+    remote = (request.META.get("REMOTE_ADDR", "") or "").strip()
+    if getattr(settings, "TRUST_X_FORWARDED_FOR", False):
+        forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+        value = forwarded.split(",")[0].strip() if forwarded else remote
+        return value or None
+    return remote or None
 
 
 def user_role(user):

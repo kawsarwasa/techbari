@@ -104,6 +104,9 @@ class StaffAccessMiddleware:
         if not request.user.is_authenticated:
             login_url = reverse("backoffice:login")
             return redirect(f"{login_url}?next={quote(request.get_full_path())}")
+        if not (request.user.is_staff or request.user.is_superuser):
+            record_audit(request, AuditLog.Action.DENIED, status_code=403, summary="Non-staff identity denied dashboard access", route_name=route_name)
+            return render(request, "backoffice/auth/403.html", {"required_permission": "staff identity"}, status=403)
 
         idle_timeout = int(getattr(settings, "STAFF_IDLE_TIMEOUT", 1800))
         now = int(time.time())

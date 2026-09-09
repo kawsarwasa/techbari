@@ -86,6 +86,7 @@ class SalesOrder(models.Model):
             models.Index(fields=("payment_status", "order_date"), name="sales_order_pay_date_idx"),
             models.Index(fields=("customer", "order_date"), name="sales_order_customer_idx"),
             models.Index(fields=("warehouse", "status"), name="sales_order_wh_status_idx"),
+            models.Index(fields=("created_at",), name="sales_order_created_idx"),
         ]
 
     def __str__(self):

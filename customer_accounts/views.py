@@ -14,6 +14,7 @@ from django.views.decorators.http import require_POST
 from catalog.models import Product
 from sales.models import SalesOrder
 from serial_tracking.models import SerializedUnit
+from staff_access.security import clear_auth_throttle, register_auth_failure, throttle_seconds_remaining
 from storefront.context import catalog_context
 from storefront.forms import normalize_bd_phone
 
@@ -47,18 +48,24 @@ def login_view(request):
         return redirect("customer_accounts:dashboard")
     form = CustomerLoginForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        account = find_customer_account(form.cleaned_data["identity"])
-        user = None
-        if account:
-            user = authenticate(request, username=account.user.username, password=form.cleaned_data["password"])
-        if user and account and not user.is_staff:
-            login(request, user)
-            if not form.cleaned_data.get("remember"):
-                request.session.set_expiry(0)
-            account.last_login_at = timezone.now()
-            account.save(update_fields=["last_login_at", "updated_at"])
-            return redirect(_safe_next(request, reverse("customer_accounts:dashboard")))
-        form.add_error(None, "Invalid email/phone or password.")
+        identity = form.cleaned_data["identity"]
+        if throttle_seconds_remaining("customer_login", request, identity):
+            form.add_error(None, "Too many sign-in attempts. Try again later.")
+        else:
+            account = find_customer_account(identity)
+            user = None
+            if account:
+                user = authenticate(request, username=account.user.username, password=form.cleaned_data["password"])
+            if user and account and not user.is_staff:
+                clear_auth_throttle("customer_login", request, identity)
+                login(request, user)
+                if not form.cleaned_data.get("remember"):
+                    request.session.set_expiry(0)
+                account.last_login_at = timezone.now()
+                account.save(update_fields=["last_login_at", "updated_at"])
+                return redirect(_safe_next(request, reverse("customer_accounts:dashboard")))
+            register_auth_failure("customer_login", request, identity)
+            form.add_error(None, "Invalid email/phone or password.")
     return render(request, "storefront/pages/login.html", _auth_context(request, mode="login", login_form=form))
 
 
@@ -269,13 +276,20 @@ def track_order_view(request):
     form = TrackOrderForm(request.POST or None)
     order = None
     if request.method == "POST" and form.is_valid():
-        candidate = SalesOrder.objects.select_related("customer", "shipment__courier").prefetch_related("history", "shipment__events").filter(order_number__iexact=form.cleaned_data["order_number"]).first()
-        if candidate:
-            order_phone = normalize_bd_phone(candidate.customer_phone or candidate.shipping_phone)
-            if order_phone == form.cleaned_data["phone"]:
-                order = candidate
-        if not order:
-            form.add_error(None, "Order not found. Check the order number and phone number.")
+        throttle_identity = f"{form.cleaned_data['order_number']}|{form.cleaned_data['phone']}"
+        if throttle_seconds_remaining("track_order", request, throttle_identity):
+            form.add_error(None, "Too many tracking attempts. Try again later.")
+        else:
+            candidate = SalesOrder.objects.select_related("customer", "shipment__courier").prefetch_related("history", "shipment__events").filter(order_number__iexact=form.cleaned_data["order_number"]).first()
+            if candidate:
+                order_phone = normalize_bd_phone(candidate.customer_phone or candidate.shipping_phone)
+                if order_phone == form.cleaned_data["phone"]:
+                    order = candidate
+            if order:
+                clear_auth_throttle("track_order", request, throttle_identity)
+            else:
+                register_auth_failure("track_order", request, throttle_identity)
+                form.add_error(None, "Order not found. Check the order number and phone number.")
     context = catalog_context()
     context.update(track_form=form, tracked_order=order)
     return render(request, "storefront/pages/track_order.html", context)

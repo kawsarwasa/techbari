@@ -3,19 +3,30 @@ import os
 from datetime import timedelta
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urljoin
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
 
-from .models import OutboundMessage
+from .models import CourierWebhookReceipt, OutboundMessage
+from .security import validate_outbound_url
 from .services import enqueue_integration_failure, get_integration_settings
 
 
 class DeliveryError(Exception):
     pass
+
+
+class _SafeRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        try:
+            validate_outbound_url(newurl, resolve=True)
+        except ValidationError as exc:
+            raise DeliveryError("Unsafe redirect destination blocked.") from exc
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
 def _secret(name):
@@ -35,12 +46,17 @@ def _safe_error(exc):
 
 
 def _http_json(url, payload, *, token="", timeout=12, headers=None):
+    try:
+        url = validate_outbound_url(url, resolve=True)
+    except ValidationError as exc:
+        raise DeliveryError("Unsafe outbound integration URL blocked.") from exc
     request_headers = {"Content-Type": "application/json", "Accept": "application/json", **(headers or {})}
     if token:
         request_headers["Authorization"] = f"Bearer {token}"
     request = Request(url, data=json.dumps(payload, separators=(",", ":")).encode("utf-8"), headers=request_headers, method="POST")
+    opener = build_opener(_SafeRedirectHandler())
     try:
-        with urlopen(request, timeout=timeout) as response:
+        with opener.open(request, timeout=timeout) as response:
             raw = response.read().decode("utf-8", errors="replace")
             if not 200 <= response.status < 300:
                 raise DeliveryError(f"HTTP {response.status}")
@@ -50,6 +66,8 @@ def _http_json(url, payload, *, token="", timeout=12, headers=None):
                 return json.loads(raw)
             except json.JSONDecodeError:
                 return {"raw": raw[:1000]}
+    except DeliveryError:
+        raise
     except (HTTPError, URLError, TimeoutError) as exc:
         raise DeliveryError(_safe_error(exc)) from exc
 
@@ -127,6 +145,8 @@ def deliver_message(message):
 
 
 def process_outbound(*, limit=100, max_attempts=5):
+    retention_days = int(getattr(settings, "COURIER_WEBHOOK_RECEIPT_DAYS", 7))
+    CourierWebhookReceipt.objects.filter(received_at__lt=timezone.now() - timedelta(days=retention_days)).delete()
     limit = max(1, min(int(limit or 100), 500))
     ids = list(OutboundMessage.objects.filter(status__in=[OutboundMessage.Status.PENDING, OutboundMessage.Status.FAILED], attempts__lt=max_attempts, available_at__lte=timezone.now()).order_by("available_at", "id").values_list("id", flat=True)[:limit])
     summary = {"sent": 0, "failed": 0, "skipped": 0}
