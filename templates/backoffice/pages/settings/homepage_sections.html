@@ -1,3 +1,145 @@
 {% extends "backoffice/base.html" %}
+{% load static %}
 {% block title %}Homepage Sections | TechBari Admin{% endblock %}
-{% block content %}<section class="page"><div class="page-head"><div><h1>Homepage Sections</h1><p>Enable, rename and reorder the main storefront homepage blocks.</p></div><a class="btn" href="{% url 'backoffice:settings' %}">Store Settings</a></div><div class="settings-grid">{% for section in sections %}<form method="post" action="{% url 'backoffice:cms_homepage_section_update' section.id %}" class="card form-card">{% csrf_token %}<div class="section-head"><h3>{{ section.get_key_display }}</h3><span class="badge">{{ section.key }}</span></div><div class="form-grid"><label class="field"><span>Display Title</span><input class="control" name="title" value="{{ section.title }}"></label><label class="field"><span>Sort Order</span><input class="control" type="number" min="0" name="sort_order" value="{{ section.sort_order }}"></label><label class="field"><span><input type="checkbox" name="is_enabled"{% if section.is_enabled %} checked{% endif %}> Enabled</span></label></div><button class="btn btn-primary" type="submit">Save Section</button></form>{% endfor %}</div></section>{% endblock %}
+{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-homepage-sections.css' %}?v=3.0.1">{% endblock %}
+{% block content %}
+<section class="page homepage-sections-ui" data-homepage-sections>
+  <div class="hps-breadcrumbs">
+    <a href="{% url 'backoffice:dashboard' %}">Home</a><span>›</span>
+    <a href="{% url 'backoffice:settings' %}">CMS / Store Settings</a><span>›</span>
+    <span>Homepage Sections</span>
+  </div>
+
+  <div class="hps-page-head">
+    <div class="hps-title-wrap">
+      <span class="hps-title-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" class="svg"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9A1.7 1.7 0 0 0 21 10h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>
+      </span>
+      <div><h1>CMS / Store Settings</h1><p>Manage your store’s branding, homepage, delivery rules, policies and SEO settings.</p></div>
+    </div>
+    <div class="hps-head-actions">
+      <span class="hps-store-state">Online Store</span>
+      <a class="hps-btn hps-btn-outline" href="{% url 'storefront:home' %}" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+        View Storefront
+      </a>
+    </div>
+  </div>
+
+  <nav class="hps-tabs" aria-label="CMS settings sections">
+    <a href="{% url 'backoffice:settings' %}#general">General</a>
+    <a href="{% url 'backoffice:settings' %}#branding">Branding</a>
+    <a href="{% url 'backoffice:settings' %}#delivery">Delivery</a>
+    <a href="{% url 'backoffice:cms_content_pages' %}">Policies</a>
+    <a href="{% url 'backoffice:settings' %}#seo">SEO</a>
+    <a href="{% url 'backoffice:settings' %}#social">Social Links</a>
+    <a class="active" href="{% url 'backoffice:cms_homepage_sections' %}">Homepage</a>
+    <a href="{% url 'backoffice:cms_banners' %}">Hero Banners</a>
+  </nav>
+
+  <div class="hps-workspace">
+    <article class="hps-card hps-list-card">
+      <div class="hps-card-head">
+        <span class="hps-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" class="svg"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></span>
+        <div><h2>Homepage Sections</h2><p>Select a section to edit its title, order and visibility.</p></div>
+      </div>
+      <div class="hps-section-list">
+        {% for section in sections %}
+        <button type="button" class="hps-section-row{% if forloop.first %} active{% endif %}" data-section-select="{{ section.id }}" aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}">
+          <span class="hps-drag" aria-hidden="true">⠿</span>
+          <span class="hps-section-icon key-{{ section.key }}" aria-hidden="true">
+            {% if section.key == 'hero' %}<svg viewBox="0 0 24 24" class="svg"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></svg>
+            {% elif section.key == 'categories' %}<svg viewBox="0 0 24 24" class="svg"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            {% elif section.key == 'featured' %}<svg viewBox="0 0 24 24" class="svg"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/></svg>
+            {% else %}<svg viewBox="0 0 24 24" class="svg"><path d="M20 12 12 20 4 12l8-8 8 8Z"/><path d="M8 12h8"/></svg>{% endif %}
+          </span>
+          <span class="hps-section-copy"><strong>{{ section.title|default:section.get_key_display }}</strong><small>{{ section.get_key_display }}</small></span>
+          <span class="hps-order"># {{ section.sort_order }}</span>
+          <span class="hps-row-switch{% if section.is_enabled %} on{% endif %}" data-section-toggle="{{ section.id }}" role="switch" aria-checked="{% if section.is_enabled %}true{% else %}false{% endif %}"><span></span></span>
+          <span class="hps-chevron" aria-hidden="true">›</span>
+        </button>
+        {% empty %}
+        <div class="hps-empty">No homepage sections are configured yet.</div>
+        {% endfor %}
+      </div>
+    </article>
+
+    <div class="hps-right-stack">
+      <article class="hps-card hps-settings-card">
+        <div class="hps-card-head split">
+          <div class="hps-head-copy"><span class="hps-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" class="svg"><path d="M4 6h16M7 12h10M9 18h6"/></svg></span><div><h2>Section Settings</h2><p>Configure the selected homepage section.</p></div></div>
+          <a class="hps-btn hps-btn-outline small" href="{% url 'storefront:home' %}" target="_blank" rel="noopener">Open Live Preview</a>
+        </div>
+
+        {% for section in sections %}
+        <form method="post" action="{% url 'backoffice:cms_homepage_section_update' section.id %}" class="hps-editor-panel{% if forloop.first %} active{% endif %}" data-section-panel="{{ section.id }}"{% if not forloop.first %} hidden{% endif %}>
+          {% csrf_token %}
+          <div class="hps-settings-grid">
+            <label class="hps-field">
+              <span>Section Title <b>*</b></span>
+              <input class="control" name="title" value="{{ section.title }}" data-title-input="{{ section.id }}">
+              <small>Customer-facing heading for this homepage section.</small>
+            </label>
+            <label class="hps-field">
+              <span>Section Type</span>
+              <input class="control readonly" value="{{ section.get_key_display }}" readonly>
+              <small>The section type is fixed by the current CMS structure.</small>
+            </label>
+            <label class="hps-field">
+              <span>Sort Order</span>
+              <input class="control" type="number" min="0" name="sort_order" value="{{ section.sort_order }}" data-order-input="{{ section.id }}">
+              <small>Lower numbers appear first on the homepage.</small>
+            </label>
+            <div class="hps-field">
+              <span>Enabled</span>
+              <label class="hps-enabled-row">
+                <input type="checkbox" name="is_enabled" data-enabled-input="{{ section.id }}"{% if section.is_enabled %} checked{% endif %}>
+                <span class="hps-toggle-track"><span></span></span>
+                <span class="hps-enabled-copy">Show this section on the homepage.</span>
+              </label>
+            </div>
+          </div>
+          <div class="hps-form-actions">
+            <span class="hps-form-note">Only this section will be updated when you save.</span>
+            <button class="hps-btn hps-btn-primary" type="submit">
+              <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+              Save Section
+            </button>
+          </div>
+        </form>
+        {% endfor %}
+      </article>
+
+      <article class="hps-card hps-preview-card">
+        <div class="hps-card-head split">
+          <div class="hps-head-copy"><span class="hps-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" class="svg"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/></svg></span><div><h2>Live Preview</h2><p>A simplified preview of the selected section.</p></div></div>
+          <div class="hps-preview-tabs" role="group" aria-label="Preview size"><button class="active" type="button" data-preview-mode="desktop">Desktop</button><button type="button" data-preview-mode="mobile">Mobile</button></div>
+        </div>
+        <div class="hps-card-body">
+          <div class="hps-storefront-preview" data-storefront-preview>
+            {% for section in sections %}
+            <div class="hps-preview-section key-{{ section.key }}{% if forloop.first %} active{% endif %}" data-preview-section="{{ section.id }}"{% if not forloop.first %} hidden{% endif %}>
+              <div class="hps-preview-topline">TechBari · Smart Tech. Better Tomorrow.</div>
+              <div class="hps-preview-content">
+                <div class="hps-preview-title" data-preview-title="{{ section.id }}">{{ section.title|default:section.get_key_display }}</div>
+                {% if section.key == 'hero' %}
+                  <div class="hps-hero-art"><span></span><span></span><span></span></div><div class="hps-preview-cta">Shop Now</div>
+                {% elif section.key == 'categories' %}
+                  <div class="hps-category-grid"><span>Audio</span><span>Power</span><span>Mobile</span><span>Smart</span></div>
+                {% elif section.key == 'featured' %}
+                  <div class="hps-product-grid"><span></span><span></span><span></span><span></span></div>
+                {% else %}
+                  <div class="hps-promo-grid"><span>Special Offer</span><span>Free Delivery</span><span>Easy Return</span></div>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="hps-preview-note"><span>ⓘ</span><span>This preview is simplified. Open the storefront to see the exact design and content.</span><a href="{% url 'storefront:home' %}" target="_blank" rel="noopener">Open Storefront ↗</a></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/cms-homepage-sections.js' %}?v=3.0.1"></script>{% endblock %}
