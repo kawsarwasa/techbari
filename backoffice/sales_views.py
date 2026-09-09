@@ -57,6 +57,8 @@ def orders(request):
     status = (request.GET.get("status") or "").strip()
     payment = (request.GET.get("payment") or "").strip()
     customer_id = (request.GET.get("customer") or "").strip()
+    channel = (request.GET.get("channel") or "").strip()
+
     if query:
         qs = qs.filter(
             Q(order_number__icontains=query)
@@ -71,30 +73,96 @@ def orders(request):
         qs = qs.filter(status=status)
     if payment in {value for value, _ in SalesOrder.PaymentStatus.choices}:
         qs = qs.filter(payment_status=payment)
+    if channel in {value for value, _ in SalesOrder.Channel.choices}:
+        qs = qs.filter(channel=channel)
     if customer_id.isdigit():
         qs = qs.filter(customer_id=int(customer_id))
 
     all_orders = list(SalesOrder.objects.prefetch_related("items").all())
-    active_orders = [o for o in all_orders if o.status not in {SalesOrder.Status.DRAFT, SalesOrder.Status.CANCELLED, SalesOrder.Status.COMPLETED}]
-    completed_orders = [o for o in all_orders if o.status == SalesOrder.Status.COMPLETED]
-    pending_value = sum((o.grand_total for o in active_orders), Decimal("0.00"))
-    completed_value = sum((o.grand_total for o in completed_orders), Decimal("0.00"))
-    due = sum((o.outstanding_amount for o in all_orders if o.status not in {SalesOrder.Status.DRAFT, SalesOrder.Status.CANCELLED}), Decimal("0.00"))
+    status_counts = {
+        value: sum(1 for order in all_orders if order.status == value)
+        for value, _ in SalesOrder.Status.choices
+    }
+    completed_value = sum(
+        (order.grand_total for order in all_orders if order.status == SalesOrder.Status.COMPLETED),
+        Decimal("0.00"),
+    )
+    due = sum(
+        (
+            order.outstanding_amount
+            for order in all_orders
+            if order.status not in {SalesOrder.Status.DRAFT, SalesOrder.Status.CANCELLED}
+        ),
+        Decimal("0.00"),
+    )
+
+    order_stats = [
+        {
+            "label": "Total Orders",
+            "value": str(len(all_orders)),
+            "trend": "All sales orders",
+            "icon": "backoffice/components/icons/icon_13.html",
+            "color": "blue",
+        },
+        {
+            "label": "Pending",
+            "value": str(status_counts.get(SalesOrder.Status.PENDING, 0)),
+            "trend": "Awaiting confirmation",
+            "icon": "backoffice/components/icons/icon_14.html",
+            "color": "orange",
+        },
+        {
+            "label": "Confirmed",
+            "value": str(status_counts.get(SalesOrder.Status.CONFIRMED, 0)),
+            "trend": "Ready to process",
+            "icon": "backoffice/components/icons/icon_13.html",
+            "color": "cyan",
+        },
+        {
+            "label": "Processing",
+            "value": str(status_counts.get(SalesOrder.Status.PROCESSING, 0)),
+            "trend": "In progress",
+            "icon": "backoffice/components/icons/icon_14.html",
+            "color": "purple",
+        },
+        {
+            "label": "Completed",
+            "value": str(status_counts.get(SalesOrder.Status.COMPLETED, 0)),
+            "trend": _money(completed_value),
+            "icon": "backoffice/components/icons/icon_12.html",
+            "color": "green",
+        },
+        {
+            "label": "Cancelled",
+            "value": str(status_counts.get(SalesOrder.Status.CANCELLED, 0)),
+            "trend": _money(due) + " outstanding",
+            "icon": "backoffice/components/icons/icon_1.html",
+            "color": "red",
+        },
+    ]
+    order_status_tabs = [
+        {
+            "value": value,
+            "label": label,
+            "count": status_counts.get(value, 0),
+        }
+        for value, label in SalesOrder.Status.choices
+    ]
+
     context.update(
         order_rows=qs.order_by("-order_date", "-id"),
         order_query=query,
         order_status=status,
         order_payment=payment,
         order_customer=customer_id,
+        order_channel=channel,
         order_status_choices=SalesOrder.Status.choices,
         order_payment_choices=SalesOrder.PaymentStatus.choices,
+        order_channel_choices=SalesOrder.Channel.choices,
         order_customers=Customer.objects.filter(is_active=True).order_by("name"),
-        order_stats=[
-            {"label": "Orders", "value": str(len(all_orders)), "trend": "Live", "trend_class": "up", "icon": "backoffice/components/icons/icon_13.html", "color": "blue"},
-            {"label": "Active", "value": str(len(active_orders)), "trend": _money(pending_value), "trend_class": "up", "icon": "backoffice/components/icons/icon_14.html", "color": "orange"},
-            {"label": "Completed", "value": str(len(completed_orders)), "trend": _money(completed_value), "trend_class": "up", "icon": "backoffice/components/icons/icon_12.html", "color": "green"},
-            {"label": "Outstanding", "value": _money(due), "trend": "Operational", "trend_class": "up", "icon": "backoffice/components/icons/icon_1.html", "color": "red"},
-        ],
+        order_stats=order_stats,
+        order_status_tabs=order_status_tabs,
+        order_total_count=len(all_orders),
     )
     return render(request, "backoffice/pages/orders/orders.html", context)
 
