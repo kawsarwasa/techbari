@@ -79,4 +79,10 @@ def sync_system_roles(sender=None, **kwargs):
         desired = [permissions[code] for code in ROLE_DEFAULTS[role_name] if code in permissions]
         if role_name == "Admin" or created:
             group.permissions.set(desired)
-    User.objects.filter(groups__name__in=SYSTEM_ROLE_NAMES, is_staff=False).distinct().update(is_staff=True)
+    role_user_ids = list(
+        User.objects.filter(groups__name__in=SYSTEM_ROLE_NAMES, is_staff=False)
+        .values_list("pk", flat=True)
+        .distinct()
+    )
+    if role_user_ids:
+        User.objects.filter(pk__in=role_user_ids).update(is_staff=True)
