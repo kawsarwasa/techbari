@@ -3,19 +3,30 @@ import os
 from datetime import timedelta
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urljoin
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
 
 from .models import OutboundMessage
+from .security import validate_outbound_url
 from .services import enqueue_integration_failure, get_integration_settings
 
 
 class DeliveryError(Exception):
     pass
+
+
+class _SafeRedirectHandler(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        try:
+            validate_outbound_url(newurl, resolve=True)
+        except ValidationError as exc:
+            raise DeliveryError("Unsafe redirect destination blocked.") from exc
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
 def _secret(name):
@@ -35,12 +46,17 @@ def _safe_error(exc):
 
 
 def _http_json(url, payload, *, token="", timeout=12, headers=None):
+    try:
+        url = validate_outbound_url(url, resolve=True)
+    except ValidationError as exc:
+        raise DeliveryError("Unsafe outbound integration URL blocked.") from exc
     request_headers = {"Content-Type": "application/json", "Accept": "application/json", **(headers or {})}
     if token:
         request_headers["Authorization"] = f"Bearer {token}"
     request = Request(url, data=json.dumps(payload, separators=(",", ":")).encode("utf-8"), headers=request_headers, method="POST")
+    opener = build_opener(_SafeRedirectHandler())
     try:
-        with urlopen(request, timeout=timeout) as response:
+        with opener.open(request, timeout=timeout) as response:
             raw = response.read().decode("utf-8", errors="replace")
             if not 200 <= response.status < 300:
                 raise DeliveryError(f"HTTP {response.status}")
@@ -50,6 +66,8 @@ def _http_json(url, payload, *, token="", timeout=12, headers=None):
                 return json.loads(raw)
             except json.JSONDecodeError:
                 return {"raw": raw[:1000]}
+    except DeliveryError:
+        raise
     except (HTTPError, URLError, TimeoutError) as exc:
         raise DeliveryError(_safe_error(exc)) from exc
 
