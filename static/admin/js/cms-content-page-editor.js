@@ -99,6 +99,27 @@
       return;
     }
 
+    let savedRange = null;
+
+    const saveRange = () => {
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      if (surface.contains(range.commonAncestorContainer)) savedRange = range.cloneRange();
+    };
+
+    const restoreRange = () => {
+      if (!savedRange) return;
+      const selection = window.getSelection();
+      if (!selection) return;
+      try {
+        selection.removeAllRanges();
+        selection.addRange(savedRange);
+      } catch (_) {
+        savedRange = null;
+      }
+    };
+
     const sync = (message) => {
       source.value = sanitizeHTML(surface.innerHTML);
       if (status && message) status.textContent = message;
@@ -109,10 +130,20 @@
       catch (_) { surface.focus(); }
     };
 
+    ['keyup','mouseup','focus'].forEach((eventName) => surface.addEventListener(eventName, saveRange));
+    surface.addEventListener('input', () => {
+      saveRange();
+      sync('Unsaved changes');
+    });
+
     root.querySelectorAll('[data-editor-command]').forEach((button) => {
-      button.addEventListener('mousedown', (event) => event.preventDefault());
+      button.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        saveRange();
+      });
       button.addEventListener('click', () => {
         focusEditor();
+        restoreRange();
         const command = button.dataset.editorCommand;
         const commandMap = {
           bold: 'bold',
@@ -127,24 +158,32 @@
         const nativeCommand = commandMap[command];
         if (!nativeCommand) return;
         document.execCommand(nativeCommand, false, null);
+        saveRange();
         sync('Unsaved changes');
       });
     });
 
     if (block) {
+      block.addEventListener('mousedown', saveRange);
+      block.addEventListener('focus', saveRange);
       block.addEventListener('change', () => {
         focusEditor();
+        restoreRange();
         const tag = String(block.value || 'P').toLowerCase();
-        document.execCommand('formatBlock', false, `<${tag}>`);
+        let applied = false;
+        try { applied = document.execCommand('formatBlock', false, tag); } catch (_) {}
+        if (!applied) {
+          try { document.execCommand('formatBlock', false, `<${tag}>`); } catch (_) {}
+        }
+        saveRange();
         sync('Unsaved changes');
       });
     }
 
-    surface.addEventListener('input', () => sync('Unsaved changes'));
-
     surface.addEventListener('paste', (event) => {
       event.preventDefault();
       insertPlainText(event.clipboardData?.getData('text/plain') || '');
+      saveRange();
       sync('Unsaved changes');
     });
 
