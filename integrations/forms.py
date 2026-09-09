@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 
 from .models import IntegrationSettings
 from .security import validate_outbound_url
@@ -34,7 +35,7 @@ class IntegrationSettingsForm(forms.ModelForm):
             if value:
                 try:
                     validate_outbound_url(value, resolve=False)
-                except forms.ValidationError as exc:
+                except ValidationError as exc:
                     self.add_error(field_name, exc)
         if (cleaned.get("meta_pixel_enabled") or cleaned.get("meta_capi_enabled")) and not cleaned.get("meta_pixel_id"):
             self.add_error("meta_pixel_id", "Meta Pixel ID is required when Meta tracking is enabled.")
