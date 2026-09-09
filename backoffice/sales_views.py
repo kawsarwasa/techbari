@@ -87,14 +87,6 @@ def orders(request):
         (order.grand_total for order in all_orders if order.status == SalesOrder.Status.COMPLETED),
         Decimal("0.00"),
     )
-    due = sum(
-        (
-            order.outstanding_amount
-            for order in all_orders
-            if order.status not in {SalesOrder.Status.DRAFT, SalesOrder.Status.CANCELLED}
-        ),
-        Decimal("0.00"),
-    )
 
     order_stats = [
         {
@@ -135,7 +127,7 @@ def orders(request):
         {
             "label": "Cancelled",
             "value": str(status_counts.get(SalesOrder.Status.CANCELLED, 0)),
-            "trend": _money(due) + " outstanding",
+            "trend": "Cancelled orders",
             "icon": "backoffice/components/icons/icon_1.html",
             "color": "red",
         },
