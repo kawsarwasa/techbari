@@ -2,6 +2,7 @@ from pathlib import Path
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import UploadedFile
 from PIL import Image, UnidentifiedImageError
 
 from .models import ContentPage, HeroBanner, HomeSection, StoreSettings
@@ -15,7 +16,7 @@ FAVICON_TYPES = CMS_IMAGE_TYPES | {"image/x-icon", "image/vnd.microsoft.icon"}
 
 
 def validate_cms_image(upload, *, favicon=False):
-    if not upload or not hasattr(upload, "size"):
+    if not upload or not isinstance(upload, UploadedFile):
         return upload
     if upload.size > MAX_CMS_IMAGE_BYTES:
         raise ValidationError(f"{upload.name}: image must be 2MB or smaller.")
