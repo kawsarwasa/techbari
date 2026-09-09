@@ -1,0 +1,108 @@
+/* TechBari admin shell refresh — responsive dark sidebar matching CMS reference */
+:root{
+  --sidebar:232px;
+  --topbar:68px;
+  --tb-sidebar-bg:#0c223b;
+  --tb-sidebar-bg-2:#0f2b4d;
+  --tb-sidebar-text:#d9e7f7;
+  --tb-sidebar-muted:#9db2cb;
+}
+
+.sidebar{
+  background:linear-gradient(180deg,var(--tb-sidebar-bg) 0%,#0a1d33 100%);
+  border-right:0;
+  padding:16px 12px 14px;
+  color:var(--tb-sidebar-text);
+  overflow-y:auto;
+}
+.brand{
+  height:64px;
+  padding:0 8px 14px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.brand img{width:190px;filter:brightness(0) invert(1);opacity:.98}
+.nav{gap:2px;margin-top:12px}
+.nav a{
+  min-height:42px;
+  border-radius:8px;
+  color:#d3e1f1;
+  padding:10px 12px;
+  gap:11px;
+  font-weight:600;
+}
+.nav a:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav a.active{
+  background:linear-gradient(135deg,#1182ff,#1677ff);
+  color:#fff;
+  box-shadow:0 8px 18px rgba(22,119,255,.22);
+}
+.nav a.active:before{display:none}
+.nav a .nav-icon{width:20px;height:20px;display:grid;place-items:center;opacity:.95;flex:none}
+.nav a .nav-icon .svg{width:19px;height:19px;stroke-width:1.8}
+.nav a .nav-label{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-promo{
+  margin-top:auto;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+  color:#fff;
+  border-radius:10px;
+  padding:13px 12px;
+  text-align:left;
+}
+.sidebar-promo strong{font-size:14px}
+.sidebar-promo p{color:var(--tb-sidebar-muted);font-size:12px;margin:2px 0}
+
+.topbar{
+  background:#fff;
+  border-bottom:1px solid #e3ebf5;
+  padding:0 18px;
+  gap:16px;
+}
+.menu-btn{display:none}
+.global-search{width:min(480px,46vw);background:#f8fbff;border-color:#dfe9f4}
+.admin-profile .btn{min-height:34px;padding:0 10px;font-size:12px}
+.main{background:#f7faff}
+
+@media (max-width:1180px){
+  :root{--sidebar:216px}
+  .global-search{width:min(420px,40vw)}
+  .admin-profile .btn{display:none}
+}
+
+@media (max-width:900px){
+  :root{--sidebar:260px}
+  .sidebar{
+    transform:translateX(-100%);
+    transition:transform .24s ease;
+    box-shadow:0 22px 55px rgba(4,22,42,.32);
+  }
+  body.sidebar-open .sidebar{transform:translateX(0)}
+  .sidebar-overlay{
+    display:block;
+    position:fixed;
+    inset:0;
+    z-index:29;
+    background:rgba(4,17,32,.42);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .24s ease;
+  }
+  body.sidebar-open .sidebar-overlay{opacity:1;pointer-events:auto}
+  .topbar{left:0;padding:0 12px}
+  .main{margin-left:0}
+  .menu-btn{display:grid}
+  .global-search{width:auto;flex:1}
+  .kbd{display:none}
+  .admin-profile>div:not(.avatar),.admin-profile form,.admin-profile>a{display:none}
+  .top-actions{gap:6px}
+}
+
+@media (max-width:600px){
+  .topbar{height:62px}
+  :root{--topbar:62px}
+  .global-search{height:38px;padding:0 10px}
+  .global-search input{font-size:13px}
+  .bell{width:36px;height:36px}
+  .avatar{width:34px;height:34px;font-size:12px}
+  .page{padding:16px 12px 12px}
+}

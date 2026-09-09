@@ -1,3 +1,104 @@
 {% extends "backoffice/base.html" %}
+{% load static %}
 {% block title %}Content Pages | TechBari Admin{% endblock %}
-{% block content %}<section class="page"><div class="page-head"><div><h1>Terms / Privacy / Return / Shipping</h1><p>Manage customer-facing policy content and page SEO.</p></div><a class="btn" href="{% url 'backoffice:settings' %}">Store Settings</a></div><div class="card table-card"><div class="table-wrap"><table><thead><tr><th>Page</th><th>Slug</th><th>Published</th><th>Updated</th><th>Action</th></tr></thead><tbody>{% for page in content_pages %}<tr><td><strong>{{ page.title }}</strong></td><td>{{ page.slug }}</td><td>{% if page.is_published %}<span class="badge green">Published</span>{% else %}<span class="badge red">Hidden</span>{% endif %}</td><td>{{ page.updated_at }}</td><td><a class="btn btn-small" href="{% url 'backoffice:cms_content_page_edit' page.id %}">Edit</a></td></tr>{% endfor %}</tbody></table></div></div></section>{% endblock %}
+{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-content-pages.css' %}?v=3.0.1">{% endblock %}
+{% block content %}
+<section class="page content-pages-ui">
+  <div class="cp-breadcrumbs">
+    <a href="{% url 'backoffice:dashboard' %}">Home</a><span>›</span>
+    <a href="{% url 'backoffice:settings' %}">CMS / Store Settings</a><span>›</span>
+    <span>Content Pages</span>
+  </div>
+
+  <div class="cp-head">
+    <div class="cp-title">
+      <span class="cp-title-icon"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6"/></svg></span>
+      <div>
+        <h1>Content Pages</h1>
+        <p>Manage Terms, Privacy, Return / Refund and Shipping policy content and page SEO.</p>
+      </div>
+    </div>
+    <a class="cp-back-btn" href="{% url 'backoffice:settings' %}"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Store Settings</a>
+  </div>
+
+  <div class="cp-layout">
+    <article class="cp-panel cp-list-panel">
+      <div class="cp-panel-head"><strong>Policy Pages</strong><span>{{ content_pages|length }} total</span></div>
+      {% if content_pages %}
+      <div class="cp-list" data-cp-list>
+        {% for page in content_pages %}
+        <button type="button" class="cp-page-item{% if forloop.first %} active{% endif %}" data-cp-item>
+          <span class="cp-page-icon"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6"/></svg></span>
+          <span class="cp-page-copy"><strong>{{ page.title }}</strong><small>/{{ page.slug }}/</small></span>
+          <span class="cp-live{% if not page.is_published %} hidden{% endif %}">{% if page.is_published %}Live{% else %}Hidden{% endif %}</span>
+          <span class="cp-chevron">›</span>
+          <span class="cp-source" hidden>
+            <span data-title>{{ page.title }}</span>
+            <span data-slug>{{ page.slug }}</span>
+            <span data-status>{% if page.is_published %}Published{% else %}Hidden{% endif %}</span>
+            <span data-seo-title>{{ page.seo_title|default:page.title }}</span>
+            <span data-updated>{{ page.updated_at|date:"M d, Y" }}</span>
+            <span data-body>{{ page.body }}</span>
+            <span data-edit-url>{% url 'backoffice:cms_content_page_edit' page.id %}</span>
+            <span data-storefront-url>/{{ page.slug }}/</span>
+          </span>
+        </button>
+        {% endfor %}
+      </div>
+      {% else %}<div class="cp-empty">No content pages found.</div>{% endif %}
+    </article>
+
+    <article class="cp-panel">
+      <div class="cp-selected-head">
+        <h2>Selected Page</h2>
+        <span class="cp-selected-status" data-cp-status>Published</span>
+      </div>
+      <div class="cp-selected-body">
+        {% if content_pages %}
+        <div class="cp-selected-top">
+          <div class="cp-selected-title"><h3 data-cp-title>{{ content_pages.0.title }}</h3><p data-cp-slug>/{{ content_pages.0.slug }}/</p></div>
+        </div>
+
+        <div class="cp-meta-grid">
+          <div class="cp-meta"><span>SEO Title</span><strong data-cp-seo>{{ content_pages.0.seo_title|default:content_pages.0.title }}</strong></div>
+          <div class="cp-meta"><span>Last Updated</span><strong data-cp-updated>{{ content_pages.0.updated_at|date:"M d, Y" }}</strong></div>
+        </div>
+
+        <div class="cp-preview">
+          <div class="cp-preview-top"><span>TechBari — Smart Tech. Better Everyday.</span><span>support@techbari.com</span></div>
+          <div class="cp-preview-nav"><strong>TechBari</strong><span>Products</span><span>Track Order</span><span>Contact</span></div>
+          <div class="cp-preview-content"><h4 data-cp-preview-title>{{ content_pages.0.title }}</h4><p data-cp-body>{{ content_pages.0.body|default:"No page content has been added yet." }}</p></div>
+        </div>
+
+        <div class="cp-actions">
+          <a class="cp-btn-outline" data-cp-storefront href="/{{ content_pages.0.slug }}/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>Open Storefront</a>
+          <a class="cp-btn-primary" data-cp-edit href="{% url 'backoffice:cms_content_page_edit' content_pages.0.id %}"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>Edit Content &amp; SEO</a>
+        </div>
+        {% else %}<div class="cp-empty">Select a content page to preview it.</div>{% endif %}
+      </div>
+    </article>
+  </div>
+</section>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function(){
+  const root=document.querySelector('.content-pages-ui');
+  if(!root)return;
+  const items=[...root.querySelectorAll('[data-cp-item]')];
+  if(!items.length)return;
+  const out={
+    title:root.querySelector('[data-cp-title]'),slug:root.querySelector('[data-cp-slug]'),status:root.querySelector('[data-cp-status]'),seo:root.querySelector('[data-cp-seo]'),updated:root.querySelector('[data-cp-updated]'),previewTitle:root.querySelector('[data-cp-preview-title]'),body:root.querySelector('[data-cp-body]'),edit:root.querySelector('[data-cp-edit]'),storefront:root.querySelector('[data-cp-storefront]')
+  };
+  function pick(item){
+    items.forEach(x=>x.classList.toggle('active',x===item));
+    const src=item.querySelector('.cp-source');
+    const read=k=>src.querySelector(`[data-${k}]`)?.textContent.trim()||'';
+    const title=read('title'),slug=read('slug'),status=read('status'),editUrl=read('edit-url'),storefrontUrl=read('storefront-url');
+    out.title.textContent=title;out.slug.textContent=`/${slug}/`;out.status.textContent=status;out.status.classList.toggle('hidden',status!=='Published');out.seo.textContent=read('seo-title')||title;out.updated.textContent=read('updated');out.previewTitle.textContent=title;out.body.textContent=read('body')||'No page content has been added yet.';out.edit.href=editUrl;out.storefront.href=storefrontUrl;
+  }
+  items.forEach(item=>item.addEventListener('click',()=>pick(item)));
+  pick(items[0]);
+})();
+</script>
+{% endblock %}
