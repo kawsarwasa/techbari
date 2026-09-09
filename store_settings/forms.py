@@ -1,7 +1,43 @@
+from pathlib import Path
+
 from django import forms
 from django.core.exceptions import ValidationError
+from PIL import Image, UnidentifiedImageError
 
 from .models import ContentPage, HeroBanner, HomeSection, StoreSettings
+
+
+MAX_CMS_IMAGE_BYTES = 2 * 1024 * 1024
+CMS_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+CMS_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+FAVICON_EXTENSIONS = CMS_IMAGE_EXTENSIONS | {".ico"}
+FAVICON_TYPES = CMS_IMAGE_TYPES | {"image/x-icon", "image/vnd.microsoft.icon"}
+
+
+def validate_cms_image(upload, *, favicon=False):
+    if not upload or not hasattr(upload, "size"):
+        return upload
+    if upload.size > MAX_CMS_IMAGE_BYTES:
+        raise ValidationError(f"{upload.name}: image must be 2MB or smaller.")
+    extensions = FAVICON_EXTENSIONS if favicon else CMS_IMAGE_EXTENSIONS
+    content_types = FAVICON_TYPES if favicon else CMS_IMAGE_TYPES
+    if Path(upload.name).suffix.lower() not in extensions:
+        raise ValidationError(f"{upload.name}: unsupported image extension.")
+    content_type = (getattr(upload, "content_type", "") or "").lower()
+    if content_type and content_type not in content_types:
+        raise ValidationError(f"{upload.name}: unsupported image content type.")
+    try:
+        position = upload.tell()
+        image = Image.open(upload)
+        image.verify()
+        upload.seek(position)
+    except (UnidentifiedImageError, OSError, ValueError):
+        try:
+            upload.seek(0)
+        except Exception:
+            pass
+        raise ValidationError(f"{upload.name}: invalid or corrupted image file.")
+    return upload
 
 
 def _style(form):
@@ -30,6 +66,12 @@ class StoreSettingsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         _style(self)
 
+    def clean_logo(self):
+        return validate_cms_image(self.cleaned_data.get("logo"))
+
+    def clean_favicon(self):
+        return validate_cms_image(self.cleaned_data.get("favicon"), favicon=True)
+
 
 class HeroBannerForm(forms.ModelForm):
     class Meta:
@@ -52,6 +94,9 @@ class HeroBannerForm(forms.ModelForm):
         if value and not (value.startswith("/") or value.startswith("https://") or value.startswith("http://")):
             raise ValidationError("Use a site-relative path starting with / or an http/https URL.")
         return value
+
+    def clean_image(self):
+        return validate_cms_image(self.cleaned_data.get("image"))
 
 
 class HomeSectionForm(forms.ModelForm):
