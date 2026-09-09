@@ -29,7 +29,6 @@
         }
         if (node.nodeType !== Node.ELEMENT_NODE) return;
 
-        // Browsers may create DIV blocks in contenteditable. Treat them as paragraphs.
         if (node.tagName === 'DIV') {
           const paragraph = document.createElement('p');
           while (node.firstChild) paragraph.appendChild(node.firstChild);
@@ -91,19 +90,23 @@
     const status = root.querySelector('[data-editor-status]');
     if (!source || !surface) return;
 
-    surface.innerHTML = initialHTML(source.value);
-    root.dataset.editorReady = 'true';
+    try {
+      surface.innerHTML = initialHTML(source.value);
+      document.execCommand('defaultParagraphSeparator', false, 'p');
+      root.dataset.editorReady = 'true';
+    } catch (error) {
+      console.error('TechBari CMS editor failed to initialize', error);
+      return;
+    }
 
-    try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (_) {}
-
-    const sync = () => {
-      const cleaned = sanitizeHTML(surface.innerHTML);
-      source.value = cleaned;
-      if (status) status.textContent = 'Ready to save';
+    const sync = (message) => {
+      source.value = sanitizeHTML(surface.innerHTML);
+      if (status && message) status.textContent = message;
     };
 
     const focusEditor = () => {
-      surface.focus({ preventScroll: true });
+      try { surface.focus({ preventScroll: true }); }
+      catch (_) { surface.focus(); }
     };
 
     root.querySelectorAll('[data-editor-command]').forEach((button) => {
@@ -121,10 +124,10 @@
           undo: 'undo',
           redo: 'redo',
         };
-        if (commandMap[command]) {
-          document.execCommand(commandMap[command], false, null);
-          sync();
-        }
+        const nativeCommand = commandMap[command];
+        if (!nativeCommand) return;
+        document.execCommand(nativeCommand, false, null);
+        sync('Unsaved changes');
       });
     });
 
@@ -132,26 +135,22 @@
       block.addEventListener('change', () => {
         focusEditor();
         const tag = String(block.value || 'P').toLowerCase();
-        document.execCommand('formatBlock', false, tag);
-        sync();
-        block.value = 'P';
+        document.execCommand('formatBlock', false, `<${tag}>`);
+        sync('Unsaved changes');
       });
     }
 
-    surface.addEventListener('input', () => {
-      if (status) status.textContent = 'Unsaved changes';
-      sync();
-    });
+    surface.addEventListener('input', () => sync('Unsaved changes'));
 
     surface.addEventListener('paste', (event) => {
       event.preventDefault();
       insertPlainText(event.clipboardData?.getData('text/plain') || '');
-      sync();
+      sync('Unsaved changes');
     });
 
-    surface.addEventListener('blur', sync);
-    source.closest('form')?.addEventListener('submit', sync);
-    sync();
+    surface.addEventListener('blur', () => sync('Ready to save'));
+    source.closest('form')?.addEventListener('submit', () => sync('Saving…'));
+    sync('Ready to save');
   }
 
   function boot() {
