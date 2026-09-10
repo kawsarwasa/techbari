@@ -1,1 +1,104 @@
-{% extends "backoffice/base.html" %}{% block title %}{{ page_title }} | TechBari Admin{% endblock %}{% block content %}<section class="page"><div class="page-head"><div><h1>{{ page_title }}</h1><p>Create or update a real staff account, role and optional direct grants.</p></div><a class="btn" href="{% url 'backoffice:users' %}">Back</a></div><form method="post" class="form-layout">{% csrf_token %}<div class="card form-card"><div class="section-head"><h3>Identity & Access</h3></div>{{ form.non_field_errors }}<div class="form-grid">{% for field in form %}<label class="field"><span>{{ field.label }}</span>{{ field }}{% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}{% if field.help_text %}<small>{{ field.help_text|safe }}</small>{% endif %}</label>{% endfor %}</div><button class="btn btn-primary" type="submit">Save User</button></div><aside class="card form-side"><div class="section-head"><h3>Security</h3></div><div class="info-body"><p>Role grants come from the selected system role. Extra permissions only add access for this individual user.</p><p>Deactivate an account to block future login immediately.</p><p>Passwords use Django's configured validators and are never stored in plain text.</p></div></aside></form></section>{% endblock %}
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}{{ page_title }} | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/user-form-refresh.css' %}?v=1.1.0">{% endblock %}
+{% block content %}
+<section class="page user-form-refresh">
+  <div class="uf-head">
+    <div>
+      <div class="uf-breadcrumbs"><a href="{% url 'backoffice:dashboard' %}">Dashboard</a><span>›</span><a href="{% url 'backoffice:users' %}">Users</a><span>›</span><strong>{{ page_title }}</strong></div>
+      <h1>{{ page_title }}</h1>
+      <p>{% if edited_user %}Update this staff account, role, branch and direct permissions.{% else %}Set up a new staff account, assign a role, and control access.{% endif %}</p>
+    </div>
+    <div class="uf-head-actions">
+      <a class="uf-btn" href="{% url 'backoffice:users' %}">Cancel</a>
+      <button class="uf-btn uf-btn-primary" type="submit" form="staffUserForm">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21h14a2 2 0 0 0 2-2V7l-4-4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+        Save User
+      </button>
+    </div>
+  </div>
+
+  <div class="uf-feature-grid">
+    <div class="uf-feature"><div class="uf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><h3>Create Team Access</h3><p>Add a staff member and give them the right system role and branch context.</p></div></div>
+    <div class="uf-feature green"><div class="uf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></div><div><h3>Keep Your Store Secure</h3><p>Use role-based access, direct grants and account activation controls.</p></div></div>
+    <div class="uf-feature purple"><div class="uf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 3v18h18"/><path d="M7 16v2M11 12v6M15 8v10M19 5v13"/></svg></div><div><h3>Improve Team Productivity</h3><p>Assign only the access each staff member needs to work effectively.</p></div></div>
+  </div>
+
+  <form method="post" id="staffUserForm">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="uf-alert">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="uf-form-grid">
+      <div class="uf-card">
+        <div class="uf-card-head"><div class="uf-small-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div><div><h2>Basic Information</h2><p>Enter the user's identity and staff contact details.</p></div></div>
+        <div class="uf-fields">
+          <div class="uf-field"><label for="{{ form.first_name.id_for_label }}">First Name</label>{{ form.first_name }}{% for error in form.first_name.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}</div>
+          <div class="uf-field"><label for="{{ form.last_name.id_for_label }}">Last Name</label>{{ form.last_name }}{% for error in form.last_name.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}</div>
+          <div class="uf-field"><label for="{{ form.email.id_for_label }}">Work Email *</label>{{ form.email }}{% for error in form.email.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}</div>
+          <div class="uf-field"><label for="{{ form.phone.id_for_label }}">Mobile Number</label>{{ form.phone }}{% for error in form.phone.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}</div>
+          <div class="uf-field full"><label for="{{ form.branch.id_for_label }}">Branch / Workplace</label>{{ form.branch }}{% for error in form.branch.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}<span class="uf-help">Leave blank to use the default Main Branch.</span></div>
+        </div>
+        <div class="uf-security-note" style="margin-top:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><div>Staff role permissions come from the selected system role. Extra permissions below only add individual access; they do not remove permissions already granted by the role.</div></div>
+      </div>
+
+      <div class="uf-stack">
+        <div class="uf-card">
+          <div class="uf-card-head"><div class="uf-small-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21a8 8 0 1 0-16 0"/><circle cx="12" cy="7" r="4"/></svg></div><div><h2>Role & Access Control</h2><p>Assign a system role and optional direct permission grants.</p></div></div>
+          <div class="uf-role-box">
+            <div class="uf-field"><label for="{{ form.role.id_for_label }}">Role Assignment *</label>{{ form.role }}{% for error in form.role.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}</div>
+            <div class="uf-toggle-line"><div class="uf-toggle-copy"><strong>Account Status</strong><span>Active users can sign in; inactive users are blocked.</span></div>{{ form.is_active }}</div>
+            {% for error in form.is_active.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}
+            <div class="uf-permissions">
+              <div class="uf-permissions-head">
+                <div><div class="uf-permissions-title">Extra User Permissions</div><div class="uf-permissions-sub">Optional direct grants in addition to the selected role.</div></div>
+                <div class="uf-selected-badge"><span data-permission-count>0</span> selected</div>
+              </div>
+              <div class="uf-permission-search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+                <input type="search" class="uf-permission-search" placeholder="Search permissions..." data-permission-search>
+              </div>
+              <div class="uf-permission-modules" data-permission-modules>
+                {% for group in form.permission_groups %}
+                <section class="uf-perm-module" data-permission-group data-group-name="{{ group.name|lower }}">
+                  <div class="uf-perm-module-head">
+                    <div class="uf-perm-module-title">
+                      <span class="uf-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+                      <div><strong>{{ group.name }}</strong><span><b data-group-count>0</b> selected</span></div>
+                    </div>
+                    <div class="uf-perm-module-actions"><button type="button" data-select-group>Select all</button><button type="button" data-clear-group>Clear</button></div>
+                  </div>
+                  <div class="uf-perm-items">
+                    {% for permission in group.permissions %}
+                    <label class="uf-perm-item" data-permission-item data-search="{{ permission.label|lower }} {{ permission.codename|lower }}">
+                      <input type="checkbox" name="{{ form.extra_permissions.html_name }}" value="{{ permission.id }}"{% if permission.checked %} checked{% endif %}>
+                      <span class="uf-check-ui"></span>
+                      <span class="uf-perm-copy"><strong>{{ permission.label }}</strong><small>{{ permission.codename }}</small></span>
+                    </label>
+                    {% endfor %}
+                  </div>
+                </section>
+                {% endfor %}
+              </div>
+              {% for error in form.extra_permissions.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="uf-card">
+          <div class="uf-card-head"><div class="uf-small-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div><h2>Login Settings</h2><p>Configure the username and password for this account.</p></div></div>
+          <div class="uf-fields">
+            <div class="uf-field full"><label for="{{ form.username.id_for_label }}">Username *</label>{{ form.username }}{% for error in form.username.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}</div>
+            <div class="uf-field"><label for="{{ form.password1.id_for_label }}">{% if edited_user %}New Password{% else %}Password *{% endif %}</label>{{ form.password1 }}{% for error in form.password1.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}</div>
+            <div class="uf-field"><label for="{{ form.password2.id_for_label }}">{% if edited_user %}Confirm New Password{% else %}Confirm Password *{% endif %}</label>{{ form.password2 }}{% for error in form.password2.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}</div>
+            {% if form.password1.help_text %}<div class="uf-field full"><span class="uf-help">{{ form.password1.help_text|safe }}</span></div>{% endif %}
+          </div>
+          <div class="uf-security-note" style="margin-top:16px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg><div>Passwords use Django's configured password validators and are stored securely as password hashes, never as plain text.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="uf-save-row"><a class="uf-btn" href="{% url 'backoffice:users' %}">Cancel</a><button class="uf-btn uf-btn-primary" type="submit">Save User</button></div>
+  </form>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/user-permissions-refresh.js' %}?v=1.0.0"></script>{% endblock %}

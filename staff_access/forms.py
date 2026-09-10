@@ -8,6 +8,25 @@ from .services import assign_system_role, ensure_profile
 
 CONTROL = {"class": "control"}
 
+EXTRA_PERMISSION_GROUPS = (
+    ("overview", "Dashboard & Notifications", ("view_dashboard", "view_notifications")),
+    ("catalog", "Catalog & Products", ("view_catalog", "manage_catalog")),
+    ("inventory", "Inventory & Serial / IMEI", ("view_inventory", "manage_inventory", "adjust_inventory", "view_serial", "manage_serial")),
+    ("purchasing", "Purchasing", ("view_purchasing", "manage_purchasing")),
+    ("customers", "Customers", ("view_customers", "manage_customers")),
+    ("sales", "Sales & POS", ("view_sales", "manage_sales", "use_pos")),
+    ("payments", "Payments", ("view_payments", "manage_payments")),
+    ("shipping", "Shipping & COD", ("view_shipping", "manage_shipping")),
+    ("returns", "Returns & Warranty", ("view_returns", "manage_returns")),
+    ("accounting", "Accounting", ("view_accounting", "manage_accounting", "manage_accounting_settings")),
+    ("expenses", "Expenses", ("view_expenses", "manage_expenses", "approve_expenses")),
+    ("reports", "Reports", ("view_reports",)),
+    ("marketing", "Marketing", ("view_marketing", "manage_marketing")),
+    ("integrations", "Integrations & Notifications", ("manage_integrations",)),
+    ("settings", "Store Settings", ("manage_store_settings",)),
+    ("users", "Users & Security", ("view_users", "manage_users", "view_audit_log")),
+)
+
 
 class StaffUserForm(forms.ModelForm):
     role = forms.ModelChoiceField(queryset=Group.objects.none(), widget=forms.Select(attrs=CONTROL))
@@ -44,6 +63,62 @@ class StaffUserForm(forms.ModelForm):
             self.fields["extra_permissions"].initial = self.instance.user_permissions.filter(
                 content_type__app_label="staff_access", content_type__model="staffprofile"
             )
+        self.permission_groups = self._build_permission_groups()
+
+    def _selected_extra_permission_ids(self):
+        if self.is_bound:
+            field_name = self.add_prefix("extra_permissions")
+            return {str(value) for value in self.data.getlist(field_name)}
+
+        initial = self.fields["extra_permissions"].initial
+        if initial is None:
+            return set()
+        if hasattr(initial, "values_list"):
+            return {str(value) for value in initial.values_list("pk", flat=True)}
+
+        selected = set()
+        for value in initial:
+            selected.add(str(getattr(value, "pk", value)))
+        return selected
+
+    def _build_permission_groups(self):
+        selected_ids = self._selected_extra_permission_ids()
+        permissions = list(self.fields["extra_permissions"].queryset)
+        by_codename = {permission.codename: permission for permission in permissions}
+        used = set()
+        groups = []
+
+        for key, name, codenames in EXTRA_PERMISSION_GROUPS:
+            items = []
+            for codename in codenames:
+                permission = by_codename.get(codename)
+                if not permission:
+                    continue
+                used.add(permission.pk)
+                items.append(
+                    {
+                        "id": permission.pk,
+                        "codename": permission.codename,
+                        "label": permission.name,
+                        "checked": str(permission.pk) in selected_ids,
+                    }
+                )
+            if items:
+                groups.append({"key": key, "name": name, "permissions": items})
+
+        other_items = [
+            {
+                "id": permission.pk,
+                "codename": permission.codename,
+                "label": permission.name,
+                "checked": str(permission.pk) in selected_ids,
+            }
+            for permission in permissions
+            if permission.pk not in used
+        ]
+        if other_items:
+            groups.append({"key": "other", "name": "Other Access", "permissions": other_items})
+        return groups
 
     def clean_email(self):
         email = self.cleaned_data.get("email", "").strip().lower()
