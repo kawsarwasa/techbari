@@ -1,43 +1,305 @@
 {% extends "backoffice/base.html" %}
-{% block title %}Notifications & Integrations | TechBari Admin{% endblock %}
+{% load static %}
+{% block title %}Integrations | TechBari Admin{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/integrations-refresh.css' %}?v=1.0.0">
+{% endblock %}
 {% block content %}
-<section class="page">
-  <div class="page-head">
-    <div><h1>Notifications & Integrations</h1><p>Configure delivery hooks and monitor the database outbox. Secrets stay in environment variables.</p></div>
-    <div class="head-actions"><a class="btn" href="{% url 'backoffice:notifications' %}">Notifications</a><form method="post" action="{% url 'integration_admin:integration_process' %}">{% csrf_token %}<button class="btn" type="submit">Process 20 Now</button></form></div>
+<section class="page ir-page">
+  <div class="ir-breadcrumb">
+    <a href="{% url 'backoffice:dashboard' %}">Dashboard</a>
+    <span>›</span>
+    <strong>Integrations</strong>
   </div>
 
-  <form method="post" class="card" style="padding:20px;margin-bottom:20px">{% csrf_token %}
-    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-    <h2>Operational notifications</h2>
-    <div class="form-grid">
-      <label>{{ form.email_enabled }} Email enabled</label><label>{{ form.sms_enabled }} SMS enabled</label><label>{{ form.whatsapp_enabled }} WhatsApp enabled</label>
-      <label>{{ form.notify_order_events }} Order events</label><label>{{ form.notify_payment_events }} Payment events</label><label>{{ form.notify_low_stock }} Low-stock alerts</label><label>{{ form.notify_shipping_events }} Shipping events</label>
-      <label>Admin alert email{{ form.admin_email }}{{ form.admin_email.errors }}</label><label>Admin phone{{ form.admin_phone }}{{ form.admin_phone.errors }}</label>
-      <label>SMS webhook URL{{ form.sms_webhook_url }}{{ form.sms_webhook_url.errors }}</label><label>WhatsApp webhook URL{{ form.whatsapp_webhook_url }}{{ form.whatsapp_webhook_url.errors }}</label>
+  <header class="ir-page-head">
+    <div>
+      <h1>Integrations</h1>
+      <p>Manage notifications, analytics, messaging and courier connections from one place.</p>
     </div>
-    <hr style="margin:24px 0">
-    <h2>Analytics</h2>
-    <div class="form-grid">
-      <label>{{ form.meta_pixel_enabled }} Meta Pixel</label><label>Meta Pixel ID{{ form.meta_pixel_id }}{{ form.meta_pixel_id.errors }}</label><label>{{ form.meta_capi_enabled }} Meta Conversions API</label>
-      <label>{{ form.ga4_enabled }} GA4 browser tracking</label><label>GA4 Measurement ID{{ form.ga4_measurement_id }}{{ form.ga4_measurement_id.errors }}</label><label>{{ form.ga4_server_enabled }} GA4 server Measurement Protocol purchase</label>
-      <label>{{ form.courier_api_enabled }} Courier API booking</label>
+    <div class="ir-head-actions">
+      <a class="ir-btn" href="{% url 'backoffice:notifications' %}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+        Notifications
+      </a>
+      <form method="post" action="{% url 'integration_admin:integration_process' %}">
+        {% csrf_token %}
+        <button class="ir-btn ir-btn-primary" type="submit">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5"/><path d="M6.1 9a7 7 0 0 1 11.3-2.1L20 11M4 13l2.6 4.1A7 7 0 0 0 17.9 15"/></svg>
+          Process 20 Now
+        </button>
+      </form>
     </div>
-    <div class="card" style="padding:14px;margin:18px 0;background:var(--surface-2,#f7f8fa)"><strong>Secrets are not stored here.</strong><p class="muted" style="margin:6px 0 0">Use .env for SMTP password, SMS/WhatsApp tokens, META_CAPI_ACCESS_TOKEN, GA4_API_SECRET and courier API/webhook secrets.</p></div>
-    <button class="btn btn-primary" type="submit">Save Integration Settings</button>
-  </form>
+  </header>
 
-  <div class="card" style="padding:20px;margin-bottom:20px">
-    <h2>Courier API providers</h2>
-    <p class="muted">Enable a courier in Shipping → Courier Providers. Configure environment variables as <code>COURIER_&lt;CODE&gt;_API_BASE_URL</code>, <code>COURIER_&lt;CODE&gt;_API_TOKEN</code>, optional <code>COURIER_&lt;CODE&gt;_CREATE_PATH</code>, and <code>COURIER_&lt;CODE&gt;_WEBHOOK_SECRET</code>.</p>
-    {% for courier in api_couriers %}<div class="summary-line"><span><strong>{{ courier.name }}</strong> ({{ courier.code }})</span><span class="badge">API enabled{% if courier.is_test_mode %} · test mode{% endif %}</span></div>{% empty %}<p class="muted">No courier provider has API enabled yet.</p>{% endfor %}
-  </div>
+  {% if messages %}
+    {% for message in messages %}<div class="ir-alert">{{ message }}</div>{% endfor %}
+  {% endif %}
 
-  <div class="card" style="padding:20px">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><div><h2>Recent delivery queue</h2><p class="muted">Cron command: <code>python manage.py process_integrations --limit 100</code></p></div></div>
-    <div class="table-wrap"><table><thead><tr><th>Created</th><th>Channel</th><th>Event</th><th>Reference</th><th>Status</th><th>Attempts</th><th>Error</th><th></th></tr></thead><tbody>
-      {% for row in recent_deliveries %}<tr><td>{{ row.created_at|date:"M d H:i" }}</td><td>{{ row.get_channel_display }}</td><td>{{ row.event_type }}</td><td>{{ row.reference_id|default:"—" }}</td><td><span class="badge">{{ row.get_status_display }}</span></td><td>{{ row.attempts }}</td><td style="max-width:320px;white-space:normal">{{ row.last_error|default:"—" }}</td><td>{% if row.status != 'sent' %}<form method="post" action="{% url 'integration_admin:integration_retry' row.id %}">{% csrf_token %}<button class="btn" type="submit">Retry</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="8" class="muted">No outbound deliveries yet.</td></tr>{% endfor %}
-    </tbody></table></div>
+  <div class="ir-shell">
+    <main class="ir-main">
+      <div class="ir-feature-grid">
+        <article class="ir-feature-card">
+          <div class="ir-feature-top">
+            <span class="ir-app-icon ir-app-meta">
+              <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 31c5-13 9-19 14-19 7 0 10 23 17 23 3 0 5-4 5-8 0-8-5-15-11-15-8 0-13 14-18 23"/></svg>
+            </span>
+            <div class="ir-feature-title">
+              <h2>Meta Pixel &amp; CAPI</h2>
+              {% if integration_settings.meta_pixel_enabled or integration_settings.meta_capi_enabled %}
+                <span class="ir-status ir-status-green"><i></i>Enabled</span>
+              {% else %}
+                <span class="ir-status ir-status-gray"><i></i>Disabled</span>
+              {% endif %}
+            </div>
+          </div>
+          <p>Browser and server-side Meta conversion tracking.</p>
+          <div class="ir-feature-meta">
+            <span>Pixel ID</span>
+            <strong>{{ integration_settings.meta_pixel_id|default:"Not configured" }}</strong>
+          </div>
+          <a class="ir-manage-link" href="#analytics-section">Manage <span>→</span></a>
+        </article>
+
+        <article class="ir-feature-card">
+          <div class="ir-feature-top">
+            <span class="ir-app-icon ir-app-ga">
+              <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 38V27M23 38V17M36 38V8"/></svg>
+            </span>
+            <div class="ir-feature-title">
+              <h2>Google Analytics 4</h2>
+              {% if integration_settings.ga4_enabled or integration_settings.ga4_server_enabled %}
+                <span class="ir-status ir-status-green"><i></i>Enabled</span>
+              {% else %}
+                <span class="ir-status ir-status-gray"><i></i>Disabled</span>
+              {% endif %}
+            </div>
+          </div>
+          <p>Measure storefront analytics and purchase events.</p>
+          <div class="ir-feature-meta">
+            <span>Measurement ID</span>
+            <strong>{{ integration_settings.ga4_measurement_id|default:"Not configured" }}</strong>
+          </div>
+          <a class="ir-manage-link" href="#analytics-section">Manage <span>→</span></a>
+        </article>
+
+        <article class="ir-feature-card">
+          <div class="ir-feature-top">
+            <span class="ir-app-icon ir-app-courier">
+              <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 15h23v20H6zM29 22h7l6 7v6H29z"/><circle cx="14" cy="38" r="4"/><circle cx="35" cy="38" r="4"/></svg>
+            </span>
+            <div class="ir-feature-title">
+              <h2>Courier API</h2>
+              {% if integration_settings.courier_api_enabled %}
+                <span class="ir-status ir-status-green"><i></i>Enabled</span>
+              {% else %}
+                <span class="ir-status ir-status-gray"><i></i>Disabled</span>
+              {% endif %}
+            </div>
+          </div>
+          <p>Automated courier booking for API-enabled providers.</p>
+          <div class="ir-feature-meta">
+            <span>API Providers</span>
+            <strong>{{ api_couriers|length }} configured</strong>
+          </div>
+          <a class="ir-manage-link" href="#courier-section">Manage <span>→</span></a>
+        </article>
+      </div>
+
+      <form method="post" id="integrationSettingsForm" class="ir-settings-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="ir-alert ir-alert-error">{{ form.non_field_errors }}</div>{% endif %}
+
+        <div class="ir-section-grid">
+          <section class="ir-panel" id="notifications-section">
+            <div class="ir-panel-head">
+              <span class="ir-section-icon ir-blue">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v12H7l-3 3V5z"/><path d="M8 9h8M8 13h5"/></svg>
+              </span>
+              <div><h2>Messaging &amp; Notifications</h2><p>Choose how TechBari sends operational alerts.</p></div>
+            </div>
+
+            <div class="ir-integration-list">
+              <div class="ir-integration-row">
+                <span class="ir-mini-icon ir-email"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg></span>
+                <div class="ir-row-copy"><strong>Email</strong><small>Transactional and admin email delivery</small></div>
+                <span class="ir-row-state {% if integration_settings.email_enabled %}is-on{% endif %}">{% if integration_settings.email_enabled %}Enabled{% else %}Disabled{% endif %}</span>
+                <label class="ir-switch" aria-label="Email enabled">{{ form.email_enabled }}<span></span></label>
+              </div>
+              <div class="ir-integration-row">
+                <span class="ir-mini-icon ir-sms"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h5M10 17h4"/></svg></span>
+                <div class="ir-row-copy"><strong>SMS</strong><small>Send order and operational SMS messages</small></div>
+                <span class="ir-row-state {% if integration_settings.sms_enabled %}is-on{% endif %}">{% if integration_settings.sms_enabled %}Enabled{% else %}Disabled{% endif %}</span>
+                <label class="ir-switch" aria-label="SMS enabled">{{ form.sms_enabled }}<span></span></label>
+              </div>
+              <div class="ir-integration-row">
+                <span class="ir-mini-icon ir-whatsapp"><svg viewBox="0 0 24 24"><path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.4-4A8 8 0 1 1 20 11.5z"/><path d="M9 8.5c.5 2.5 2 4 4.5 5"/></svg></span>
+                <div class="ir-row-copy"><strong>WhatsApp</strong><small>Customer updates through your webhook</small></div>
+                <span class="ir-row-state {% if integration_settings.whatsapp_enabled %}is-on{% endif %}">{% if integration_settings.whatsapp_enabled %}Enabled{% else %}Disabled{% endif %}</span>
+                <label class="ir-switch" aria-label="WhatsApp enabled">{{ form.whatsapp_enabled }}<span></span></label>
+              </div>
+            </div>
+
+            <div class="ir-config-grid">
+              <label><span>Admin alert email</span>{{ form.admin_email }}{{ form.admin_email.errors }}</label>
+              <label><span>Admin phone</span>{{ form.admin_phone }}{{ form.admin_phone.errors }}</label>
+              <label class="ir-wide"><span>SMS webhook URL</span>{{ form.sms_webhook_url }}{{ form.sms_webhook_url.errors }}</label>
+              <label class="ir-wide"><span>WhatsApp webhook URL</span>{{ form.whatsapp_webhook_url }}{{ form.whatsapp_webhook_url.errors }}</label>
+            </div>
+          </section>
+
+          <section class="ir-panel" id="analytics-section">
+            <div class="ir-panel-head">
+              <span class="ir-section-icon ir-blue">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V5M16 20v-7M22 20H2"/></svg>
+              </span>
+              <div><h2>Marketing &amp; Analytics</h2><p>Track traffic, conversions and purchase events.</p></div>
+            </div>
+
+            <div class="ir-integration-list">
+              <div class="ir-integration-row">
+                <span class="ir-mini-icon ir-meta"><svg viewBox="0 0 24 24"><path d="M3 16c2.5-6 4.5-9 7-9 3.5 0 5 10 8.5 10 1.5 0 2.5-2 2.5-4 0-4-2.5-7-5.5-7-4 0-6.5 7-9 11"/></svg></span>
+                <div class="ir-row-copy"><strong>Meta Pixel</strong><small>Browser conversion tracking</small></div>
+                <span class="ir-row-state {% if integration_settings.meta_pixel_enabled %}is-on{% endif %}">{% if integration_settings.meta_pixel_enabled %}Enabled{% else %}Disabled{% endif %}</span>
+                <label class="ir-switch">{{ form.meta_pixel_enabled }}<span></span></label>
+              </div>
+              <div class="ir-integration-row">
+                <span class="ir-mini-icon ir-capi"><svg viewBox="0 0 24 24"><path d="M5 12h4l2-5 3 10 2-5h3"/></svg></span>
+                <div class="ir-row-copy"><strong>Meta Conversions API</strong><small>Server-side Meta purchase events</small></div>
+                <span class="ir-row-state {% if integration_settings.meta_capi_enabled %}is-on{% endif %}">{% if integration_settings.meta_capi_enabled %}Enabled{% else %}Disabled{% endif %}</span>
+                <label class="ir-switch">{{ form.meta_capi_enabled }}<span></span></label>
+              </div>
+              <div class="ir-integration-row">
+                <span class="ir-mini-icon ir-ga"><svg viewBox="0 0 24 24"><path d="M5 19v-6M12 19V8M19 19V4"/></svg></span>
+                <div class="ir-row-copy"><strong>GA4 Browser Tracking</strong><small>Storefront analytics in the browser</small></div>
+                <span class="ir-row-state {% if integration_settings.ga4_enabled %}is-on{% endif %}">{% if integration_settings.ga4_enabled %}Enabled{% else %}Disabled{% endif %}</span>
+                <label class="ir-switch">{{ form.ga4_enabled }}<span></span></label>
+              </div>
+              <div class="ir-integration-row">
+                <span class="ir-mini-icon ir-server"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="6" rx="2"/><rect x="4" y="14" width="16" height="6" rx="2"/><path d="M8 7h.01M8 17h.01"/></svg></span>
+                <div class="ir-row-copy"><strong>GA4 Server Events</strong><small>Measurement Protocol purchase tracking</small></div>
+                <span class="ir-row-state {% if integration_settings.ga4_server_enabled %}is-on{% endif %}">{% if integration_settings.ga4_server_enabled %}Enabled{% else %}Disabled{% endif %}</span>
+                <label class="ir-switch">{{ form.ga4_server_enabled }}<span></span></label>
+              </div>
+            </div>
+
+            <div class="ir-config-grid">
+              <label><span>Meta Pixel ID</span>{{ form.meta_pixel_id }}{{ form.meta_pixel_id.errors }}</label>
+              <label><span>GA4 Measurement ID</span>{{ form.ga4_measurement_id }}{{ form.ga4_measurement_id.errors }}</label>
+            </div>
+          </section>
+
+          <section class="ir-panel">
+            <div class="ir-panel-head">
+              <span class="ir-section-icon ir-purple">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+              </span>
+              <div><h2>Event Notifications</h2><p>Choose which business events create outbound notifications.</p></div>
+            </div>
+            <div class="ir-event-grid">
+              <label class="ir-event-card">{{ form.notify_order_events }}<span class="ir-event-icon ir-blue"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6"/></svg></span><span><strong>Order Events</strong><small>Order lifecycle updates</small></span></label>
+              <label class="ir-event-card">{{ form.notify_payment_events }}<span class="ir-event-icon ir-green"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg></span><span><strong>Payment Events</strong><small>Payment status changes</small></span></label>
+              <label class="ir-event-card">{{ form.notify_low_stock }}<span class="ir-event-icon ir-orange"><svg viewBox="0 0 24 24"><path d="m12 3 9 16H3z"/><path d="M12 9v4M12 17h.01"/></svg></span><span><strong>Low Stock</strong><small>Inventory alert notifications</small></span></label>
+              <label class="ir-event-card">{{ form.notify_shipping_events }}<span class="ir-event-icon ir-purple"><svg viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span><span><strong>Shipping Events</strong><small>Shipment status updates</small></span></label>
+            </div>
+          </section>
+
+          <section class="ir-panel" id="courier-section">
+            <div class="ir-panel-head ir-panel-head-split">
+              <div class="ir-panel-title-wrap">
+                <span class="ir-section-icon ir-blue"><svg viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>
+                <div><h2>Shipping &amp; Fulfillment</h2><p>Courier API booking and configured providers.</p></div>
+              </div>
+              <label class="ir-switch ir-switch-labeled"><span class="ir-switch-label">Courier API</span>{{ form.courier_api_enabled }}<span></span></label>
+            </div>
+
+            <div class="ir-courier-list">
+              {% for courier in api_couriers %}
+              <div class="ir-courier-row">
+                <span class="ir-courier-logo">{{ courier.code|slice:":1"|upper }}</span>
+                <div><strong>{{ courier.name }}</strong><small>{{ courier.code }}{% if courier.is_test_mode %} · Test mode{% else %} · Live mode{% endif %}</small></div>
+                <span class="ir-status ir-status-green"><i></i>API enabled</span>
+              </div>
+              {% empty %}
+              <div class="ir-empty">No courier provider has API enabled yet. Enable one from Shipping → Courier Providers.</div>
+              {% endfor %}
+            </div>
+          </section>
+        </div>
+
+        <div class="ir-secret-note">
+          <span class="ir-secret-icon"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.5 8 10 4.6-1.5 8-5 8-10V6z"/><path d="m9 12 2 2 4-5"/></svg></span>
+          <div><strong>Secrets stay outside the dashboard</strong><p>SMTP passwords, SMS/WhatsApp tokens, META_CAPI_ACCESS_TOKEN, GA4_API_SECRET and courier API/webhook secrets remain in environment variables.</p></div>
+        </div>
+
+        <div class="ir-save-row">
+          <div><strong>Integration Settings</strong><span>Last updated {{ integration_settings.updated_at|date:"M d, Y · h:i A" }}</span></div>
+          <button class="ir-btn ir-btn-primary" type="submit">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l2 2v14H5z"/><path d="M8 4v6h8V4M8 17h8"/></svg>
+            Save Integration Settings
+          </button>
+        </div>
+      </form>
+
+      <section class="ir-panel ir-queue-full">
+        <div class="ir-panel-head ir-panel-head-split">
+          <div class="ir-panel-title-wrap">
+            <span class="ir-section-icon ir-blue"><svg viewBox="0 0 24 24"><path d="M20 6v5h-5M4 18v-5h5"/><path d="M6.1 9a7 7 0 0 1 11.3-2.1L20 11M4 13l2.6 4.1A7 7 0 0 0 17.9 15"/></svg></span>
+            <div><h2>Recent Delivery Queue</h2><p>Latest outbound messages from the database outbox.</p></div>
+          </div>
+          <code>process_integrations --limit 100</code>
+        </div>
+        <div class="ir-table-wrap">
+          <table class="ir-table">
+            <thead><tr><th>Created</th><th>Channel</th><th>Event</th><th>Reference</th><th>Status</th><th>Attempts</th><th>Error</th><th></th></tr></thead>
+            <tbody>
+              {% for row in recent_deliveries %}
+              <tr>
+                <td>{{ row.created_at|date:"M d H:i" }}</td>
+                <td>{{ row.get_channel_display }}</td>
+                <td>{{ row.event_type }}</td>
+                <td>{{ row.reference_id|default:"—" }}</td>
+                <td><span class="ir-queue-status is-{{ row.status }}">{{ row.get_status_display }}</span></td>
+                <td>{{ row.attempts }}</td>
+                <td class="ir-error-cell">{{ row.last_error|default:"—" }}</td>
+                <td>{% if row.status != 'sent' %}<form method="post" action="{% url 'integration_admin:integration_retry' row.id %}">{% csrf_token %}<button class="ir-small-btn" type="submit">Retry</button></form>{% endif %}</td>
+              </tr>
+              {% empty %}<tr><td colspan="8" class="ir-empty-cell">No outbound deliveries yet.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <aside class="ir-side">
+      <section class="ir-side-card">
+        <div class="ir-side-head"><div><h2>Connection Health</h2><p>Current configuration status</p></div><span class="ir-live-dot"></span></div>
+        <div class="ir-health-grid">
+          <div class="ir-health-box is-green"><span class="ir-health-icon"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg></span><strong>Email</strong><small>{% if integration_settings.email_enabled %}Enabled{% else %}Disabled{% endif %}</small></div>
+          <div class="ir-health-box {% if integration_settings.meta_pixel_enabled or integration_settings.meta_capi_enabled %}is-green{% else %}is-gray{% endif %}"><span class="ir-health-icon"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg></span><strong>Meta</strong><small>{% if integration_settings.meta_pixel_enabled or integration_settings.meta_capi_enabled %}Enabled{% else %}Disabled{% endif %}</small></div>
+          <div class="ir-health-box {% if integration_settings.ga4_enabled or integration_settings.ga4_server_enabled %}is-green{% else %}is-gray{% endif %}"><span class="ir-health-icon"><svg viewBox="0 0 24 24"><path d="M5 19v-6M12 19V8M19 19V4"/></svg></span><strong>GA4</strong><small>{% if integration_settings.ga4_enabled or integration_settings.ga4_server_enabled %}Enabled{% else %}Disabled{% endif %}</small></div>
+          <div class="ir-health-box {% if integration_settings.courier_api_enabled %}is-green{% else %}is-gray{% endif %}"><span class="ir-health-icon"><svg viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/></svg></span><strong>Courier</strong><small>{% if integration_settings.courier_api_enabled %}Enabled{% else %}Disabled{% endif %}</small></div>
+        </div>
+      </section>
+
+      <section class="ir-side-card">
+        <div class="ir-side-head"><div><h2>Recent Logs</h2><p>Latest outbound activity</p></div></div>
+        <div class="ir-log-list">
+          {% for row in recent_deliveries|slice:":8" %}
+          <div class="ir-log-row">
+            <span class="ir-log-dot is-{{ row.status }}"></span>
+            <div><strong>{{ row.get_channel_display }}</strong><small>{{ row.event_type }}{% if row.last_error %} · {{ row.last_error|truncatechars:34 }}{% endif %}</small></div>
+            <time>{{ row.created_at|date:"M d" }}</time>
+          </div>
+          {% empty %}<div class="ir-empty">No delivery activity yet.</div>{% endfor %}
+        </div>
+      </section>
+
+      <section class="ir-side-card ir-help-card">
+        <span class="ir-help-icon"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-4 12.7V19h8v-3.3A7 7 0 0 0 12 3z"/><path d="M9 22h6M9 11h6"/></svg></span>
+        <div><h2>Integration checklist</h2><p>Keep IDs in the dashboard, but keep API secrets and private tokens in your environment configuration.</p></div>
+      </section>
+    </aside>
   </div>
 </section>
 {% endblock %}
