@@ -2,6 +2,7 @@
 {% load static demo %}
 {% block title %}Checkout - {{ store_settings.store_name }}{% endblock %}
 {% block body_attributes %} data-checkout-backend="v2.6.0"{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'store/css/checkout-searchable-select.css' %}?v=1.0.0">{% endblock %}
 {% block content %}
 <main class="page"><div class="container">
 <div style="display:flex;justify-content:space-between;gap:16px"><div><h1 class="page-title">Checkout</h1><p class="page-subtitle">Complete your order securely and easily</p></div>{% include "storefront/includes/breadcrumbs/checkout.html" %}</div>
@@ -62,4 +63,7 @@
 </form>
 </div></main>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'store/js/checkout-v160.js' %}?v=1.6.0"></script>{% endblock %}
+{% block extra_js %}
+{{ checkout_bd_locations|json_script:"checkoutBdLocations" }}
+<script src="{% static 'store/js/checkout-v160.js' %}?v=1.6.2"></script>
+{% endblock %}

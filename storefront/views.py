@@ -9,6 +9,7 @@ from promotions.services import campaign_attribution_for_request
 from sales.models import SalesOrder
 from store_settings.models import ContentPage
 
+from .bd_locations import BD_LOCATIONS
 from .checkout_services import CheckoutError, checkout_success_url, create_checkout_token, place_checkout_order, verify_success_token
 from .context import catalog_context
 from .forms import CheckoutForm
@@ -89,7 +90,12 @@ def checkout(request):
             else:
                 initial.update(address=customer.address, district=customer.district, upazila=customer.city)
         form = CheckoutForm(initial=initial)
-    context.update(checkout_form=form, checkout_backend=True, checkout_customer_account=account)
+    context.update(
+        checkout_form=form,
+        checkout_backend=True,
+        checkout_customer_account=account,
+        checkout_bd_locations=BD_LOCATIONS,
+    )
     return render(request, "storefront/pages/checkout.html", context)
 
 
