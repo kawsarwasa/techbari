@@ -1,35 +1,45 @@
 {% extends "backoffice/base.html" %}
+{% load static %}
 {% block title %}Create Shipment | TechBari Admin{% endblock %}
 {% block content %}
 <section class="page">
   <div class="page-head"><div><h1>Create Shipment</h1><p>Create one fulfillment shipment for a confirmed or processing Sales Order.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:shipping' %}">Back to Shipping</a></div></div>
   {% if form.non_field_errors %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ form.non_field_errors }}</div>{% endif %}
-  <form method="post" class="form-layout">{% csrf_token %}
+  <form method="post" class="form-layout" id="shipmentAddForm" data-bound="{% if form.is_bound %}1{% else %}0{% endif %}">{% csrf_token %}
     <div class="card form-card">
       <div class="section-head"><h3>Shipment Information</h3></div>
       <div class="form-grid">
         <label class="field"><span>Sales Order</span>{{ form.order }}{% for e in form.order.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
         <label class="field"><span>Courier Provider</span>{{ form.courier }}{% for e in form.courier.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
         <label class="field"><span>Shipment Date</span>{{ form.shipment_date }}{% for e in form.shipment_date.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>Expected Delivery</span>{{ form.expected_delivery_date }}{% for e in form.expected_delivery_date.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>Tracking ID</span>{{ form.tracking_id }}{% for e in form.tracking_id.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>Courier Reference</span>{{ form.courier_reference }}{% for e in form.courier_reference.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
+        <label class="field"><span>Expected Delivery <small class="muted">(optional)</small></span>{{ form.expected_delivery_date }}{% for e in form.expected_delivery_date.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
+        <label class="field"><span>Tracking ID <small class="muted">(optional / courier provided)</small></span>{{ form.tracking_id }}<small class="muted">Enter this manually after the courier gives you a tracking ID, unless a courier API is integrated later.</small>{% for e in form.tracking_id.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
+        <label class="field"><span>Courier Reference <small class="muted">(optional)</small></span>{{ form.courier_reference }}<small class="muted">Use the courier's own booking/reference number when available.</small>{% for e in form.courier_reference.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
         <label class="field"><span>Parcel Count</span>{{ form.parcel_count }}{% for e in form.parcel_count.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>Weight (kg)</span>{{ form.weight_kg }}{% for e in form.weight_kg.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>Courier Fee</span>{{ form.courier_fee }}{% for e in form.courier_fee.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>COD Expected</span>{{ form.cod_expected }}{% for e in form.cod_expected.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
+        <label class="field"><span>Weight (kg) <small class="muted">(optional)</small></span>{{ form.weight_kg }}{% for e in form.weight_kg.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
+
+        <label class="field"><span>Customer Shipping Charge <small class="muted">(order revenue)</small></span><input class="control" id="shipmentCustomerShippingCharge" type="text" value="—" readonly aria-readonly="true"><small class="muted">What the customer is charged for delivery on the Sales Order.</small></label>
+        <label class="field"><span>Courier Fee <small class="muted">(business expense)</small></span>{{ form.courier_fee }}<small class="muted">Auto-filled from the selected courier's default fee. You can edit it when the courier charges a different amount.</small>{% for e in form.courier_fee.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
+
+        <label class="field"><span>Order Outstanding <small class="muted">(read only)</small></span><input class="control" id="shipmentOrderOutstanding" type="text" value="—" readonly aria-readonly="true"><small class="muted">The unpaid balance remaining on the selected Sales Order.</small></label>
+        <label class="field"><span>COD Expected <small class="muted">(auto)</small></span>{{ form.cod_expected }}<small class="muted" id="shipmentCodNote">Select a Sales Order to calculate the amount the courier should collect.</small>{% for e in form.cod_expected.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
       </div>
       <label class="field" style="margin-top:14px"><span>Notes</span>{{ form.notes }}</label>
     </div>
     <aside class="card form-side">
       <div class="section-head"><h3>Fulfillment Rules</h3></div>
       <div class="info-body">
-        <div class="soft-note">Leave COD Expected blank to use the Sales Order's current outstanding amount. Leave Courier Fee blank to use the provider default.</div>
+        <div class="soft-note"><strong>COD Expected is automatic.</strong> It always uses the selected Sales Order's current outstanding balance. A fully paid order will show ৳0 and does not require courier COD collection.</div>
+        <p><strong>Customer Shipping Charge</strong> is revenue charged to the customer. <strong>Courier Fee</strong> is what the courier charges your business, so the two amounts may be different.</p>
+        <p>Tracking ID and Courier Reference are optional and are entered manually when the courier provides them. They can later be automated through courier API integration.</p>
         <p>Creating a shipment does not deduct inventory. Inventory is issued only when the parcel is handed to the courier.</p>
-        <p>v1.9.0 intentionally keeps one fulfillment shipment per order so the existing Sales inventory issue remains atomic and consistent.</p>
+        <p>One fulfillment shipment is currently kept per order so the existing Sales inventory issue remains atomic and consistent.</p>
         <button class="btn btn-primary" type="submit">Create Shipment</button>
       </div>
     </aside>
   </form>
 </section>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'admin/js/shipment-add-v191.js' %}?v=1.0.0"></script>
 {% endblock %}
