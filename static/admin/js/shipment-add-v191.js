@@ -8,6 +8,12 @@
     const customerShipping = document.getElementById('shipmentCustomerShippingCharge');
     const orderOutstanding = document.getElementById('shipmentOrderOutstanding');
     const codNote = document.getElementById('shipmentCodNote');
+    const headerOrder = document.getElementById('shipmentHeaderOrder');
+    const summaryOrder = document.getElementById('shipmentSummaryOrder');
+    const summaryTotal = document.getElementById('shipmentSummaryTotal');
+    const summaryShipping = document.getElementById('shipmentSummaryShipping');
+    const summaryOutstanding = document.getElementById('shipmentSummaryOutstanding');
+    const summaryCod = document.getElementById('shipmentSummaryCod');
     if (!form || !orderSelect || !courierSelect) return;
 
     const money = (value) => {
@@ -23,10 +29,18 @@
       const option = selectedOption(orderSelect);
       const outstanding = option?.dataset.outstanding ?? '';
       const shippingCharge = option?.dataset.shippingCharge ?? '';
+      const grandTotal = option?.dataset.grandTotal ?? '';
+      const orderLabel = option?.value ? option.textContent.trim() : '—';
 
       if (customerShipping) customerShipping.value = option?.value ? money(shippingCharge) : '—';
       if (orderOutstanding) orderOutstanding.value = option?.value ? money(outstanding) : '—';
       if (codExpected) codExpected.value = option?.value ? Number(outstanding || 0).toFixed(2) : '';
+      if (headerOrder) headerOrder.textContent = orderLabel;
+      if (summaryOrder) summaryOrder.textContent = orderLabel;
+      if (summaryTotal) summaryTotal.textContent = option?.value ? money(grandTotal) : '—';
+      if (summaryShipping) summaryShipping.textContent = option?.value ? money(shippingCharge) : '—';
+      if (summaryOutstanding) summaryOutstanding.textContent = option?.value ? money(outstanding) : '—';
+      if (summaryCod) summaryCod.textContent = option?.value ? money(outstanding) : '—';
 
       syncCodNote();
     }
