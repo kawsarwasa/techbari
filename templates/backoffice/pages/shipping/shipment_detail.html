@@ -1,82 +1,195 @@
 {% extends "backoffice/base.html" %}
-{% load demo %}
-{% block title %}{{ shipment.shipment_no }} | TechBari Admin{% endblock %}
+{% load static demo %}
+{% block title %}Shipment #{{ shipment.id }} | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/shipment-detail-refresh.css' %}?v=1.0.0">{% endblock %}
 {% block content %}
-<section class="page">
-  <div class="page-head">
-    <div><h1>{{ shipment.shipment_no }}</h1><p>{{ shipment.courier.name }} • {{ shipment.get_status_display }} • Order {{ shipment.order.order_number }}</p></div>
-    <div class="head-actions"><a class="btn" href="{% url 'backoffice:shipping' %}">Shipping</a><a class="btn" href="{% url 'backoffice:order_detail_id' shipment.order.id %}">Open Order</a>{% if shipment.tracking_url %}<a class="btn" href="{{ shipment.tracking_url }}" target="_blank" rel="noopener">External Tracking</a>{% endif %}</div>
+<section class="page sd-page">
+  <header class="sd-head">
+    <div class="sd-head-copy">
+      <div class="sd-title-row">
+        <h1>Shipment #{{ shipment.id }}</h1>
+        <span class="sd-status-pill sd-status-{{ shipment.status }}">{{ shipment.get_status_display }}</span>
+      </div>
+      <p>Sales Order: <a href="{% url 'backoffice:order_detail_id' shipment.order.id %}">{{ shipment.order.order_number }}</a><span>•</span>Created on {{ shipment.created_at|date:"M d, Y" }}</p>
+    </div>
+    <div class="sd-head-actions">
+      <button class="sd-btn" type="button" onclick="window.print()" aria-label="Print shipment">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V4h10v4M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v6H7z"/></svg>
+        <span>Print Label</span>
+      </button>
+      {% if shipment.tracking_url %}
+      <a class="sd-btn" href="{{ shipment.tracking_url }}" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5"/></svg>
+        <span>Track Shipment</span>
+      </a>
+      {% else %}
+      <a class="sd-btn" href="#shipment-management">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-4.4 7-11a7 7 0 1 0-14 0c0 6.6 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span>Track Shipment</span>
+      </a>
+      {% endif %}
+      <a class="sd-btn sd-btn-primary" href="#shipment-management" onclick="var el=document.getElementById('shipment-management');if(el){el.open=true;}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.2-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/><path d="m13.5 7.5 3 3"/></svg>
+        <span>Edit Shipment</span>
+      </a>
+    </div>
+  </header>
+
+  {% if shipping_notice %}<div class="sd-alert sd-alert-success">{{ shipping_notice }}</div>{% endif %}
+  {% if shipping_error %}<div class="sd-alert sd-alert-error">{{ shipping_error }}</div>{% endif %}
+
+  <section class="sd-progress-card">
+    <div class="sd-progress">
+      <div class="sd-step is-done">
+        <span class="sd-step-icon sd-green"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg></span>
+        <div><strong>Order Placed</strong><small>{{ shipment.order.created_at|date:"M d, Y, h:i A" }}</small></div>
+      </div>
+      <span class="sd-line is-done"></span>
+
+      <div class="sd-step {% if shipment.order.status == 'confirmed' or shipment.order.status == 'processing' or shipment.order.status == 'completed' %}is-done{% endif %}">
+        <span class="sd-step-icon sd-blue"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h5"/></svg></span>
+        <div><strong>Confirmed</strong><small>{% if shipment.order.status == 'pending' or shipment.order.status == 'draft' %}Not confirmed yet{% else %}Order confirmed{% endif %}</small></div>
+      </div>
+      <span class="sd-line {% if shipment.order.status == 'processing' or shipment.order.status == 'completed' or shipment.status != 'draft' %}is-done{% endif %}"></span>
+
+      <div class="sd-step {% if shipment.status == 'draft' or shipment.status == 'ready' %}is-current{% elif shipment.status != 'cancelled' %}is-done{% endif %}">
+        <span class="sd-step-icon sd-purple"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.7-1L14.5 3h-5l-.4 3.1a8 8 0 0 0-1.7 1L5 6.1 3 9.5 5.1 11a7 7 0 0 0 0 2L3 14.5 5 18l2.4-1.1a8 8 0 0 0 1.7 1l.4 3.1h5l.4-3.1a8 8 0 0 0 1.7-1L19 18l2-3.5-2.1-1.5a7 7 0 0 0 .1-1Z"/></svg></span>
+        <div><strong>Processing</strong><small>{% if shipment.status == 'draft' %}Shipment created{% elif shipment.status == 'ready' %}Ready for handover{% else %}Processed{% endif %}</small></div>
+      </div>
+      <span class="sd-line {% if shipment.status == 'handed_over' or shipment.status == 'in_transit' or shipment.status == 'out_for_delivery' or shipment.status == 'delivered' or shipment.status == 'failed' or shipment.status == 'returning' or shipment.status == 'returned' %}is-done{% endif %}"></span>
+
+      <div class="sd-step {% if shipment.status == 'handed_over' or shipment.status == 'in_transit' or shipment.status == 'out_for_delivery' or shipment.status == 'failed' or shipment.status == 'returning' or shipment.status == 'returned' %}is-current{% elif shipment.status == 'delivered' %}is-done{% endif %}">
+        <span class="sd-step-icon sd-slate"><svg viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>
+        <div><strong>Shipped</strong><small>{% if shipment.handed_over_at %}{{ shipment.get_status_display }}{% else %}Not shipped yet{% endif %}</small></div>
+      </div>
+      <span class="sd-line {% if shipment.status == 'delivered' %}is-done{% endif %}"></span>
+
+      <div class="sd-step {% if shipment.status == 'delivered' %}is-done{% endif %}">
+        <span class="sd-step-icon sd-slate"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span>
+        <div><strong>Delivered</strong><small>{% if shipment.delivered_at %}{{ shipment.delivered_at|date:"M d, Y, h:i A" }}{% else %}Not delivered yet{% endif %}</small></div>
+      </div>
+    </div>
+
+    <div class="sd-current-banner">
+      <span class="sd-current-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg></span>
+      <div><strong>{{ shipment.get_status_display }}</strong><p>{% if shipment.status == 'draft' %}The shipment has been created and is waiting to be prepared.{% elif shipment.status == 'ready' %}The parcel is ready to be handed over to the courier.{% elif shipment.status == 'handed_over' %}The parcel has been handed over to the courier.{% elif shipment.status == 'in_transit' %}The parcel is moving through the courier network.{% elif shipment.status == 'out_for_delivery' %}The parcel is out for delivery to the customer.{% elif shipment.status == 'delivered' %}The parcel has been delivered successfully.{% elif shipment.status == 'failed' %}The latest delivery attempt failed.{% elif shipment.status == 'returning' %}The parcel is returning to the merchant.{% elif shipment.status == 'returned' %}The parcel has been returned to the merchant.{% elif shipment.status == 'cancelled' %}This shipment has been cancelled.{% else %}Shipment status is up to date.{% endif %}</p></div>
+      <div class="sd-current-label"><small>Current Status</small><strong>{{ shipment.get_status_display }}</strong></div>
+    </div>
+  </section>
+
+  <div class="sd-cards-grid">
+    <section class="sd-card">
+      <div class="sd-card-head"><span class="sd-card-icon sd-icon-blue"><svg viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v5h4M10 12h6M10 16h6"/></svg></span><h2>Shipment Information</h2></div>
+      <div class="sd-kv-list">
+        <div><span>Sales Order</span><strong><a href="{% url 'backoffice:order_detail_id' shipment.order.id %}">{{ shipment.order.order_number }}</a></strong></div>
+        <div><span>Shipment Date</span><strong>{{ shipment.shipment_date|date:"d-M-Y" }}</strong></div>
+        <div><span>Expected Delivery</span><strong>{% if shipment.expected_delivery_date %}{{ shipment.expected_delivery_date|date:"d-M-Y" }}{% else %}<em>Not set</em>{% endif %}</strong></div>
+        <div><span>Last Location</span><strong>{{ shipment.last_location|default:"—" }}</strong></div>
+        <div><span>Notes</span><strong>{{ shipment.notes|default:"—"|truncatechars:44 }}</strong></div>
+      </div>
+    </section>
+
+    <section class="sd-card">
+      <div class="sd-card-head"><span class="sd-card-icon sd-icon-blue"><svg viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span><h2>Courier &amp; Tracking</h2></div>
+      <div class="sd-kv-list">
+        <div><span>Courier Provider</span><strong>{{ shipment.courier.name }}{% if shipment.courier.code %} ({{ shipment.courier.code }}){% endif %}</strong></div>
+        <div><span>Tracking ID</span><strong>{{ shipment.tracking_id|default:"—" }}</strong></div>
+        <div><span>Courier Reference</span><strong>{{ shipment.courier_reference|default:"—" }}</strong></div>
+        <div><span>Courier Fee</span><strong>{{ shipment.courier_fee|money }}</strong></div>
+        <div><span>Handed Over</span><strong>{% if shipment.handed_over_at %}{{ shipment.handed_over_at|date:"M d, Y, h:i A" }}{% else %}—{% endif %}</strong></div>
+      </div>
+    </section>
+
+    <section class="sd-card">
+      <div class="sd-card-head"><span class="sd-card-icon sd-icon-blue"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span><h2>Package Details</h2></div>
+      <div class="sd-kv-list">
+        <div><span>Parcel Count</span><strong>{{ shipment.parcel_count }}</strong></div>
+        <div><span>Weight</span><strong>{{ shipment.weight_kg }} kg</strong></div>
+        <div><span>Shipment No</span><strong>{{ shipment.shipment_no }}</strong></div>
+        <div><span>Returned</span><strong>{% if shipment.returned_at %}{{ shipment.returned_at|date:"M d, Y, h:i A" }}{% else %}—{% endif %}</strong></div>
+        <div><span>Failure Reason</span><strong>{{ shipment.failure_reason|default:"—"|truncatechars:42 }}</strong></div>
+      </div>
+    </section>
   </div>
-  {% if shipping_notice %}<div class="soft-note" style="margin-bottom:14px">{{ shipping_notice }}</div>{% endif %}
-  {% if shipping_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ shipping_error }}</div>{% endif %}
 
-  <div class="detail-cards">
-    <div class="card info-card"><div class="section-head"><h3>Shipment</h3></div><div class="info-body">
-      <div class="kv"><span>Status</span><strong>{{ shipment.get_status_display }}</strong></div>
-      <div class="kv"><span>Courier</span><strong>{{ shipment.courier.name }}</strong></div>
-      <div class="kv"><span>Tracking</span><strong>{{ shipment.tracking_id|default:"—" }}</strong></div>
-      <div class="kv"><span>Courier Ref</span><strong>{{ shipment.courier_reference|default:"—" }}</strong></div>
-      <div class="kv"><span>Ship Date</span><strong>{{ shipment.shipment_date }}</strong></div>
-      <div class="kv"><span>Expected</span><strong>{{ shipment.expected_delivery_date|default:"—" }}</strong></div>
-      <div class="kv"><span>Last Location</span><strong>{{ shipment.last_location|default:"—" }}</strong></div>
-    </div></div>
-    <div class="card info-card"><div class="section-head"><h3>Parcel</h3></div><div class="info-body">
-      <div class="kv"><span>Parcels</span><strong>{{ shipment.parcel_count }}</strong></div>
-      <div class="kv"><span>Weight</span><strong>{{ shipment.weight_kg }} kg</strong></div>
-      <div class="kv"><span>Courier Fee</span><strong>{{ shipment.courier_fee|money }}</strong></div>
-      <div class="kv"><span>Handed Over</span><strong>{{ shipment.handed_over_at|default:"—" }}</strong></div>
-      <div class="kv"><span>Delivered</span><strong>{{ shipment.delivered_at|default:"—" }}</strong></div>
-      <div class="kv"><span>Returned</span><strong>{{ shipment.returned_at|default:"—" }}</strong></div>
-    </div></div>
-    <div class="card info-card"><div class="section-head"><h3>COD</h3></div><div class="info-body">
-      <div class="kv"><span>Expected</span><strong>{{ shipment.cod_expected|money }}</strong></div>
-      <div class="kv"><span>Collected</span><strong>{{ shipment.cod_collected|money }}</strong></div>
-      <div class="kv"><span>Settled</span><strong>{{ shipment.cod_settled|money }}</strong></div>
-      <div class="kv"><span>Unsettled</span><strong>{{ shipment.unsettled_cod|money }}</strong></div>
-      <div class="kv"><span>COD Status</span><strong>{{ shipment.get_cod_status_display }}</strong></div>
-      {% if shipment.unsettled_cod %}<a class="btn btn-primary" href="{% url 'backoffice:cod_settlement_add' %}">Settle COD</a>{% endif %}
-    </div></div>
+  <div class="sd-summary-row">
+    <section class="sd-card sd-cod-card">
+      <div class="sd-card-head"><span class="sd-card-icon sd-icon-green"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 15h4"/><circle cx="16.5" cy="14" r="1.5"/></svg></span><h2>COD Summary</h2></div>
+      <div class="sd-cod-grid">
+        <div><span>Expected</span><strong>{{ shipment.cod_expected|money }}</strong></div>
+        <div><span>Collected</span><strong>{{ shipment.cod_collected|money }}</strong></div>
+        <div><span>Settled</span><strong>{{ shipment.cod_settled|money }}</strong></div>
+        <div><span>Unsettled</span><strong>{{ shipment.unsettled_cod|money }}</strong></div>
+        <div class="sd-cod-status"><span>COD Status</span><strong>{{ shipment.get_cod_status_display }}</strong></div>
+      </div>
+      {% if shipment.unsettled_cod %}<a class="sd-settle-link" href="{% url 'backoffice:cod_settlement_add' %}">Settle COD</a>{% endif %}
+    </section>
+
+    <section class="sd-card sd-notes-card">
+      <div class="sd-card-head"><span class="sd-card-icon sd-icon-orange"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><h2>Notes</h2></div>
+      <div class="sd-note-body">{% if shipment.notes %}{{ shipment.notes|linebreaksbr }}{% else %}No internal notes yet.{% endif %}</div>
+    </section>
   </div>
 
-  <div class="detail-grid-top" style="margin-top:16px">
-    <div class="card info-card"><div class="section-head"><h3>Update Shipment Status</h3></div><div class="info-body">
-      {% if allowed_shipping_statuses %}
-      <form method="post" action="{% url 'backoffice:shipment_status' shipment.id %}">{% csrf_token %}
-        <label class="field"><span>Next Status</span>{{ status_form.new_status }}</label>
-        <label class="field"><span>COD Collected (required when COD shipment is Delivered)</span>{{ status_form.cod_collected }}</label>
-        <label class="field"><span>Current Location</span>{{ status_form.location }}</label>
-        <label class="field"><span>Failure Reason</span>{{ status_form.failure_reason }}</label>
-        <label class="field"><span>Note</span>{{ status_form.note }}</label>
-        <button class="btn btn-primary" type="submit">Update Status</button>
-      </form>
-      {% else %}<p>This shipment has reached a terminal status.</p>{% endif %}
-      <div class="soft-note" style="margin-top:12px">When the parcel is handed to the courier, the linked Sales Order is completed and its reserved inventory is issued. Courier returns do not automatically put stock back; the Returns module will handle that inventory transaction.</div>
-    </div></div>
+  <section class="sd-card sd-log-card">
+    <div class="sd-card-head"><span class="sd-card-icon sd-icon-blue"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><h2>Shipment Event Log</h2></div>
+    <div class="sd-event-list">
+      {% for event in shipment.events.all %}
+      <div class="sd-event-row">
+        <span class="sd-event-dot {% if event.event == 'created' %}green{% elif event.event == 'tracking' %}blue{% elif event.event == 'cod_collection' or event.event == 'cod_settlement' %}green{% elif event.event == 'delivery_attempt' %}orange{% else %}purple{% endif %}">
+          {% if event.event == 'created' %}<svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>{% elif event.event == 'tracking' %}<svg viewBox="0 0 24 24"><path d="M12 21s7-4.4 7-11a7 7 0 1 0-14 0c0 6.6 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>{% elif event.event == 'cod_collection' or event.event == 'cod_settlement' %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M14.5 9.5c-.6-.8-1.4-1.2-2.5-1.2-1.4 0-2.5.7-2.5 1.8 0 1.2 1 1.7 2.7 2.1 1.6.4 2.3.9 2.3 1.9 0 1.2-1 2-2.6 2-1.1 0-2-.4-2.7-1.3M12 6.5v11"/></svg>{% else %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.7-1L14.5 3h-5l-.4 3.1a8 8 0 0 0-1.7 1L5 6.1 3 9.5 5.1 11a7 7 0 0 0 0 2L3 14.5 5 18l2.4-1.1a8 8 0 0 0 1.7 1l.4 3.1h5l.4-3.1a8 8 0 0 0 1.7-1L19 18l2-3.5-2.1-1.5a7 7 0 0 0 .1-1Z"/></svg>{% endif %}
+        </span>
+        <div class="sd-event-title"><strong>{{ event.get_event_display }}</strong>{% if event.previous_status or event.new_status %}<small>{{ event.previous_status|default:"—" }} → {{ event.new_status|default:"—" }}</small>{% endif %}</div>
+        <div class="sd-event-note">{{ event.note|default:"—" }}{% if event.location %}<small>{{ event.location }}</small>{% endif %}</div>
+        <time>{{ event.occurred_at|date:"M d, Y, h:i A" }}</time>
+      </div>
+      {% empty %}<div class="sd-empty">No shipment events yet.</div>{% endfor %}
+    </div>
+  </section>
 
-    <div class="card info-card"><div class="section-head"><h3>Tracking Information</h3></div><div class="info-body">
-      <form method="post" action="{% url 'backoffice:shipment_tracking' shipment.id %}">{% csrf_token %}
-        <label class="field"><span>Tracking ID</span>{{ tracking_form.tracking_id }}</label>
-        <label class="field"><span>Courier Reference</span>{{ tracking_form.courier_reference }}</label>
-        <label class="field"><span>Location</span>{{ tracking_form.location }}</label>
-        <label class="field"><span>Tracking Note</span>{{ tracking_form.note }}</label>
-        <button class="btn" type="submit">Save Tracking</button>
-      </form>
-    </div></div>
-  </div>
+  {% if shipment.failure_reason %}<div class="sd-alert sd-alert-error"><strong>Delivery Failure:</strong> {{ shipment.failure_reason }}</div>{% endif %}
 
-  {% if shipment.failure_reason %}<div class="card info-card" style="margin-top:16px"><div class="section-head"><h3>Delivery Failure</h3></div><div class="info-body">{{ shipment.failure_reason }}</div></div>{% endif %}
+  <details class="sd-manage" id="shipment-management">
+    <summary>
+      <span><svg viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M9 17h6"/></svg> Manage Shipment</span>
+      <small>Update status or tracking information</small>
+    </summary>
+    <div class="sd-manage-grid">
+      <section class="sd-card">
+        <div class="sd-card-head"><span class="sd-card-icon sd-icon-purple"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span><h2>Update Shipment Status</h2></div>
+        {% if allowed_shipping_statuses %}
+        <form class="sd-form" method="post" action="{% url 'backoffice:shipment_status' shipment.id %}">{% csrf_token %}
+          <label><span>Next Status</span>{{ status_form.new_status }}</label>
+          <label><span>COD Collected <small>Required when a COD shipment is Delivered</small></span>{{ status_form.cod_collected }}</label>
+          <label><span>Current Location</span>{{ status_form.location }}</label>
+          <label><span>Failure Reason</span>{{ status_form.failure_reason }}</label>
+          <label class="sd-form-wide"><span>Note</span>{{ status_form.note }}</label>
+          <div class="sd-form-wide"><button class="sd-btn sd-btn-primary" type="submit">Update Status</button></div>
+        </form>
+        {% else %}<div class="sd-empty">This shipment has reached a terminal status.</div>{% endif %}
+      </section>
 
-  <div class="card orders-table-card" style="margin-top:16px">
-    <div class="section-head"><h3>Shipment Timeline</h3></div>
-    <div class="table-scroll"><table class="data-table"><thead><tr><th>When</th><th>Event</th><th>Status</th><th>Location</th><th>Actor</th><th>Note</th></tr></thead><tbody>
-      {% for event in shipment.events.all %}<tr><td>{{ event.occurred_at }}</td><td>{{ event.get_event_display }}</td><td>{% if event.previous_status or event.new_status %}{{ event.previous_status|default:"—" }} → {{ event.new_status|default:"—" }}{% else %}—{% endif %}</td><td>{{ event.location|default:"—" }}</td><td>{{ event.actor|default:"System" }}</td><td>{{ event.note|default:"—" }}</td></tr>{% empty %}<tr><td colspan="6">No shipment events.</td></tr>{% endfor %}
-    </tbody></table></div>
-  </div>
+      <section class="sd-card">
+        <div class="sd-card-head"><span class="sd-card-icon sd-icon-blue"><svg viewBox="0 0 24 24"><path d="M12 21s7-4.4 7-11a7 7 0 1 0-14 0c0 6.6 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><h2>Tracking Information</h2></div>
+        <form class="sd-form" method="post" action="{% url 'backoffice:shipment_tracking' shipment.id %}">{% csrf_token %}
+          <label><span>Tracking ID</span>{{ tracking_form.tracking_id }}</label>
+          <label><span>Courier Reference</span>{{ tracking_form.courier_reference }}</label>
+          <label><span>Location</span>{{ tracking_form.location }}</label>
+          <label class="sd-form-wide"><span>Tracking Note</span>{{ tracking_form.note }}</label>
+          <div class="sd-form-wide"><button class="sd-btn" type="submit">Save Tracking</button></div>
+        </form>
+      </section>
+    </div>
+    <div class="sd-rule-note">When the parcel is handed to the courier, the linked Sales Order is completed and reserved inventory is issued. Courier returns do not automatically put stock back; use the Returns module for that inventory transaction.</div>
+  </details>
 
   {% if shipment.settlement_items.all %}
-  <div class="card orders-table-card" style="margin-top:16px"><div class="section-head"><h3>COD Settlement Links</h3></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Settlement</th><th>Amount</th><th>Payment</th><th>Reconciliation</th></tr></thead><tbody>{% for item in shipment.settlement_items.all %}<tr><td><a href="{% url 'backoffice:cod_settlement_detail' item.settlement.id %}">{{ item.settlement.settlement_no }}</a></td><td>{{ item.amount|money }}</td><td><a href="{% url 'backoffice:payment_detail' item.payment_transaction.id %}">{{ item.payment_transaction.transaction_no }}</a></td><td>{{ item.payment_transaction.get_reconciliation_status_display }}</td></tr>{% endfor %}</tbody></table></div></div>
+  <section class="sd-card sd-settlement-card">
+    <div class="sd-card-head"><span class="sd-card-icon sd-icon-green"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4zM7 4h10v3M8 12h8"/></svg></span><h2>COD Settlement Links</h2></div>
+    <div class="sd-settlement-list">
+      {% for item in shipment.settlement_items.all %}<div><a href="{% url 'backoffice:cod_settlement_detail' item.settlement.id %}">{{ item.settlement.settlement_no }}</a><strong>{{ item.amount|money }}</strong><a href="{% url 'backoffice:payment_detail' item.payment_transaction.id %}">{{ item.payment_transaction.transaction_no }}</a><span>{{ item.payment_transaction.get_reconciliation_status_display }}</span></div>{% endfor %}
+    </div>
+  </section>
   {% endif %}
-
-  {% if shipment.notes %}<div class="card info-card" style="margin-top:16px"><div class="section-head"><h3>Notes</h3></div><div class="info-body">{{ shipment.notes|linebreaksbr }}</div></div>{% endif %}
 </section>
 {% endblock %}
