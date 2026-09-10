@@ -77,8 +77,10 @@
   }
 
   if (divisionSelect && districtSelect && upazilaSelect && Object.keys(bdLocations).length) {
-    // Rebuild once so browser autofill and saved-address values stay in sync.
-    syncDistricts(true);
+    // Server-rendered choices preserve an older saved address if necessary.
+    // Only rebuild when the user changes a parent selection.
+    districtSelect.disabled = !divisionSelect.value;
+    upazilaSelect.disabled = !divisionSelect.value || !districtSelect.value;
     divisionSelect.addEventListener('change', () => syncDistricts(false));
     districtSelect.addEventListener('change', () => syncUpazilas(false));
   }
