@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 
 from .models import AuditLog, StaffProfile
-from .permissions import SYSTEM_ROLE_NAMES
+from .permissions import staff_role_groups_queryset
 
 
 def get_client_ip(request):
@@ -17,7 +17,8 @@ def get_client_ip(request):
 def user_role(user):
     if not getattr(user, "is_authenticated", False):
         return ""
-    role = user.groups.filter(name__in=SYSTEM_ROLE_NAMES).order_by("name").first()
+    role_ids = staff_role_groups_queryset().values("pk")
+    role = user.groups.filter(pk__in=role_ids).order_by("name").first()
     return role.name if role else ("Superuser" if user.is_superuser else "Unassigned")
 
 
@@ -47,6 +48,9 @@ def record_audit(request, action, *, user=None, status_code=200, object_type="",
 
 
 def assign_system_role(user, group):
-    user.groups.remove(*Group.objects.filter(name__in=SYSTEM_ROLE_NAMES))
+    """Assign exactly one TechBari staff role, including custom roles."""
+    current_roles = list(staff_role_groups_queryset().filter(user=user))
+    if current_roles:
+        user.groups.remove(*current_roles)
     if group:
         user.groups.add(group)
