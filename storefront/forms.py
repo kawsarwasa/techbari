@@ -4,8 +4,9 @@ import re
 from django import forms
 from django.core import signing
 
+from .bd_locations import DIVISION_CHOICES, district_choices, upazila_choices
+
 CHECKOUT_SIGNING_SALT = "storefront.checkout.v160"
-DIVISION_CHOICES = [("", "Select Division"), ("Dhaka", "Dhaka"), ("Chattogram", "Chattogram"), ("Rajshahi", "Rajshahi"), ("Khulna", "Khulna"), ("Barishal", "Barishal"), ("Sylhet", "Sylhet"), ("Rangpur", "Rangpur"), ("Mymensingh", "Mymensingh")]
 
 
 def normalize_bd_phone(value):
@@ -21,9 +22,20 @@ class CheckoutForm(forms.Form):
     full_name = forms.CharField(max_length=180, widget=forms.TextInput(attrs={"placeholder": "Enter your full name", "autocomplete": "name"}))
     phone = forms.CharField(max_length=40, widget=forms.TextInput(attrs={"placeholder": "01XXXXXXXXX", "autocomplete": "tel", "inputmode": "tel"}))
     email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={"placeholder": "you@email.com", "autocomplete": "email"}))
-    division = forms.ChoiceField(choices=DIVISION_CHOICES)
-    district = forms.CharField(max_length=120, widget=forms.TextInput(attrs={"placeholder": "e.g. Dhaka", "autocomplete": "address-level2"}))
-    upazila = forms.CharField(max_length=120, widget=forms.TextInput(attrs={"placeholder": "e.g. Dhanmondi / Savar", "autocomplete": "address-level3"}))
+    division = forms.ChoiceField(
+        choices=DIVISION_CHOICES,
+        widget=forms.Select(attrs={"autocomplete": "address-level1"}),
+    )
+    district = forms.ChoiceField(
+        choices=(("", "Select District"),),
+        error_messages={"invalid_choice": "Select a district that belongs to the selected division."},
+        widget=forms.Select(attrs={"autocomplete": "address-level2"}),
+    )
+    upazila = forms.ChoiceField(
+        choices=(("", "Select Upazila / Thana"),),
+        error_messages={"invalid_choice": "Select an Upazila / Thana that belongs to the selected district."},
+        widget=forms.Select(attrs={"autocomplete": "address-level3"}),
+    )
     address = forms.CharField(max_length=500, widget=forms.TextInput(attrs={"placeholder": "House no, Road no, Area name", "autocomplete": "street-address"}))
     landmark = forms.CharField(max_length=180, required=False, widget=forms.TextInput(attrs={"placeholder": "e.g. Near school, mosque, shopping mall"}))
     delivery_option = forms.ChoiceField(choices=(("inside", "Inside Dhaka"), ("outside", "Outside Dhaka")), initial="inside")
@@ -32,6 +44,31 @@ class CheckoutForm(forms.Form):
     coupon_code = forms.CharField(max_length=40, required=False, widget=forms.TextInput(attrs={"id": "checkoutCouponInput", "placeholder": "Enter coupon code", "autocomplete": "off"}))
     cart_payload = forms.CharField(widget=forms.HiddenInput(attrs={"id": "checkoutCartPayload"}))
     checkout_token = forms.CharField(widget=forms.HiddenInput(attrs={"id": "checkoutToken"}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        def current_value(name):
+            if self.is_bound:
+                return str(self.data.get(self.add_prefix(name)) or "").strip()
+            initial = self.initial.get(name, self.fields[name].initial)
+            return str(initial or "").strip()
+
+        division = current_value("division")
+        district = current_value("district")
+        upazila = current_value("upazila")
+
+        # On GET, retain an old saved-address value even if it predates the
+        # current hierarchy. Bound submissions stay strict, so users cannot
+        # submit a District/Upazila that does not belong to its parent.
+        legacy_district = district if not self.is_bound else ""
+        legacy_upazila = upazila if not self.is_bound else ""
+        self.fields["district"].choices = district_choices(division, include=legacy_district)
+        self.fields["upazila"].choices = upazila_choices(
+            division,
+            district,
+            include=legacy_upazila,
+        )
 
     def clean_full_name(self):
         value = " ".join((self.cleaned_data.get("full_name") or "").split())
