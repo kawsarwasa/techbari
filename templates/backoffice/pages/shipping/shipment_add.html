@@ -1,45 +1,249 @@
 {% extends "backoffice/base.html" %}
-{% load static %}
+{% load static demo %}
 {% block title %}Create Shipment | TechBari Admin{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/shipment-add-refresh.css' %}?v=1.0.0">
+{% endblock %}
 {% block content %}
-<section class="page">
-  <div class="page-head"><div><h1>Create Shipment</h1><p>Create one fulfillment shipment for a confirmed or processing Sales Order.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:shipping' %}">Back to Shipping</a></div></div>
-  {% if form.non_field_errors %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ form.non_field_errors }}</div>{% endif %}
-  <form method="post" class="form-layout" id="shipmentAddForm" data-bound="{% if form.is_bound %}1{% else %}0{% endif %}">{% csrf_token %}
-    <div class="card form-card">
-      <div class="section-head"><h3>Shipment Information</h3></div>
-      <div class="form-grid">
-        <label class="field"><span>Sales Order</span>{{ form.order }}{% for e in form.order.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>Courier Provider</span>{{ form.courier }}{% for e in form.courier.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>Shipment Date</span>{{ form.shipment_date }}{% for e in form.shipment_date.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>Expected Delivery <small class="muted">(optional)</small></span>{{ form.expected_delivery_date }}{% for e in form.expected_delivery_date.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>Tracking ID <small class="muted">(optional / courier provided)</small></span>{{ form.tracking_id }}<small class="muted">Enter this manually after the courier gives you a tracking ID, unless a courier API is integrated later.</small>{% for e in form.tracking_id.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>Courier Reference <small class="muted">(optional)</small></span>{{ form.courier_reference }}<small class="muted">Use the courier's own booking/reference number when available.</small>{% for e in form.courier_reference.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>Parcel Count</span>{{ form.parcel_count }}{% for e in form.parcel_count.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-        <label class="field"><span>Weight (kg) <small class="muted">(optional)</small></span>{{ form.weight_kg }}{% for e in form.weight_kg.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
+<section class="page sa-page">
+  <div class="sa-breadcrumb">
+    <a href="{% url 'backoffice:index' %}">Dashboard</a>
+    <span>›</span>
+    <a href="{% url 'backoffice:shipping' %}">Shipping</a>
+    <span>›</span>
+    <strong>Add Shipment</strong>
+  </div>
 
-        <label class="field"><span>Customer Shipping Charge <small class="muted">(order revenue)</small></span><input class="control" id="shipmentCustomerShippingCharge" type="text" value="—" readonly aria-readonly="true"><small class="muted">What the customer is charged for delivery on the Sales Order.</small></label>
-        <label class="field"><span>Courier Fee <small class="muted">(business expense)</small></span>{{ form.courier_fee }}<small class="muted">Auto-filled from the selected courier's default fee. You can edit it when the courier charges a different amount.</small>{% for e in form.courier_fee.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-
-        <label class="field"><span>Order Outstanding <small class="muted">(read only)</small></span><input class="control" id="shipmentOrderOutstanding" type="text" value="—" readonly aria-readonly="true"><small class="muted">The unpaid balance remaining on the selected Sales Order.</small></label>
-        <label class="field"><span>COD Expected <small class="muted">(auto)</small></span>{{ form.cod_expected }}<small class="muted" id="shipmentCodNote">Select a Sales Order to calculate the amount the courier should collect.</small>{% for e in form.cod_expected.errors %}<small style="color:#c42b2b">{{ e }}</small>{% endfor %}</label>
-      </div>
-      <label class="field" style="margin-top:14px"><span>Notes</span>{{ form.notes }}</label>
+  <div class="sa-page-head">
+    <div>
+      <h1>Create Shipment</h1>
+      <p>Create a shipment for order <strong id="shipmentHeaderOrder">{% if form.order.value %}{{ form.order.value }}{% else %}—{% endif %}</strong></p>
     </div>
-    <aside class="card form-side">
-      <div class="section-head"><h3>Fulfillment Rules</h3></div>
-      <div class="info-body">
-        <div class="soft-note"><strong>COD Expected is automatic.</strong> It always uses the selected Sales Order's current outstanding balance. A fully paid order will show ৳0 and does not require courier COD collection.</div>
-        <p><strong>Customer Shipping Charge</strong> is revenue charged to the customer. <strong>Courier Fee</strong> is what the courier charges your business, so the two amounts may be different.</p>
-        <p>Tracking ID and Courier Reference are optional and are entered manually when the courier provides them. They can later be automated through courier API integration.</p>
-        <p>Creating a shipment does not deduct inventory. Inventory is issued only when the parcel is handed to the courier.</p>
-        <p>One fulfillment shipment is currently kept per order so the existing Sales inventory issue remains atomic and consistent.</p>
-        <button class="btn btn-primary" type="submit">Create Shipment</button>
-      </div>
+    <div class="sa-head-actions">
+      <a class="sa-btn sa-btn-secondary" href="{% url 'backoffice:shipping' %}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m6 6-6-6 6-6"/></svg>
+        Back to Shipping
+      </a>
+      <button class="sa-btn sa-btn-primary" type="submit" form="shipmentAddForm">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v10H3zM14 9h3l4 4v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+        Create Shipment
+      </button>
+    </div>
+  </div>
+
+  {% if form.non_field_errors %}
+  <div class="sa-alert sa-alert-error">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <form method="post" id="shipmentAddForm" class="sa-layout" data-bound="{% if form.is_bound %}1{% else %}0{% endif %}">
+    {% csrf_token %}
+    <div class="sa-main-column">
+      <section class="sa-card">
+        <div class="sa-card-head sa-card-head-soft">
+          <div class="sa-icon sa-icon-blue">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v5h5M10 12h6M10 16h6"/></svg>
+          </div>
+          <div>
+            <h2>Shipment Information</h2>
+            <p>Basic shipment details and courier information.</p>
+          </div>
+        </div>
+
+        <div class="sa-form-grid">
+          <label class="sa-field">
+            <span>Sales Order <b>*</b></span>
+            {{ form.order }}
+            <small class="sa-help sa-info-line">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg>
+              Order details will be loaded automatically.
+            </small>
+            {% for e in form.order.errors %}<small class="sa-error">{{ e }}</small>{% endfor %}
+          </label>
+
+          <label class="sa-field">
+            <span>Shipment Date <b>*</b></span>
+            {{ form.shipment_date }}
+            {% for e in form.shipment_date.errors %}<small class="sa-error">{{ e }}</small>{% endfor %}
+          </label>
+
+          <label class="sa-field">
+            <span>Courier Provider <b>*</b></span>
+            {{ form.courier }}
+            {% for e in form.courier.errors %}<small class="sa-error">{{ e }}</small>{% endfor %}
+          </label>
+
+          <label class="sa-field">
+            <span>Expected Delivery</span>
+            {{ form.expected_delivery_date }}
+            <small class="sa-help">Estimated delivery date (optional).</small>
+            {% for e in form.expected_delivery_date.errors %}<small class="sa-error">{{ e }}</small>{% endfor %}
+          </label>
+
+          <label class="sa-field">
+            <span>Tracking ID</span>
+            {{ form.tracking_id }}
+            <small class="sa-help">Enter the tracking ID provided by the courier. You can also add it later.</small>
+            {% for e in form.tracking_id.errors %}<small class="sa-error">{{ e }}</small>{% endfor %}
+          </label>
+
+          <label class="sa-field">
+            <span>Courier Reference</span>
+            {{ form.courier_reference }}
+            <small class="sa-help">Optional booking, manifest or consignment reference.</small>
+            {% for e in form.courier_reference.errors %}<small class="sa-error">{{ e }}</small>{% endfor %}
+          </label>
+        </div>
+      </section>
+
+      <section class="sa-card">
+        <div class="sa-card-head sa-card-head-soft">
+          <div class="sa-icon sa-icon-blue">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4z"/><path d="m4 7v10l8 4 8-4V7M12 11v10"/></svg>
+          </div>
+          <div>
+            <h2>Parcel &amp; Delivery Details</h2>
+            <p>Package information and delivery charges.</p>
+          </div>
+        </div>
+
+        <div class="sa-form-grid">
+          <label class="sa-field">
+            <span>Parcel Count <b>*</b></span>
+            {{ form.parcel_count }}
+            <small class="sa-help">Total number of parcels.</small>
+            {% for e in form.parcel_count.errors %}<small class="sa-error">{{ e }}</small>{% endfor %}
+          </label>
+
+          <label class="sa-field">
+            <span>Customer Shipping Charge (৳)</span>
+            <input class="control sa-readonly" id="shipmentCustomerShippingCharge" type="text" value="—" readonly aria-readonly="true">
+            <small class="sa-help">Shipping charge paid by customer (from order).</small>
+          </label>
+
+          <label class="sa-field">
+            <span>Weight (kg)</span>
+            {{ form.weight_kg }}
+            <small class="sa-help">Total package weight in kilograms.</small>
+            {% for e in form.weight_kg.errors %}<small class="sa-error">{{ e }}</small>{% endfor %}
+          </label>
+
+          <label class="sa-field">
+            <span>Courier Fee (৳) <b>*</b></span>
+            {{ form.courier_fee }}
+            <small class="sa-help">Your delivery cost charged by the courier; editable when needed.</small>
+            {% for e in form.courier_fee.errors %}<small class="sa-error">{{ e }}</small>{% endfor %}
+          </label>
+
+          <label class="sa-field">
+            <span>Order Outstanding</span>
+            <input class="control sa-readonly" id="shipmentOrderOutstanding" type="text" value="—" readonly aria-readonly="true">
+            <small class="sa-help">Current unpaid order balance.</small>
+          </label>
+
+          <label class="sa-field">
+            <span>COD Expected (৳)</span>
+            {{ form.cod_expected }}
+            <small class="sa-help" id="shipmentCodNote">Select a Sales Order to calculate the COD amount.</small>
+            {% for e in form.cod_expected.errors %}<small class="sa-error">{{ e }}</small>{% endfor %}
+          </label>
+        </div>
+      </section>
+    </div>
+
+    <aside class="sa-side-column">
+      {% with selected_order_id=form.order.value|stringformat:"s" %}
+      {% for order in form.order.field.queryset %}
+        {% if order.pk|stringformat:"s" == selected_order_id %}
+        <section class="sa-card sa-side-card">
+          <div class="sa-side-head">
+            <div class="sa-title-row">
+              <span class="sa-icon sa-icon-green">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 13h5"/></svg>
+              </span>
+              <h2>Order Snapshot</h2>
+            </div>
+            <span class="sa-status sa-status-green">{{ order.get_status_display }}</span>
+          </div>
+          <div class="sa-kv-list">
+            <div><span>Sales Order</span><strong id="shipmentSummaryOrder">{{ order.order_number }}</strong></div>
+            <div><span>Order Date</span><strong>{{ order.order_date|date:"d-M-Y" }}</strong></div>
+            <div><span>Payment Method</span><strong>{{ order.get_payment_method_display|default:"—" }}</strong></div>
+            <div><span>Order Status</span><strong class="sa-text-blue">{{ order.get_status_display }}</strong></div>
+          </div>
+          <a class="sa-link" href="{% url 'backoffice:order_detail_id' order.id %}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8"/><path d="M19 13v6H5V5h6"/></svg>
+            View Order Details
+            <span>→</span>
+          </a>
+        </section>
+
+        <section class="sa-card sa-side-card">
+          <div class="sa-side-head">
+            <div class="sa-title-row">
+              <span class="sa-icon sa-icon-purple">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20c.8-4 3.2-6 7-6s6.2 2 7 6"/></svg>
+              </span>
+              <h2>Customer &amp; Shipping Address</h2>
+            </div>
+          </div>
+          <div class="sa-customer-name">{{ order.customer_name|default:"Guest Customer" }}</div>
+          <div class="sa-contact-row">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8c1.6 3.2 3.4 5 6.6 6.6l2.2-2.2c.3-.3.8-.4 1.2-.2 1.2.4 2.4.6 3.7.6.4 0 .7.3.7.7V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.7c.4 0 .7.3.7.7 0 1.3.2 2.5.6 3.7.1.4 0 .9-.2 1.2z"/></svg>
+            <span>{{ order.customer_phone|default:"—" }}</span>
+          </div>
+          {% if order.shipping_email or order.customer.email %}
+          <div class="sa-contact-row">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+            <span>{{ order.shipping_email|default:order.customer.email }}</span>
+          </div>
+          {% endif %}
+          <div class="sa-contact-row sa-address-row">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            <span>
+              {% if order.shipping_address %}{{ order.shipping_address }}{% endif %}
+              {% if order.shipping_city %}<br>{{ order.shipping_city }}{% endif %}{% if order.shipping_district %}{% if order.shipping_city %}, {% endif %}{{ order.shipping_district }}{% endif %}
+              {% if order.shipping_postal_code %} {{ order.shipping_postal_code }}{% endif %}
+            </span>
+          </div>
+        </section>
+
+        <section class="sa-card sa-side-card">
+          <div class="sa-side-head">
+            <div class="sa-title-row">
+              <span class="sa-icon sa-icon-orange">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v18H7z"/><path d="M9 7h6M9 11h6M9 15h2"/></svg>
+              </span>
+              <h2>Financial Summary</h2>
+            </div>
+          </div>
+          <div class="sa-kv-list sa-financial-list">
+            <div><span>Order Total</span><strong id="shipmentSummaryTotal">{{ order.grand_total|money }}</strong></div>
+            <div><span>Customer Shipping Charge</span><strong id="shipmentSummaryShipping">{{ order.shipping_charge|money }}</strong></div>
+            <div><span>Order Outstanding</span><strong class="sa-text-blue" id="shipmentSummaryOutstanding">{{ order.outstanding_amount|money }}</strong></div>
+            <div class="sa-cod-highlight"><span>COD Expected</span><strong id="shipmentSummaryCod">{{ order.outstanding_amount|money }}</strong></div>
+          </div>
+        </section>
+        {% endif %}
+      {% endfor %}
+      {% endwith %}
+
+      <section class="sa-card sa-side-card sa-notes-card">
+        <div class="sa-side-head">
+          <div class="sa-title-row">
+            <span class="sa-icon sa-icon-purple">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+            </span>
+            <h2>Notes</h2>
+          </div>
+        </div>
+        {{ form.notes }}
+        <small class="sa-help">Visible only to admin users.</small>
+        {% for e in form.notes.errors %}<small class="sa-error">{{ e }}</small>{% endfor %}
+      </section>
     </aside>
   </form>
 </section>
 {% endblock %}
 {% block extra_js %}
-<script src="{% static 'admin/js/shipment-add-v191.js' %}?v=1.0.0"></script>
+<script src="{% static 'admin/js/shipment-add-v191.js' %}?v=1.0.1"></script>
 {% endblock %}
