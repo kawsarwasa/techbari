@@ -69,6 +69,17 @@ def staff_permissions_queryset():
     return Permission.objects.filter(content_type__app_label="staff_access", content_type__model="staffprofile")
 
 
+def staff_role_groups_queryset():
+    """Return TechBari staff-role groups without pulling unrelated Django groups into the UI."""
+    from django.contrib.auth.models import Group
+    from django.db.models import Q
+
+    return Group.objects.filter(
+        Q(name__in=SYSTEM_ROLE_NAMES)
+        | Q(permissions__content_type__app_label="staff_access", permissions__content_type__model="staffprofile")
+    ).distinct()
+
+
 def sync_system_roles(sender=None, **kwargs):
     from django.contrib.auth.models import Group, User
     permissions = {p.codename: p for p in staff_permissions_queryset()}
