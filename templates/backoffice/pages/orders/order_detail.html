@@ -3,7 +3,7 @@
 {% load demo %}
 {% block title %}{{ order.order_number }} | TechBari Admin{% endblock %}
 {% block page_theme_css %}
-<link rel="stylesheet" href="{% static 'admin/css/order-detail-refresh.css' %}?v=1.0.3">
+<link rel="stylesheet" href="{% static 'admin/css/order-detail-refresh.css' %}?v=1.0.4">
 <style>
 .od-page .od-icon-svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .od-page .od-back .od-icon-svg{width:21px;height:21px}
@@ -12,6 +12,12 @@
 .od-page .od-mini-icon .od-icon-svg{width:22px;height:22px}
 .od-page .od-side-icon .od-icon-svg{width:20px;height:20px}
 .od-page .od-side-icon.blue:before,.od-page .od-side-icon.blue:after{display:none!important}
+.od-page .od-progress-pos{grid-template-columns:auto minmax(44px,1fr) auto minmax(44px,1fr) auto minmax(44px,1fr) auto}
+.od-page .od-progress-pos .od-step{min-width:145px}
+.od-page .od-progress-pos .od-step:nth-child(7).done .od-step-icon,.od-page .od-progress-pos .od-step:nth-child(7).current .od-step-icon{background:var(--od-green-soft);border-color:#ccefdc;color:#0f9f59}
+.od-page .od-progress-pos .od-step:nth-child(7).done strong,.od-page .od-progress-pos .od-step:nth-child(7).done small,.od-page .od-progress-pos .od-step:nth-child(7).current strong,.od-page .od-progress-pos .od-step:nth-child(7).current small{color:#11935a}
+.od-page .od-pill-na{background:#f1f5f9;color:#64748b}
+@media(max-width:1050px){.od-page .od-progress-pos{min-width:700px}}
 </style>
 {% endblock %}
 {% block content %}
@@ -62,6 +68,29 @@
   <div class="od-layout">
     <div class="od-main-column">
       <article class="od-card od-progress-card">
+        {% if order.channel == 'pos' %}
+        <div class="od-progress od-progress-pos">
+          <div class="od-step done">
+            <span class="od-step-icon"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <div><strong>Order Placed</strong><small>{{ order.created_at|date:"M d, h:i A" }}</small></div>
+          </div>
+          <span class="od-step-line {% if order.status != 'draft' and order.status != 'pending' and order.status != 'cancelled' %}active{% endif %}"></span>
+          <div class="od-step {% if order.status == 'confirmed' %}current{% elif order.status == 'processing' or order.status == 'completed' %}done{% endif %}">
+            <span class="od-step-icon"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <div><strong>Confirmed</strong><small>{% if order.status == 'draft' or order.status == 'pending' %}Waiting{% else %}Order confirmed{% endif %}</small></div>
+          </div>
+          <span class="od-step-line {% if order.status == 'processing' or order.status == 'completed' %}active{% endif %}"></span>
+          <div class="od-step {% if order.status == 'processing' %}current{% elif order.status == 'completed' %}done{% endif %}">
+            <span class="od-step-icon"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9A1.7 1.7 0 0 0 21 10h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg></span>
+            <div><strong>Processing</strong><small>{% if order.status == 'processing' %}Current{% elif order.status == 'completed' %}Processed{% else %}Waiting{% endif %}</small></div>
+          </div>
+          <span class="od-step-line {% if order.status == 'completed' %}active{% endif %}"></span>
+          <div class="od-step {% if order.status == 'completed' %}done{% endif %}">
+            <span class="od-step-icon"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 2.5 2.5L16 9"/></svg></span>
+            <div><strong>Completed / Sold</strong><small>{% if order.status == 'completed' %}Counter sale completed{% else %}Waiting{% endif %}</small></div>
+          </div>
+        </div>
+        {% else %}
         <div class="od-progress">
           <div class="od-step done">
             <span class="od-step-icon"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>
@@ -88,6 +117,7 @@
             <div><strong>Delivered</strong><small>{% if order.shipment and order.shipment.delivered_at %}{{ order.shipment.delivered_at|date:"M d, h:i A" }}{% else %}Not delivered yet{% endif %}</small></div>
           </div>
         </div>
+        {% endif %}
       </article>
 
       <article class="od-card od-items-card">
@@ -135,9 +165,13 @@
         <div class="od-section-head"><h2>Payment &amp; Delivery Status</h2></div>
         <div class="od-status-grid">
           <div class="od-mini-card od-mini-green"><span class="od-mini-icon"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 9h18M16 13h3"/></svg></span><div><small>Payment Status</small><span class="od-pill od-pill-green">{{ order.get_payment_status_display }}</span><strong>{{ order.amount_paid|money }} / {{ order.payable_total|money }}</strong></div></div>
+          {% if order.channel == 'pos' %}
+          <div class="od-mini-card od-mini-orange"><span class="od-mini-icon"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v10H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span><div><small>Delivery Status</small><span class="od-pill od-pill-na">Not Required</span><strong>No delivery required</strong></div></div>
+          {% else %}
           <div class="od-mini-card od-mini-orange"><span class="od-mini-icon"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h11v10H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span><div><small>Delivery Status</small><span class="od-pill od-pill-orange">{% if order.shipment %}{{ order.shipment.get_status_display }}{% else %}Pending{% endif %}</span><strong>{% if order.shipment %}{{ order.shipment.courier.name }}{% else %}Not shipped yet{% endif %}</strong></div></div>
+          {% endif %}
           <div class="od-mini-card od-mini-blue"><span class="od-mini-icon"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span><div><small>Order Channel</small><span class="od-pill od-pill-blue">{{ order.get_channel_display }}</span><strong>{{ order.warehouse.name }}</strong></div></div>
-          <div class="od-mini-card od-mini-sky"><span class="od-mini-icon"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span><div><small>Estimated Delivery</small><span class="od-pill od-pill-neutral">{% if order.shipment and order.shipment.expected_delivery_date %}{{ order.shipment.expected_delivery_date|date:"M d, Y" }}{% else %}—{% endif %}</span><strong>{% if order.shipment and order.shipment.expected_delivery_date %}Scheduled{% else %}Not available{% endif %}</strong></div></div>
+          <div class="od-mini-card od-mini-sky"><span class="od-mini-icon"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span><div><small>Estimated Delivery</small>{% if order.channel == 'pos' %}<span class="od-pill od-pill-na">—</span><strong>Not applicable</strong>{% else %}<span class="od-pill od-pill-neutral">{% if order.shipment and order.shipment.expected_delivery_date %}{{ order.shipment.expected_delivery_date|date:"M d, Y" }}{% else %}—{% endif %}</span><strong>{% if order.shipment and order.shipment.expected_delivery_date %}Scheduled{% else %}Not available{% endif %}</strong>{% endif %}</div></div>
         </div>
       </article>
 
@@ -185,8 +219,12 @@
       </article>
 
       <article class="od-card od-side-card">
-        <div class="od-side-title"><span class="od-side-icon pink"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><h3>Shipping Information</h3></div>
+        <div class="od-side-title"><span class="od-side-icon pink"><svg class="od-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><h3>{% if order.channel == 'pos' %}Fulfillment Information{% else %}Shipping Information{% endif %}</h3></div>
+        {% if order.channel == 'pos' %}
+        <div class="od-side-copy"><strong>{{ order.warehouse.name }}</strong><span>POS counter sale</span><span>No shipping or delivery required.</span></div>
+        {% else %}
         <div class="od-side-copy"><strong>{{ order.shipping_name|default:order.customer_name }}</strong>{% if order.shipping_phone %}<span>{{ order.shipping_phone }}</span>{% endif %}<span>{{ order.shipping_summary|default:"No shipping address supplied." }}</span></div>
+        {% endif %}
       </article>
 
       <article class="od-card od-side-card">
