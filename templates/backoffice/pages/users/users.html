@@ -1,1 +1,150 @@
-{% extends "backoffice/base.html" %}{% block title %}Users & Roles | TechBari Admin{% endblock %}{% block content %}<section class="page"><div class="page-head"><div><h1>Users & Role Management</h1><p>Real staff accounts, system roles and fine-grained permission overrides.</p></div><div class="head-actions">{% if perms.staff_access.manage_users or request.user.is_superuser %}<a class="btn btn-primary" href="{% url 'backoffice:user_add' %}">Add User</a><a class="btn" href="{% url 'backoffice:roles' %}">Roles & Permissions</a>{% endif %}{% if perms.staff_access.view_audit_log or request.user.is_superuser %}<a class="btn" href="{% url 'backoffice:audit_log' %}">Audit Log</a>{% endif %}</div></div><div class="cards kpi-grid-4"><div class="kpi"><div><div class="kpi-label">Total Users</div><div class="kpi-value">{{ user_kpis.total }}</div></div></div><div class="kpi"><div><div class="kpi-label">Active</div><div class="kpi-value">{{ user_kpis.active }}</div></div></div><div class="kpi"><div><div class="kpi-label">System Roles</div><div class="kpi-value">{{ user_kpis.roles }}</div></div></div><div class="kpi"><div><div class="kpi-label">Admins</div><div class="kpi-value">{{ user_kpis.admins }}</div></div></div></div><form class="filters-card" method="get"><div class="filter-row"><input class="control search" name="q" value="{{ q }}" placeholder="Search username, name or email..."><select class="control" name="role"><option value="">All Roles</option>{% for role in role_choices %}<option value="{{ role }}"{% if role_filter == role %} selected{% endif %}>{{ role }}</option>{% endfor %}</select><select class="control" name="status"><option value="">All Status</option><option value="active"{% if status_filter == 'active' %} selected{% endif %}>Active</option><option value="inactive"{% if status_filter == 'inactive' %} selected{% endif %}>Inactive</option></select><button class="btn" type="submit">Filter</button></div></form><div class="card orders-table-card"><div class="table-scroll"><table class="data-table"><thead><tr><th>User</th><th>Email</th><th>Role</th><th>Branch</th><th>Extra Grants</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead><tbody>{% for row in user_rows %}<tr><td><strong>{{ row.user.get_full_name|default:row.user.username }}</strong><br><small>@{{ row.user.username }}</small></td><td>{{ row.user.email }}</td><td>{{ row.role }}</td><td>{{ row.branch }}</td><td>{{ row.extra_permissions }}</td><td>{% if row.user.is_active %}<span class="status active">Active</span>{% else %}<span class="status inactive">Inactive</span>{% endif %}</td><td>{{ row.user.last_login|date:"d M Y H:i"|default:"Never" }}</td><td>{% if perms.staff_access.manage_users or request.user.is_superuser %}<a class="btn" href="{% url 'backoffice:user_edit' row.user.id %}">Edit</a><form method="post" action="{% url 'backoffice:user_toggle' row.user.id %}" style="display:inline">{% csrf_token %}<button class="btn" type="submit">{% if row.user.is_active %}Deactivate{% else %}Activate{% endif %}</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="8">No staff users found.</td></tr>{% endfor %}</tbody></table></div></div></section>{% endblock %}
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Users & Roles | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/users-refresh.css' %}?v=1.0.0">{% endblock %}
+{% block content %}
+<section class="page users-refresh">
+  <div class="users-head">
+    <div>
+      <div class="users-breadcrumb"><a href="{% url 'backoffice:dashboard' %}">Dashboard</a><span>›</span><strong>Users</strong></div>
+      <h1>Users</h1>
+      <p>Manage your staff accounts, roles and access across TechBari.</p>
+    </div>
+    <div class="users-head-actions">
+      {% if perms.staff_access.manage_users or request.user.is_superuser %}
+      <a class="ur-btn ur-btn-soft" href="{% url 'backoffice:roles' %}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6M22 11h-6"/></svg>
+        Roles & Permissions
+      </a>
+      <a class="ur-btn ur-btn-primary" href="{% url 'backoffice:user_add' %}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 19a6 6 0 0 0-12 0M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6M22 11h-6"/></svg>
+        Add User
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="ur-kpis">
+    <article class="ur-kpi">
+      <span class="ur-kpi-icon ur-blue"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+      <div><span>Total Users</span><strong>{{ user_kpis.total }}</strong><small>Staff accounts in the system</small></div>
+    </article>
+    <article class="ur-kpi">
+      <span class="ur-kpi-icon ur-green"><svg viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z"/></svg></span>
+      <div><span>Active</span><strong>{{ user_kpis.active }}</strong><small>Users currently allowed to sign in</small></div>
+    </article>
+    <article class="ur-kpi">
+      <span class="ur-kpi-icon ur-purple"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10ZM9 12l2 2 4-4"/></svg></span>
+      <div><span>System Roles</span><strong>{{ user_kpis.roles }}</strong><small>Configured access roles</small></div>
+    </article>
+    <article class="ur-kpi">
+      <span class="ur-kpi-icon ur-orange"><svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0M17 3l1 2 2 .5-1.5 1.6.3 2.2L17 8.3l-1.8 1 .3-2.2L14 5.5l2-.5 1-2Z"/></svg></span>
+      <div><span>Admins</span><strong>{{ user_kpis.admins }}</strong><small>Full administrative access</small></div>
+    </article>
+  </div>
+
+  <div class="ur-layout">
+    <div class="ur-main-card">
+      <div class="ur-tabs-row">
+        <div class="ur-tabs">
+          <a class="ur-tab{% if not role_filter %} active{% endif %}" href="?q={{ q|urlencode }}&status={{ status_filter|urlencode }}">All Users <span>{{ user_kpis.total }}</span></a>
+          {% for role in role_choices %}
+          <a class="ur-tab{% if role_filter == role %} active{% endif %}" href="?q={{ q|urlencode }}&role={{ role|urlencode }}&status={{ status_filter|urlencode }}">{{ role }}</a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <form class="ur-filters" method="get">
+        <div class="ur-search-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input name="q" value="{{ q }}" placeholder="Search username, name or email...">
+        </div>
+        <select name="role">
+          <option value="">All Roles</option>
+          {% for role in role_choices %}<option value="{{ role }}"{% if role_filter == role %} selected{% endif %}>{{ role }}</option>{% endfor %}
+        </select>
+        <select name="status">
+          <option value="">All Status</option>
+          <option value="active"{% if status_filter == 'active' %} selected{% endif %}>Active</option>
+          <option value="inactive"{% if status_filter == 'inactive' %} selected{% endif %}>Inactive</option>
+        </select>
+        <button class="ur-filter-btn" type="submit"><svg viewBox="0 0 24 24"><path d="M4 5h16M7 12h10M10 19h4"/></svg>Filter</button>
+      </form>
+
+      <div class="ur-table-wrap">
+        <table class="ur-table">
+          <thead><tr><th>User</th><th>Role</th><th>Email</th><th>Branch</th><th>Extra Grants</th><th>Status</th><th>Last Login</th><th class="ur-actions-col">Actions</th></tr></thead>
+          <tbody>
+            {% for row in user_rows %}
+            <tr>
+              <td>
+                <div class="ur-user-cell">
+                  <span class="ur-avatar">{{ row.user.username|first|upper }}</span>
+                  <span><strong>{{ row.user.get_full_name|default:row.user.username }}</strong><small>@{{ row.user.username }}</small></span>
+                </div>
+              </td>
+              <td><span class="ur-role">{{ row.role }}</span></td>
+              <td class="ur-muted-cell">{{ row.user.email|default:"—" }}</td>
+              <td>{{ row.branch|default:"—" }}</td>
+              <td><span class="ur-grants">{{ row.extra_permissions }}</span></td>
+              <td>{% if row.user.is_active %}<span class="ur-status active"><i></i>Active</span>{% else %}<span class="ur-status inactive"><i></i>Inactive</span>{% endif %}</td>
+              <td class="ur-last-login">{% if row.user.last_login %}<i></i>{{ row.user.last_login|date:"d M Y, H:i" }}{% else %}<span>Never</span>{% endif %}</td>
+              <td class="ur-actions-col">
+                {% if perms.staff_access.manage_users or request.user.is_superuser %}
+                <div class="ur-actions">
+                  <a class="ur-icon-btn" href="{% url 'backoffice:user_edit' row.user.id %}" title="Edit user" aria-label="Edit user"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4L16.5 3.5Z"/></svg></a>
+                  <form method="post" action="{% url 'backoffice:user_toggle' row.user.id %}">{% csrf_token %}<button class="ur-icon-btn" type="submit" title="{% if row.user.is_active %}Deactivate{% else %}Activate{% endif %} user" aria-label="{% if row.user.is_active %}Deactivate{% else %}Activate{% endif %} user"><svg viewBox="0 0 24 24"><path d="M12 2v10M6.3 5.7a8 8 0 1 0 11.4 0"/></svg></button></form>
+                </div>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="ur-empty">No staff users found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ur-table-footer">
+        <span>Page {{ user_page.number }} of {{ user_page.paginator.num_pages }} · {{ user_page.paginator.count }} user{{ user_page.paginator.count|pluralize }}</span>
+        <div class="ur-pagination">
+          {% if user_page.has_previous %}<a href="?q={{ q|urlencode }}&role={{ role_filter|urlencode }}&status={{ status_filter|urlencode }}&page={{ user_page.previous_page_number }}">‹</a>{% else %}<span>‹</span>{% endif %}
+          <strong>{{ user_page.number }}</strong>
+          {% if user_page.has_next %}<a href="?q={{ q|urlencode }}&role={{ role_filter|urlencode }}&status={{ status_filter|urlencode }}&page={{ user_page.next_page_number }}">›</a>{% else %}<span>›</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <aside class="ur-side">
+      <section class="ur-side-card">
+        <div class="ur-side-title"><h2>Access Overview</h2></div>
+        <div class="ur-overview-grid">
+          <div><span class="ur-mini-icon ur-blue"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg></span><strong>{{ user_kpis.total }}</strong><small>Total Users</small></div>
+          <div><span class="ur-mini-icon ur-green"><svg viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z"/></svg></span><strong>{{ user_kpis.active }}</strong><small>Active</small></div>
+          <div><span class="ur-mini-icon ur-purple"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></span><strong>{{ user_kpis.roles }}</strong><small>Roles</small></div>
+          <div><span class="ur-mini-icon ur-orange"><svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0"/></svg></span><strong>{{ user_kpis.admins }}</strong><small>Admins</small></div>
+        </div>
+        {% if perms.staff_access.manage_users or request.user.is_superuser %}<a class="ur-side-link" href="{% url 'backoffice:roles' %}">Manage roles & permissions <span>→</span></a>{% endif %}
+      </section>
+
+      <section class="ur-side-card">
+        <div class="ur-side-title"><h2>User Access Snapshot</h2></div>
+        <div class="ur-access-list">
+          {% for row in user_rows|slice:":6" %}
+          <div class="ur-access-item">
+            <span class="ur-avatar small">{{ row.user.username|first|upper }}</span>
+            <div><strong>{{ row.user.get_full_name|default:row.user.username }}</strong><small>{{ row.role }}{% if row.branch %} · {{ row.branch }}{% endif %}</small><em>{% if row.user.last_login %}Last login {{ row.user.last_login|date:"d M, H:i" }}{% else %}No login recorded{% endif %}</em></div>
+            <i class="{% if row.user.is_active %}ok{% else %}off{% endif %}"></i>
+          </div>
+          {% empty %}<p class="ur-side-empty">No users to show.</p>{% endfor %}
+        </div>
+      </section>
+
+      <section class="ur-security-card">
+        <span class="ur-security-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10ZM9 12l2 2 4-4"/></svg></span>
+        <div><strong>Keep staff access secure</strong><p>Use system roles and permission overrides to give each staff member only the access they need.</p>{% if perms.staff_access.view_audit_log or request.user.is_superuser %}<a href="{% url 'backoffice:audit_log' %}">View Audit Log <span>→</span></a>{% endif %}</div>
+      </section>
+    </aside>
+  </div>
+</section>
+{% endblock %}
