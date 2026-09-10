@@ -62,4 +62,7 @@
 </form>
 </div></main>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'store/js/checkout-v160.js' %}?v=1.6.0"></script>{% endblock %}
+{% block extra_js %}
+{{ checkout_bd_locations|json_script:"checkoutBdLocations" }}
+<script src="{% static 'store/js/checkout-v160.js' %}?v=1.6.1"></script>
+{% endblock %}
