@@ -21,12 +21,12 @@
       <section class="ra-card ra-role-card">
         <div class="ra-card-head">
           <span class="ra-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span>
-          <div><h2>Role Information</h2><p>{% if role_group.name in system_role_names %}System role name is protected.{% else %}Update the custom role name if needed.{% endif %}</p></div>
+          <div><h2>Role Information</h2><p>{% if form.name.field.disabled %}System role name is protected.{% else %}Update the custom role name if needed.{% endif %}</p></div>
         </div>
         <div class="ra-field">
           <label for="{{ form.name.id_for_label }}">Role Name <b>*</b></label>
           {{ form.name }}
-          {% if role_group.name in system_role_names %}<span class="ra-help">Built-in system role names cannot be changed.</span>{% else %}<span class="ra-help">Use a clear name staff can recognize when assigning users.</span>{% endif %}
+          {% if form.name.field.disabled %}<span class="ra-help">Built-in system role names cannot be changed.</span>{% else %}<span class="ra-help">Use a clear name staff can recognize when assigning users.</span>{% endif %}
           {% for error in form.name.errors %}<span class="ra-error">{{ error }}</span>{% endfor %}
         </div>
       </section>
@@ -34,10 +34,10 @@
       <section class="ra-card ra-settings-card">
         <div class="ra-card-head compact">
           <span class="ra-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span>
-          <div><h2>Role Settings</h2><p>{% if role_group.name in system_role_names %}System role{% else %}Custom role{% endif %}</p></div>
+          <div><h2>Role Settings</h2><p>{% if form.name.field.disabled %}System role{% else %}Custom role{% endif %}</p></div>
         </div>
         <div class="ra-status-row"><span class="ra-status-dot"></span><div><strong>Available for assignment</strong><p>This role can be selected from Add User and Edit User.</p></div></div>
-        <div class="ra-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><div><strong>{% if role_group.name in system_role_names %}Protected system identity{% else %}Custom role{% endif %}</strong><span>{% if role_group.name in system_role_names %}You can change its permission matrix, but not rename this built-in role.{% else %}You can rename this role and update its permissions at any time.{% endif %}</span></div></div>
+        <div class="ra-info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><div><strong>{% if form.name.field.disabled %}Protected system identity{% else %}Custom role{% endif %}</strong><span>{% if form.name.field.disabled %}You can change its permission matrix, but not rename this built-in role.{% else %}You can rename this role and update its permissions at any time.{% endif %}</span></div></div>
       </section>
     </div>
 
