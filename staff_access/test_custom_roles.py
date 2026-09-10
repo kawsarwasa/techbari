@@ -83,3 +83,40 @@ class CustomRoleTests(TestCase):
         manager.groups.add(Group.objects.get(name="Manager"))
         self.client.force_login(manager)
         self.assertEqual(self.client.get(reverse("backoffice:role_add")).status_code, 403)
+
+    def test_custom_role_edit_can_rename_and_update_permissions(self):
+        role = Group.objects.create(name="Support Team")
+        role.permissions.add(self.permission("view_dashboard"), self.permission("view_customers"))
+        new_permissions = [self.permission("view_dashboard"), self.permission("view_sales")]
+        response = self.client.post(
+            reverse("backoffice:role_edit", args=[role.pk]),
+            {"name": "Customer Care Lead", "permissions": [permission.pk for permission in new_permissions]},
+        )
+        self.assertRedirects(response, reverse("backoffice:roles"), fetch_redirect_response=False)
+        role.refresh_from_db()
+        self.assertEqual(role.name, "Customer Care Lead")
+        self.assertEqual(
+            set(role.permissions.filter(content_type__app_label="staff_access").values_list("codename", flat=True)),
+            {"view_dashboard", "view_sales"},
+        )
+
+    def test_system_role_name_stays_locked_during_permission_edit(self):
+        manager = Group.objects.get(name="Manager")
+        permission = self.permission("view_dashboard")
+        response = self.client.post(
+            reverse("backoffice:role_edit", args=[manager.pk]),
+            {"name": "Renamed Manager", "permissions": [permission.pk]},
+        )
+        self.assertRedirects(response, reverse("backoffice:roles"), fetch_redirect_response=False)
+        manager.refresh_from_db()
+        self.assertEqual(manager.name, "Manager")
+        self.assertFalse(Group.objects.filter(name="Renamed Manager").exists())
+
+    def test_custom_role_edit_page_uses_grouped_permission_ui(self):
+        role = Group.objects.create(name="Warehouse Assistant")
+        role.permissions.add(self.permission("view_inventory"))
+        response = self.client.get(reverse("backoffice:role_edit", args=[role.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Module Permissions")
+        self.assertContains(response, "Selected Permissions")
+        self.assertContains(response, "data-role-group-toggle")
