@@ -41,7 +41,7 @@ MARKETING_VIEW = {"marketing", "coupons"}
 MARKETING_MANAGE = {"coupon_add"}
 STORE_SETTINGS_ROUTES = {"settings", "cms_banners", "cms_banner_add", "cms_banner_edit", "cms_banner_toggle", "cms_banner_delete", "cms_homepage_sections", "cms_homepage_section_update", "cms_content_pages", "cms_content_page_edit"}
 USER_VIEW = {"users", "roles"}
-USER_MANAGE = {"user_add", "user_edit", "user_toggle", "role_edit"}
+USER_MANAGE = {"user_add", "user_edit", "user_toggle", "role_add", "role_edit"}
 NOTIFICATION_ROUTES = {"notifications", "notification_read", "notifications_read_all"}
 INTEGRATION_ROUTES = {"integration_settings", "integration_retry", "integration_process"}
 
