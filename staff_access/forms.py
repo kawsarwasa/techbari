@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import password_validation
 from django.contrib.auth.models import Group, Permission, User
 
-from .permissions import SYSTEM_ROLE_NAMES, staff_permissions_queryset
+from .permissions import SYSTEM_ROLE_NAMES, staff_permissions_queryset, staff_role_groups_queryset
 from .services import assign_system_role, ensure_profile
 
 
@@ -28,6 +28,45 @@ EXTRA_PERMISSION_GROUPS = (
 )
 
 
+def build_permission_groups(permissions, selected_ids=None):
+    selected_ids = {str(value) for value in (selected_ids or set())}
+    by_codename = {permission.codename: permission for permission in permissions}
+    used = set()
+    groups = []
+
+    for key, name, codenames in EXTRA_PERMISSION_GROUPS:
+        items = []
+        for codename in codenames:
+            permission = by_codename.get(codename)
+            if not permission:
+                continue
+            used.add(permission.pk)
+            items.append(
+                {
+                    "id": permission.pk,
+                    "codename": permission.codename,
+                    "label": permission.name,
+                    "checked": str(permission.pk) in selected_ids,
+                }
+            )
+        if items:
+            groups.append({"key": key, "name": name, "permissions": items})
+
+    other_items = [
+        {
+            "id": permission.pk,
+            "codename": permission.codename,
+            "label": permission.name,
+            "checked": str(permission.pk) in selected_ids,
+        }
+        for permission in permissions
+        if permission.pk not in used
+    ]
+    if other_items:
+        groups.append({"key": "other", "name": "Other Access", "permissions": other_items})
+    return groups
+
+
 class StaffUserForm(forms.ModelForm):
     role = forms.ModelChoiceField(queryset=Group.objects.none(), widget=forms.Select(attrs=CONTROL))
     branch = forms.CharField(max_length=120, required=False, widget=forms.TextInput(attrs=CONTROL))
@@ -51,10 +90,11 @@ class StaffUserForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["role"].queryset = Group.objects.filter(name__in=SYSTEM_ROLE_NAMES).order_by("name")
+        role_qs = staff_role_groups_queryset().order_by("name")
+        self.fields["role"].queryset = role_qs
         self.fields["extra_permissions"].queryset = staff_permissions_queryset().order_by("codename")
         if self.instance and self.instance.pk:
-            role = self.instance.groups.filter(name__in=SYSTEM_ROLE_NAMES).first()
+            role = self.instance.groups.filter(pk__in=role_qs.values("pk")).order_by("name").first()
             if role:
                 self.fields["role"].initial = role.pk
             profile = ensure_profile(self.instance)
@@ -82,43 +122,7 @@ class StaffUserForm(forms.ModelForm):
         return selected
 
     def _build_permission_groups(self):
-        selected_ids = self._selected_extra_permission_ids()
-        permissions = list(self.fields["extra_permissions"].queryset)
-        by_codename = {permission.codename: permission for permission in permissions}
-        used = set()
-        groups = []
-
-        for key, name, codenames in EXTRA_PERMISSION_GROUPS:
-            items = []
-            for codename in codenames:
-                permission = by_codename.get(codename)
-                if not permission:
-                    continue
-                used.add(permission.pk)
-                items.append(
-                    {
-                        "id": permission.pk,
-                        "codename": permission.codename,
-                        "label": permission.name,
-                        "checked": str(permission.pk) in selected_ids,
-                    }
-                )
-            if items:
-                groups.append({"key": key, "name": name, "permissions": items})
-
-        other_items = [
-            {
-                "id": permission.pk,
-                "codename": permission.codename,
-                "label": permission.name,
-                "checked": str(permission.pk) in selected_ids,
-            }
-            for permission in permissions
-            if permission.pk not in used
-        ]
-        if other_items:
-            groups.append({"key": "other", "name": "Other Access", "permissions": other_items})
-        return groups
+        return build_permission_groups(list(self.fields["extra_permissions"].queryset), self._selected_extra_permission_ids())
 
     def clean_email(self):
         email = self.cleaned_data.get("email", "").strip().lower()
@@ -160,6 +164,44 @@ class StaffUserForm(forms.ModelForm):
         return user
 
 
+class RoleCreateForm(forms.Form):
+    name = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={"class": "control", "placeholder": "e.g. Store Manager", "autocomplete": "off"}),
+        label="Role name",
+    )
+    permissions = forms.ModelMultipleChoiceField(
+        queryset=Permission.objects.none(), required=False, widget=forms.CheckboxSelectMultiple
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["permissions"].queryset = staff_permissions_queryset().order_by("codename")
+        selected_ids = set()
+        if self.is_bound:
+            selected_ids = {str(value) for value in self.data.getlist(self.add_prefix("permissions"))}
+        self.permission_groups = build_permission_groups(list(self.fields["permissions"].queryset), selected_ids)
+
+    def clean_name(self):
+        name = " ".join((self.cleaned_data.get("name") or "").split())
+        if not name:
+            raise forms.ValidationError("Role name is required.")
+        if Group.objects.filter(name__iexact=name).exists():
+            raise forms.ValidationError("A role with this name already exists.")
+        return name
+
+    def clean_permissions(self):
+        permissions = self.cleaned_data.get("permissions")
+        if not permissions:
+            raise forms.ValidationError("Select at least one permission for this role.")
+        return permissions
+
+    def save(self):
+        group = Group.objects.create(name=self.cleaned_data["name"])
+        group.permissions.set(self.cleaned_data["permissions"])
+        return group
+
+
 class RolePermissionForm(forms.Form):
     permissions = forms.ModelMultipleChoiceField(
         queryset=Permission.objects.none(), required=False, widget=forms.CheckboxSelectMultiple
@@ -173,6 +215,12 @@ class RolePermissionForm(forms.Form):
             self.fields["permissions"].initial = group.permissions.filter(
                 content_type__app_label="staff_access", content_type__model="staffprofile"
             )
+
+    def clean_permissions(self):
+        permissions = self.cleaned_data.get("permissions")
+        if self.group and self.group.name not in SYSTEM_ROLE_NAMES and not permissions:
+            raise forms.ValidationError("Custom roles must keep at least one permission.")
+        return permissions
 
     def save(self):
         self.group.permissions.set(self.cleaned_data["permissions"])
