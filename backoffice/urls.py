@@ -21,6 +21,7 @@ auth_patterns = [
     path("users/<int:user_id>/edit/", staff_views.user_form, name="user_edit"),
     path("users/<int:user_id>/toggle/", staff_views.user_toggle, name="user_toggle"),
     path("users/roles/", staff_views.roles, name="roles"),
+    path("users/roles/add/", staff_views.role_add, name="role_add"),
     path("users/roles/<int:role_id>/edit/", staff_views.role_edit, name="role_edit"),
     path("audit-log/", staff_views.audit_log, name="audit_log"),
 ]
