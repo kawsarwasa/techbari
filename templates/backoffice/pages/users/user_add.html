@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{{ page_title }} | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/user-form-refresh.css' %}?v=1.0.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/user-form-refresh.css' %}?v=1.1.0">{% endblock %}
 {% block content %}
 <section class="page user-form-refresh">
   <div class="uf-head">
@@ -48,7 +48,39 @@
             <div class="uf-field"><label for="{{ form.role.id_for_label }}">Role Assignment *</label>{{ form.role }}{% for error in form.role.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}</div>
             <div class="uf-toggle-line"><div class="uf-toggle-copy"><strong>Account Status</strong><span>Active users can sign in; inactive users are blocked.</span></div>{{ form.is_active }}</div>
             {% for error in form.is_active.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}
-            <div class="uf-permissions"><div class="uf-permissions-title">Extra User Permissions</div><div class="uf-permissions-sub">Optional direct grants in addition to the selected role.</div>{{ form.extra_permissions }}{% for error in form.extra_permissions.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}</div>
+            <div class="uf-permissions">
+              <div class="uf-permissions-head">
+                <div><div class="uf-permissions-title">Extra User Permissions</div><div class="uf-permissions-sub">Optional direct grants in addition to the selected role.</div></div>
+                <div class="uf-selected-badge"><span data-permission-count>0</span> selected</div>
+              </div>
+              <div class="uf-permission-search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+                <input type="search" class="uf-permission-search" placeholder="Search permissions..." data-permission-search>
+              </div>
+              <div class="uf-permission-modules" data-permission-modules>
+                {% for group in form.permission_groups %}
+                <section class="uf-perm-module" data-permission-group data-group-name="{{ group.name|lower }}">
+                  <div class="uf-perm-module-head">
+                    <div class="uf-perm-module-title">
+                      <span class="uf-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+                      <div><strong>{{ group.name }}</strong><span><b data-group-count>0</b> selected</span></div>
+                    </div>
+                    <div class="uf-perm-module-actions"><button type="button" data-select-group>Select all</button><button type="button" data-clear-group>Clear</button></div>
+                  </div>
+                  <div class="uf-perm-items">
+                    {% for permission in group.permissions %}
+                    <label class="uf-perm-item" data-permission-item data-search="{{ permission.label|lower }} {{ permission.codename|lower }}">
+                      <input type="checkbox" name="{{ form.extra_permissions.html_name }}" value="{{ permission.id }}"{% if permission.checked %} checked{% endif %}>
+                      <span class="uf-check-ui"></span>
+                      <span class="uf-perm-copy"><strong>{{ permission.label }}</strong><small>{{ permission.codename }}</small></span>
+                    </label>
+                    {% endfor %}
+                  </div>
+                </section>
+                {% endfor %}
+              </div>
+              {% for error in form.extra_permissions.errors %}<span class="uf-error">{{ error }}</span>{% endfor %}
+            </div>
           </div>
         </div>
 
@@ -69,3 +101,4 @@
   </form>
 </section>
 {% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/user-permissions-refresh.js' %}?v=1.0.0"></script>{% endblock %}
