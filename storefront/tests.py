@@ -73,7 +73,11 @@ class CheckoutBackendTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "checkoutForm")
         self.assertContains(response, "Cash on Delivery")
+        self.assertContains(response, 'id="checkoutBdLocations"')
         self.assertEqual(response.context["store_data"]["cart"], [])
+        form = response.context["checkout_form"]
+        self.assertEqual(list(form.fields["district"].choices), [("", "Select District")])
+        self.assertEqual(list(form.fields["upazila"].choices), [("", "Select Upazila / Thana")])
 
     def test_checkout_creates_customer_pending_order_and_reserves_stock(self):
         response = self.client.post(reverse("storefront:checkout"), self.payload())
@@ -89,9 +93,29 @@ class CheckoutBackendTests(TestCase):
         self.assertEqual(order.subtotal, Decimal("200.00"))
         self.assertEqual(order.shipping_charge, Decimal("60.00"))
         self.assertEqual(order.grand_total, Decimal("260.00"))
+        self.assertEqual(order.shipping_district, "Dhaka")
+        self.assertEqual(order.shipping_city, "Dhanmondi")
         self.assertEqual(balance.on_hand, 5)
         self.assertEqual(balance.reserved_quantity, 2)
         self.assertEqual(order.items.get().reserved_quantity, 2)
+
+    def test_checkout_rejects_district_outside_selected_division(self):
+        response = self.client.post(
+            reverse("storefront:checkout"),
+            self.payload(district="Chattogram", upazila="Panchlaish Thana"),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Select a district that belongs to the selected division")
+        self.assertEqual(SalesOrder.objects.count(), 0)
+
+    def test_checkout_rejects_upazila_outside_selected_district(self):
+        response = self.client.post(
+            reverse("storefront:checkout"),
+            self.payload(upazila="Panchlaish Thana"),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Select an Upazila / Thana that belongs to the selected district")
+        self.assertEqual(SalesOrder.objects.count(), 0)
 
     def test_checkout_uses_database_price_and_server_coupon_calculation(self):
         now = timezone.now()
@@ -120,7 +144,12 @@ class CheckoutBackendTests(TestCase):
     def test_outside_dhaka_shipping_is_verified_server_side(self):
         response = self.client.post(
             reverse("storefront:checkout"),
-            self.payload(delivery_option="outside", division="Chattogram", district="Chattogram"),
+            self.payload(
+                delivery_option="outside",
+                division="Chattogram",
+                district="Chattogram",
+                upazila="Panchlaish Thana",
+            ),
         )
         self.assertEqual(response.status_code, 302)
         order = SalesOrder.objects.get()
