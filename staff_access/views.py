@@ -11,9 +11,9 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from backoffice.context import page_context
-from .forms import RolePermissionForm, StaffUserForm
+from .forms import RoleCreateForm, RolePermissionForm, StaffUserForm
 from .models import AuditLog
-from .permissions import SYSTEM_ROLE_NAMES, staff_permissions_queryset, sync_system_roles
+from .permissions import SYSTEM_ROLE_NAMES, staff_permissions_queryset, staff_role_groups_queryset, sync_system_roles
 from .security import clear_auth_throttle, register_auth_failure, throttle_seconds_remaining
 from .services import ensure_profile, record_audit, user_role
 
@@ -69,9 +69,11 @@ def users(request):
     q = request.GET.get("q", "").strip()
     role = request.GET.get("role", "").strip()
     status = request.GET.get("status", "").strip()
+    role_groups = staff_role_groups_queryset().order_by("name")
+    role_names = list(role_groups.values_list("name", flat=True))
     if q:
         qs = qs.filter(Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(email__icontains=q))
-    if role in SYSTEM_ROLE_NAMES:
+    if role and role in role_names:
         qs = qs.filter(groups__name=role)
     if status == "active":
         qs = qs.filter(is_active=True)
@@ -88,14 +90,14 @@ def users(request):
     context.update(
         user_rows=rows,
         user_page=page,
-        role_choices=SYSTEM_ROLE_NAMES,
+        role_choices=role_names,
         q=q,
         role_filter=role,
         status_filter=status,
         user_kpis={
             "total": base_staff.count(),
             "active": base_staff.filter(is_active=True).count(),
-            "roles": Group.objects.filter(name__in=SYSTEM_ROLE_NAMES).count(),
+            "roles": role_groups.count(),
             "admins": base_staff.filter(Q(is_superuser=True) | Q(groups__name="Admin")).distinct().count(),
         },
     )
@@ -129,15 +131,40 @@ def user_toggle(request, user_id):
 
 def roles(request):
     sync_system_roles()
-    groups = Group.objects.filter(name__in=SYSTEM_ROLE_NAMES).prefetch_related("permissions").order_by("name")
-    role_rows = [{"group": group, "staff_count": group.user_set.filter(is_staff=True).count(), "permission_count": group.permissions.filter(content_type__app_label="staff_access").count()} for group in groups]
+    groups = staff_role_groups_queryset().prefetch_related("permissions").order_by("name")
+    role_rows = [
+        {
+            "group": group,
+            "staff_count": group.user_set.filter(is_staff=True).count(),
+            "permission_count": group.permissions.filter(content_type__app_label="staff_access").count(),
+            "is_system": group.name in SYSTEM_ROLE_NAMES,
+        }
+        for group in groups
+    ]
     context = page_context("users")
-    context.update(role_rows=role_rows, permission_total=staff_permissions_queryset().count())
+    context.update(
+        role_rows=role_rows,
+        permission_total=staff_permissions_queryset().count(),
+        system_role_count=sum(1 for row in role_rows if row["is_system"]),
+        custom_role_count=sum(1 for row in role_rows if not row["is_system"]),
+    )
     return render(request, "backoffice/pages/users/roles.html", context)
 
 
+def role_add(request):
+    form = RoleCreateForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        group = form.save()
+        record_audit(request, AuditLog.Action.CREATE, object_type="Role", object_id=group.pk, summary=f"Custom role {group.name} created")
+        messages.success(request, f"Role {group.name} created successfully.")
+        return redirect("backoffice:roles")
+    context = page_context("users")
+    context.update(form=form, permission_total=staff_permissions_queryset().count())
+    return render(request, "backoffice/pages/users/role_add.html", context)
+
+
 def role_edit(request, role_id):
-    group = get_object_or_404(Group, pk=role_id, name__in=SYSTEM_ROLE_NAMES)
+    group = get_object_or_404(staff_role_groups_queryset(), pk=role_id)
     if group.name == "Admin":
         messages.info(request, "Admin is a protected system role and always keeps every TechBari permission.")
         return redirect("backoffice:roles")
