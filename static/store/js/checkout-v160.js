@@ -28,6 +28,7 @@
   const divisionSelect = document.getElementById('id_division');
   const districtSelect = document.getElementById('id_district');
   const upazilaSelect = document.getElementById('id_upazila');
+  const searchableSelects = new Map();
   let bdLocations = {};
 
   if (locationsNode) {
@@ -37,6 +38,203 @@
       bdLocations = {};
     }
   }
+
+  function normalizeSearch(value) {
+    return String(value || '').trim().toLocaleLowerCase();
+  }
+
+  function selectedLabel(select) {
+    const selected = select && select.options ? select.options[select.selectedIndex] : null;
+    return selected && selected.value ? selected.textContent.trim() : '';
+  }
+
+  function enhanceSearchableSelect(select) {
+    if (!select || searchableSelects.has(select)) return searchableSelects.get(select);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'tb-searchable-select';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'tb-searchable-select__input';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-expanded', 'false');
+
+    const menu = document.createElement('div');
+    menu.className = 'tb-searchable-select__menu';
+    menu.setAttribute('role', 'listbox');
+    menu.id = `${select.id}-search-listbox`;
+    input.setAttribute('aria-controls', menu.id);
+
+    const chevron = document.createElement('span');
+    chevron.className = 'tb-searchable-select__chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+
+    select.parentNode.insertBefore(wrapper, select);
+    wrapper.appendChild(select);
+    wrapper.appendChild(input);
+    wrapper.appendChild(chevron);
+    wrapper.appendChild(menu);
+
+    select.classList.add('tb-searchable-select__native');
+    select.tabIndex = -1;
+    select.setAttribute('aria-hidden', 'true');
+
+    input.id = `${select.id}_search`;
+    const label = document.querySelector(`label[for="${select.id}"]`);
+    if (label) label.htmlFor = input.id;
+
+    let activeIndex = -1;
+
+    function optionRows(query = '') {
+      const needle = normalizeSearch(query);
+      return [...select.options].filter((option) => {
+        if (!option.value || option.disabled) return false;
+        return !needle || normalizeSearch(option.textContent).includes(needle);
+      });
+    }
+
+    function setActive(index) {
+      const rows = [...menu.querySelectorAll('.tb-searchable-select__option')];
+      if (!rows.length) {
+        activeIndex = -1;
+        return;
+      }
+      activeIndex = Math.max(0, Math.min(index, rows.length - 1));
+      rows.forEach((row, rowIndex) => row.classList.toggle('is-active', rowIndex === activeIndex));
+      rows[activeIndex].scrollIntoView({ block: 'nearest' });
+    }
+
+    function choose(value) {
+      const option = [...select.options].find((row) => row.value === value);
+      if (!option) return;
+      select.value = value;
+      input.value = option.textContent.trim();
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      close(false);
+    }
+
+    function render(query = '') {
+      menu.replaceChildren();
+      const rows = optionRows(query);
+      const currentValue = select.value;
+
+      if (!rows.length) {
+        const empty = document.createElement('div');
+        empty.className = 'tb-searchable-select__empty';
+        empty.textContent = 'No matching option found';
+        menu.appendChild(empty);
+        activeIndex = -1;
+        return;
+      }
+
+      rows.forEach((option, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'tb-searchable-select__option';
+        button.setAttribute('role', 'option');
+        button.dataset.value = option.value;
+        button.textContent = option.textContent.trim();
+        if (option.value === currentValue) {
+          button.classList.add('is-selected');
+          button.setAttribute('aria-selected', 'true');
+        } else {
+          button.setAttribute('aria-selected', 'false');
+        }
+        button.addEventListener('mousedown', (event) => {
+          event.preventDefault();
+          choose(option.value);
+        });
+        menu.appendChild(button);
+        if (option.value === currentValue) activeIndex = index;
+      });
+    }
+
+    function open() {
+      if (select.disabled) return;
+      wrapper.classList.add('is-open');
+      input.setAttribute('aria-expanded', 'true');
+      const currentLabel = selectedLabel(select);
+      const query = input.value && input.value !== currentLabel ? input.value : '';
+      render(query);
+    }
+
+    function close(restore = true) {
+      wrapper.classList.remove('is-open');
+      input.setAttribute('aria-expanded', 'false');
+      activeIndex = -1;
+      if (restore) input.value = selectedLabel(select);
+    }
+
+    function refresh() {
+      input.disabled = select.disabled;
+      const placeholder = select.options.length ? select.options[0].textContent.trim() : 'Select option';
+      input.placeholder = placeholder;
+      input.value = selectedLabel(select);
+      if (wrapper.classList.contains('is-open')) render('');
+    }
+
+    input.addEventListener('focus', () => {
+      open();
+      window.setTimeout(() => input.select(), 0);
+    });
+
+    input.addEventListener('click', () => {
+      open();
+    });
+
+    input.addEventListener('input', () => {
+      if (!wrapper.classList.contains('is-open')) open();
+      render(input.value);
+      setActive(0);
+    });
+
+    input.addEventListener('keydown', (event) => {
+      const rows = [...menu.querySelectorAll('.tb-searchable-select__option')];
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (!wrapper.classList.contains('is-open')) open();
+        setActive(activeIndex < 0 ? 0 : activeIndex + 1);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (!wrapper.classList.contains('is-open')) open();
+        setActive(activeIndex < 0 ? Math.max(0, rows.length - 1) : activeIndex - 1);
+      } else if (event.key === 'Enter' && wrapper.classList.contains('is-open')) {
+        const active = rows[activeIndex];
+        if (active) {
+          event.preventDefault();
+          choose(active.dataset.value);
+        }
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        close(true);
+        input.blur();
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      window.setTimeout(() => {
+        if (!wrapper.contains(document.activeElement)) close(true);
+      }, 0);
+    });
+
+    select.addEventListener('change', refresh);
+
+    const api = { refresh, close };
+    searchableSelects.set(select, api);
+    refresh();
+    return api;
+  }
+
+  document.addEventListener('mousedown', (event) => {
+    for (const [select, widget] of searchableSelects.entries()) {
+      const wrapper = select.closest('.tb-searchable-select');
+      if (wrapper && !wrapper.contains(event.target)) widget.close(true);
+    }
+  });
 
   function replaceOptions(select, values, placeholder, selectedValue = '') {
     if (!select) return;
@@ -56,6 +254,8 @@
 
     select.replaceChildren(fragment);
     select.disabled = values.length === 0;
+    const widget = searchableSelects.get(select);
+    if (widget) widget.refresh();
   }
 
   function syncUpazilas(preserveSelection = true) {
@@ -83,6 +283,10 @@
     upazilaSelect.disabled = !divisionSelect.value || !districtSelect.value;
     divisionSelect.addEventListener('change', () => syncDistricts(false));
     districtSelect.addEventListener('change', () => syncUpazilas(false));
+
+    enhanceSearchableSelect(divisionSelect);
+    enhanceSearchableSelect(districtSelect);
+    enhanceSearchableSelect(upazilaSelect);
   }
 
   function readCart() {
