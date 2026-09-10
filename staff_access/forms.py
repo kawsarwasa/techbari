@@ -181,6 +181,7 @@ class RoleCreateForm(forms.Form):
         if self.is_bound:
             selected_ids = {str(value) for value in self.data.getlist(self.add_prefix("permissions"))}
         self.permission_groups = build_permission_groups(list(self.fields["permissions"].queryset), selected_ids)
+        self.permission_total = self.fields["permissions"].queryset.count()
 
     def clean_name(self):
         name = " ".join((self.cleaned_data.get("name") or "").split())
@@ -203,6 +204,12 @@ class RoleCreateForm(forms.Form):
 
 
 class RolePermissionForm(forms.Form):
+    name = forms.CharField(
+        max_length=150,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "control", "autocomplete": "off"}),
+        label="Role name",
+    )
     permissions = forms.ModelMultipleChoiceField(
         queryset=Permission.objects.none(), required=False, widget=forms.CheckboxSelectMultiple
     )
@@ -211,10 +218,32 @@ class RolePermissionForm(forms.Form):
         self.group = group
         super().__init__(*args, **kwargs)
         self.fields["permissions"].queryset = staff_permissions_queryset().order_by("codename")
+        self.permission_total = self.fields["permissions"].queryset.count()
+        selected_ids = set()
         if group:
-            self.fields["permissions"].initial = group.permissions.filter(
+            self.fields["name"].initial = group.name
+            if group.name in SYSTEM_ROLE_NAMES:
+                self.fields["name"].disabled = True
+            initial_permissions = group.permissions.filter(
                 content_type__app_label="staff_access", content_type__model="staffprofile"
             )
+            self.fields["permissions"].initial = initial_permissions
+            selected_ids = {str(value) for value in initial_permissions.values_list("pk", flat=True)}
+        if self.is_bound:
+            selected_ids = {str(value) for value in self.data.getlist(self.add_prefix("permissions"))}
+        self.permission_groups = build_permission_groups(list(self.fields["permissions"].queryset), selected_ids)
+
+    def clean_name(self):
+        if not self.group:
+            return ""
+        if self.group.name in SYSTEM_ROLE_NAMES:
+            return self.group.name
+        name = " ".join((self.cleaned_data.get("name") or "").split())
+        if not name:
+            raise forms.ValidationError("Role name is required.")
+        if Group.objects.filter(name__iexact=name).exclude(pk=self.group.pk).exists():
+            raise forms.ValidationError("A role with this name already exists.")
+        return name
 
     def clean_permissions(self):
         permissions = self.cleaned_data.get("permissions")
@@ -223,5 +252,10 @@ class RolePermissionForm(forms.Form):
         return permissions
 
     def save(self):
+        if self.group.name not in SYSTEM_ROLE_NAMES:
+            new_name = self.cleaned_data.get("name")
+            if new_name and new_name != self.group.name:
+                self.group.name = new_name
+                self.group.save(update_fields=["name"])
         self.group.permissions.set(self.cleaned_data["permissions"])
         return self.group
