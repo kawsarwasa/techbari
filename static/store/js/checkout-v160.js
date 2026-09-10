@@ -22,6 +22,67 @@
   const errorNode = document.getElementById('checkoutClientError');
   const submitButton = document.getElementById('placeOrder');
 
+  // Bangladesh dependent location selectors.
+  // The same hierarchy is also enforced by CheckoutForm on the server.
+  const locationsNode = document.getElementById('checkoutBdLocations');
+  const divisionSelect = document.getElementById('id_division');
+  const districtSelect = document.getElementById('id_district');
+  const upazilaSelect = document.getElementById('id_upazila');
+  let bdLocations = {};
+
+  if (locationsNode) {
+    try {
+      bdLocations = JSON.parse(locationsNode.textContent || '{}');
+    } catch (_) {
+      bdLocations = {};
+    }
+  }
+
+  function replaceOptions(select, values, placeholder, selectedValue = '') {
+    if (!select) return;
+    const fragment = document.createDocumentFragment();
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = '';
+    placeholderOption.textContent = placeholder;
+    fragment.appendChild(placeholderOption);
+
+    for (const value of values) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = value;
+      if (value === selectedValue) option.selected = true;
+      fragment.appendChild(option);
+    }
+
+    select.replaceChildren(fragment);
+    select.disabled = values.length === 0;
+  }
+
+  function syncUpazilas(preserveSelection = true) {
+    if (!divisionSelect || !districtSelect || !upazilaSelect) return;
+    const division = divisionSelect.value;
+    const district = districtSelect.value;
+    const selected = preserveSelection ? upazilaSelect.value : '';
+    const values = (bdLocations[division] && bdLocations[division][district]) || [];
+    replaceOptions(upazilaSelect, values, 'Select Upazila / Thana', selected);
+  }
+
+  function syncDistricts(preserveSelection = true) {
+    if (!divisionSelect || !districtSelect || !upazilaSelect) return;
+    const division = divisionSelect.value;
+    const selected = preserveSelection ? districtSelect.value : '';
+    const districts = Object.keys(bdLocations[division] || {});
+    replaceOptions(districtSelect, districts, 'Select District', selected);
+    syncUpazilas(preserveSelection && districtSelect.value === selected);
+  }
+
+  if (divisionSelect && districtSelect && upazilaSelect && Object.keys(bdLocations).length) {
+    // Rebuild once so browser autofill and saved-address values stay in sync.
+    syncDistricts(true);
+    divisionSelect.addEventListener('change', () => syncDistricts(false));
+    districtSelect.addEventListener('change', () => syncUpazilas(false));
+  }
+
   function readCart() {
     try {
       const cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
