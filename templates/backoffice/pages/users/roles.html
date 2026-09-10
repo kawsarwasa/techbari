@@ -1,23 +1,23 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Roles & Permissions | TechBari{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/roles-refresh.css' %}?v=1.0.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/roles-refresh.css' %}?v=1.1.0">{% endblock %}
 {% block content %}
 <section class="page roles-refresh">
   <div class="rr-head">
     <div>
       <div class="rr-breadcrumbs"><a href="{% url 'backoffice:dashboard' %}">Dashboard</a><span>›</span><a href="{% url 'backoffice:users' %}">Users</a><span>›</span><strong>Roles</strong></div>
       <h1>Roles & Permissions</h1>
-      <p>Manage system roles and access permissions to keep your store secure and productive.</p>
+      <p>Manage system and custom staff roles with server-side permission enforcement.</p>
     </div>
     <div class="rr-actions">
-      <a class="rr-btn" href="{% url 'backoffice:users' %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-        Users
-      </a>
-      <a class="rr-btn rr-btn-primary" href="{% url 'backoffice:user_add' %}">
+      <a class="rr-btn" href="{% url 'backoffice:user_add' %}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
         Add User
+      </a>
+      <a class="rr-btn rr-btn-primary" href="{% url 'backoffice:role_add' %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+        Add Role
       </a>
     </div>
   </div>
@@ -27,19 +27,19 @@
       <div class="rr-kpis">
         <article class="rr-kpi">
           <div class="rr-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-          <div><div class="rr-kpi-label">System Roles</div><div class="rr-kpi-value">{{ role_rows|length }}</div><div class="rr-kpi-note">Configured role profiles</div></div>
+          <div><div class="rr-kpi-label">Total Roles</div><div class="rr-kpi-value">{{ role_rows|length }}</div><div class="rr-kpi-note">Available staff roles</div></div>
         </article>
         <article class="rr-kpi">
           <div class="rr-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></div>
-          <div><div class="rr-kpi-label">Permission Types</div><div class="rr-kpi-value">{{ permission_total }}</div><div class="rr-kpi-note">Available access controls</div></div>
+          <div><div class="rr-kpi-label">System Roles</div><div class="rr-kpi-value">{{ system_role_count }}</div><div class="rr-kpi-note">Built-in role profiles</div></div>
         </article>
         <article class="rr-kpi">
-          <div class="rr-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-          <div><div class="rr-kpi-label">Protected Role</div><div class="rr-kpi-value">1</div><div class="rr-kpi-note">Admin keeps full access</div></div>
+          <div class="rr-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M17.5 14v7M14 17.5h7"/></svg></div>
+          <div><div class="rr-kpi-label">Custom Roles</div><div class="rr-kpi-value">{{ custom_role_count }}</div><div class="rr-kpi-note">Created for your team</div></div>
         </article>
         <article class="rr-kpi">
           <div class="rr-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></div>
-          <div><div class="rr-kpi-label">Access Model</div><div class="rr-kpi-value">RBAC</div><div class="rr-kpi-note">Role-based access control</div></div>
+          <div><div class="rr-kpi-label">Permission Types</div><div class="rr-kpi-value">{{ permission_total }}</div><div class="rr-kpi-note">Available access controls</div></div>
         </article>
       </div>
 
@@ -47,8 +47,8 @@
         <div class="rr-toolbar">
           <div class="rr-tabs" role="tablist" aria-label="Role filters">
             <button class="rr-tab is-active" type="button" data-role-filter="all">All Roles <span>{{ role_rows|length }}</span></button>
-            <button class="rr-tab" type="button" data-role-filter="editable">Editable</button>
-            <button class="rr-tab" type="button" data-role-filter="protected">Protected</button>
+            <button class="rr-tab" type="button" data-role-filter="system">System Roles <span>{{ system_role_count }}</span></button>
+            <button class="rr-tab" type="button" data-role-filter="custom">Custom Roles <span>{{ custom_role_count }}</span></button>
           </div>
           <label class="rr-search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
@@ -57,10 +57,10 @@
         </div>
         <div class="rr-table-wrap">
           <table class="rr-table">
-            <thead><tr><th>Role Name</th><th>Staff</th><th>Access Coverage</th><th>Policy</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Role Name</th><th>Staff</th><th>Access Coverage</th><th>Role Type</th><th>Actions</th></tr></thead>
             <tbody>
               {% for row in role_rows %}
-              <tr data-role-row data-role="{{ row.group.name }}" data-policy="{% if row.group.name == 'Admin' %}protected{% else %}editable{% endif %}" data-search="{{ row.group.name|lower }}">
+              <tr data-role-row data-role="{{ row.group.name }}" data-kind="{% if row.is_system %}system{% else %}custom{% endif %}" data-search="{{ row.group.name|lower }}">
                 <td>
                   <div class="rr-role-cell">
                     <span class="rr-role-icon">
@@ -69,9 +69,10 @@
                       {% elif row.group.name == 'Accountant' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h3M15 15h1"/></svg>
                       {% elif row.group.name == 'Sales Staff' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M17 11v6M20 14h-6M2 21a7 7 0 0 1 12-4.9"/></svg>
                       {% elif row.group.name == 'Cashier' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v5H4zM5 9h14v11H5z"/><path d="M8 13h3M14 13h2M8 16h8"/></svg>
-                      {% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>{% endif %}
+                      {% elif row.is_system %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                      {% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M17.5 14v7M14 17.5h7"/></svg>{% endif %}
                     </span>
-                    <div><strong>{{ row.group.name }}</strong><span>{% if row.group.name == 'Admin' %}Full system access{% elif row.group.name == 'Manager' %}Broad operational management{% elif row.group.name == 'Cashier' %}POS and sales operations{% elif row.group.name == 'Inventory Manager' %}Inventory and purchasing control{% elif row.group.name == 'Accountant' %}Finance and reporting access{% else %}Sales and customer operations{% endif %}</span></div>
+                    <div><strong>{{ row.group.name }}</strong><span>{% if row.group.name == 'Admin' %}Full system access{% elif row.group.name == 'Manager' %}Broad operational management{% elif row.group.name == 'Cashier' %}POS and sales operations{% elif row.group.name == 'Inventory Manager' %}Inventory and purchasing control{% elif row.group.name == 'Accountant' %}Finance and reporting access{% elif row.group.name == 'Sales Staff' %}Sales and customer operations{% else %}Custom permission set{% endif %}</span></div>
                   </div>
                 </td>
                 <td><span class="rr-staff-pill">{{ row.staff_count }} staff</span></td>
@@ -81,16 +82,16 @@
                     <div class="rr-progress"><span style="width:{% if permission_total %}{% widthratio row.permission_count permission_total 100 %}{% else %}0{% endif %}%"></span></div>
                   </div>
                 </td>
-                <td>{% if row.group.name == 'Admin' %}<span class="rr-policy locked">Protected full access</span>{% else %}<span class="rr-policy">Editable permission matrix</span>{% endif %}</td>
+                <td>{% if row.group.name == 'Admin' %}<span class="rr-policy locked">Protected system role</span>{% elif row.is_system %}<span class="rr-policy">System role</span>{% else %}<span class="rr-policy" style="background:#f2edff;color:#6941c6">Custom role</span>{% endif %}</td>
                 <td>{% if row.group.name != 'Admin' %}<a class="rr-link" href="{% url 'backoffice:role_edit' row.group.id %}">Edit Permissions <span>→</span></a>{% else %}<span class="rr-locked">Locked</span>{% endif %}</td>
               </tr>
               {% empty %}
-              <tr><td colspan="5" class="rr-empty">No system roles are configured.</td></tr>
+              <tr><td colspan="5" class="rr-empty">No staff roles are configured.</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-        <div class="rr-card-foot">Showing <strong data-role-shown>{{ role_rows|length }}</strong> of {{ role_rows|length }} system roles</div>
+        <div class="rr-card-foot">Showing <strong data-role-shown>{{ role_rows|length }}</strong> of {{ role_rows|length }} roles</div>
       </section>
     </div>
 
@@ -108,11 +109,11 @@
       </section>
 
       <section class="rr-card rr-side-card">
-        <div class="rr-side-title"><h3>Access Policy</h3><span>System rules</span></div>
+        <div class="rr-side-title"><h3>Access Policy</h3><span>Role rules</span></div>
         <div class="rr-log-list">
           <div class="rr-log"><span class="rr-log-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></span><div><strong>Admin is protected</strong><p>The Admin role always keeps every TechBari permission.</p></div></div>
-          <div class="rr-log"><span class="rr-log-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M12 4h9M4 9h16M4 15h16"/></svg></span><div><strong>Other roles are editable</strong><p>Manager, Cashier, Inventory Manager, Accountant and Sales Staff can use the permission editor.</p></div></div>
-          <div class="rr-log"><span class="rr-log-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><strong>Changes are audited</strong><p>Role permission updates are recorded in the staff audit log.</p></div></div>
+          <div class="rr-log"><span class="rr-log-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M17.5 14v7M14 17.5h7"/></svg></span><div><strong>Custom roles are supported</strong><p>Create a role with the exact permissions your team needs, then assign it from Add User.</p></div></div>
+          <div class="rr-log"><span class="rr-log-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><strong>Changes are audited</strong><p>Role creation and permission updates are recorded in the staff audit log.</p></div></div>
         </div>
       </section>
 
@@ -124,4 +125,4 @@
   </div>
 </section>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'admin/js/roles-refresh.js' %}?v=1.0.0"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/roles-refresh.js' %}?v=1.1.0"></script>{% endblock %}
