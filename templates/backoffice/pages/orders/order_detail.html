@@ -1,51 +1,197 @@
 {% extends "backoffice/base.html" %}
+{% load static %}
 {% load demo %}
 {% block title %}{{ order.order_number }} | TechBari Admin{% endblock %}
+{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/order-detail-refresh.css' %}?v=1.0.0">{% endblock %}
 {% block content %}
-<section class="page">
-  <div class="page-head"><div><h1>{{ order.order_number }}</h1><p>{{ order.get_channel_display }} • {{ order.order_date }} • {{ order.warehouse.name }}</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:orders' %}">Orders</a>{% if order.status == 'draft' or order.status == 'pending' %}<a class="btn" href="{% url 'backoffice:order_add' %}?id={{ order.id }}">Edit</a>{% endif %}
-    {% if order.status == 'draft' or order.status == 'pending' %}<form method="post" action="{% url 'backoffice:order_confirm' order.id %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Confirm</button></form>{% endif %}
-    {% if order.status == 'confirmed' %}<form method="post" action="{% url 'backoffice:order_process' order.id %}">{% csrf_token %}<button class="btn btn-primary" type="submit">Process</button></form>{% endif %}
-    {% if order.status == 'confirmed' or order.status == 'processing' %}<form method="post" action="{% url 'backoffice:order_complete' order.id %}" onsubmit="return confirm('Mark this order completed/sold and deduct reserved stock?');">{% csrf_token %}<button class="btn btn-primary" type="submit">Complete / Sold</button></form>{% endif %}
-    {% if order.status == 'completed' %}<a class="btn btn-primary" href="{% url 'backoffice:return_add' %}?order={{ order.id }}">Return / Refund</a>{% endif %}
-  </div></div>
-  {% if sales_notice %}<div class="soft-note" style="margin-bottom:14px">{{ sales_notice }}</div>{% endif %}{% if sales_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ sales_error }}</div>{% endif %}
-  <div class="detail-cards">
-    <div class="card info-card"><div class="section-head"><h3>Order Status</h3></div><div class="info-body"><div class="kv"><span>Status</span><strong>{{ order.get_status_display }}</strong></div><div class="kv"><span>Payment</span><strong>{{ order.get_payment_status_display }}</strong></div><div class="kv"><span>Channel</span><strong>{{ order.get_channel_display }}</strong></div><div class="kv"><span>Warehouse</span><strong>{{ order.warehouse.code }}</strong></div></div></div>
-    <div class="card info-card"><div class="section-head"><h3>Customer</h3></div><div class="info-body">{% if order.customer %}<a href="{% url 'backoffice:customer_detail_id' order.customer.id %}"><strong>{{ order.customer.name }}</strong></a><br>{{ order.customer.phone }}<br>{{ order.customer.email }}{% else %}<strong>{{ order.shipping_name }}</strong><br>{{ order.shipping_phone }}<br>{{ order.shipping_email }}<div class="soft-note" style="margin-top:10px">Guest order</div>{% endif %}</div></div>
-    <div class="card info-card"><div class="section-head"><h3>Shipping Address</h3></div><div class="info-body"><strong>{{ order.shipping_name }}</strong><br>{{ order.shipping_phone }}{% if order.shipping_email %}<br>{{ order.shipping_email }}{% endif %}<p>{{ order.shipping_summary|default:"No address supplied." }}</p></div></div>
+<section class="page od-page">
+  <div class="od-head">
+    <div class="od-head-main">
+      <a class="od-back" href="{% url 'backoffice:orders' %}" aria-label="Back to orders">←</a>
+      <div>
+        <div class="od-breadcrumb"><a href="{% url 'backoffice:dashboard' %}">Home</a><span>›</span><a href="{% url 'backoffice:orders' %}">Sales Orders</a><span>›</span><strong>{{ order.order_number }}</strong></div>
+        <div class="od-title-row">
+          <h1>Order {{ order.order_number }}</h1>
+          <span class="od-status od-status-{{ order.status }}">{{ order.get_status_display }}</span>
+        </div>
+        <p>Placed on {{ order.created_at|date:"M d, Y" }} at {{ order.created_at|date:"h:i A" }} • Via {{ order.get_channel_display }}</p>
+      </div>
+    </div>
+
+    <div class="od-head-actions">
+      {% if order.status == 'draft' or order.status == 'pending' %}
+      <a class="od-btn od-btn-outline" href="{% url 'backoffice:order_add' %}?id={{ order.id }}">Edit Order</a>
+      <form method="post" action="{% url 'backoffice:order_confirm' order.id %}">{% csrf_token %}<button class="od-btn od-btn-primary" type="submit">Confirm Order</button></form>
+      {% elif order.status == 'confirmed' %}
+      <form method="post" action="{% url 'backoffice:order_process' order.id %}">{% csrf_token %}<button class="od-btn od-btn-primary" type="submit">Start Processing</button></form>
+      {% elif order.status == 'processing' %}
+      <form method="post" action="{% url 'backoffice:order_complete' order.id %}" onsubmit="return confirm('Mark this order completed/sold and deduct reserved stock?');">{% csrf_token %}<button class="od-btn od-btn-primary" type="submit">Complete / Sold</button></form>
+      {% elif order.status == 'completed' %}
+      <a class="od-btn od-btn-primary" href="{% url 'backoffice:return_add' %}?order={{ order.id }}">Return / Refund</a>
+      {% endif %}
+
+      {% if order.channel != 'pos' %}
+        {% if order.shipment %}
+        <a class="od-btn od-btn-outline" href="{% url 'backoffice:shipment_detail' order.shipment.id %}">Open Shipment</a>
+        {% elif order.status == 'confirmed' or order.status == 'processing' or order.status == 'completed' %}
+        <a class="od-btn od-btn-outline" href="{% url 'backoffice:shipment_add' %}?order={{ order.id }}">Create Shipment</a>
+        {% endif %}
+      {% endif %}
+    </div>
   </div>
 
-  {% if order.channel != 'pos' %}
-  <div class="card info-card" style="margin-top:16px"><div class="section-head"><h3>Courier Fulfillment</h3></div><div class="info-body">
-    {% if order.shipment %}
-      <div class="kv"><span>Shipment</span><strong><a href="{% url 'backoffice:shipment_detail' order.shipment.id %}">{{ order.shipment.shipment_no }}</a></strong></div>
-      <div class="kv"><span>Courier</span><strong>{{ order.shipment.courier.name }}</strong></div>
-      <div class="kv"><span>Shipment Status</span><strong>{{ order.shipment.get_status_display }}</strong></div>
-      <div class="kv"><span>Tracking</span><strong>{{ order.shipment.tracking_id|default:"—" }}</strong></div>
-      <div class="kv"><span>COD Expected</span><strong>{{ order.shipment.cod_expected|money }}</strong></div>
-      <div class="kv"><span>COD Settled</span><strong>{{ order.shipment.cod_settled|money }}</strong></div>
-      <a class="btn" href="{% url 'backoffice:shipment_detail' order.shipment.id %}" style="margin-top:10px">Open Shipment</a>
-      {% if order.shipment.status == 'returned' %}<a class="btn btn-primary" href="{% url 'backoffice:return_add' %}?order={{ order.id }}" style="margin-top:10px">Process Courier Return</a>{% endif %}
-    {% elif order.status == 'confirmed' or order.status == 'processing' or order.status == 'completed' %}
-      <p>No courier shipment has been created for this order.</p>
-      <a class="btn btn-primary" href="{% url 'backoffice:shipment_add' %}?order={{ order.id }}">Create Shipment</a>
-    {% else %}
-      <p>Confirm the order before creating a courier shipment.</p>
-    {% endif %}
-  </div></div>
-  {% endif %}
+  {% if sales_notice %}<div class="od-notice od-notice-success">{{ sales_notice }}</div>{% endif %}
+  {% if sales_error %}<div class="od-notice od-notice-error">{{ sales_error }}</div>{% endif %}
 
-  <div class="card orders-table-card" style="margin-top:16px"><div class="section-head"><h3>Order Items</h3></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Product / SKU</th><th>Qty</th><th>Price</th><th>Discount</th><th>Line Total</th><th>Reserved</th><th>Issued</th></tr></thead><tbody>{% for item in order.items.all %}<tr><td><strong>{{ item.product_snapshot }}</strong><br><small>{{ item.variant_snapshot }} • {{ item.sku_snapshot }}</small></td><td>{{ item.quantity }}</td><td>{{ item.unit_price|money }}</td><td>{{ item.discount_amount|money }}</td><td>{{ item.line_total|money }}</td><td>{{ item.reserved_quantity }}</td><td>{{ item.issued_quantity }}</td></tr>{% endfor %}</tbody></table></div><div class="summary-lines"><div class="summary-line"><span>Items Subtotal</span><strong>{{ order.subtotal|money }}</strong></div><div class="summary-line"><span>Order Discount</span><strong>- {{ order.discount_amount|money }}</strong></div><div class="summary-line"><span>Shipping</span><strong>{{ order.shipping_charge|money }}</strong></div><div class="summary-line"><span>Grand Total</span><strong>{{ order.grand_total|money }}</strong></div>{% if order.return_credit_amount > 0 %}<div class="summary-line"><span>Return Credit</span><strong>- {{ order.return_credit_amount|money }}</strong></div>{% endif %}<div class="summary-line total"><span>Payable After Returns</span><strong>{{ order.payable_total|money }}</strong></div><div class="summary-line"><span>Paid / Net Paid</span><strong>{{ order.amount_paid|money }}</strong></div><div class="summary-line"><span>Due</span><strong>{{ order.outstanding_amount|money }}</strong></div></div></div>
-  <div class="detail-grid-top" style="margin-top:16px">
-    <div class="card info-card"><div class="section-head"><h3>Payments</h3></div><div class="info-body"><div class="kv"><span>Net Paid</span><strong>{{ order.amount_paid|money }}</strong></div><div class="kv"><span>Return Credit</span><strong>{{ order.return_credit_amount|money }}</strong></div><div class="kv"><span>Due</span><strong>{{ order.outstanding_amount|money }}</strong></div>{% if order.status != 'draft' and order.status != 'cancelled' and order.outstanding_amount > 0 %}<a class="btn btn-primary" href="{% url 'backoffice:payment_add' %}?order={{ order.id }}" style="margin-top:12px">Record Payment</a>{% endif %}<a class="btn" href="{% url 'backoffice:payments' %}?q={{ order.order_number }}" style="margin-top:12px">Open Payment Ledger</a><div class="soft-note" style="margin-top:10px">v1.10.0 keeps return credits separate from actual cash refunds. The payable balance and Payment ledger stay synchronized.</div></div></div>
-    <div class="card info-card"><div class="section-head"><h3>Order Actions</h3></div><div class="info-body">{% if order.status != 'completed' and order.status != 'cancelled' %}<form method="post" action="{% url 'backoffice:order_cancel' order.id %}" onsubmit="return confirm('Cancel this order and release reserved stock?');">{% csrf_token %}<label class="field"><span>Cancellation note</span><textarea class="control" name="note" rows="2"></textarea></label><button class="btn" type="submit">Cancel Order</button></form>{% elif order.status == 'completed' %}<a class="btn btn-primary" href="{% url 'backoffice:return_add' %}?order={{ order.id }}">Create Return / Refund</a>{% endif %}{% if order.status == 'draft' %}<form method="post" action="{% url 'backoffice:order_delete' order.id %}" onsubmit="return confirm('Delete this draft order permanently?');" style="margin-top:12px">{% csrf_token %}<button class="btn" type="submit">Delete Draft</button></form>{% endif %}</div></div>
+  <div class="od-layout">
+    <div class="od-main-column">
+      <article class="od-card od-progress-card">
+        <div class="od-progress">
+          <div class="od-step done">
+            <span class="od-step-icon">✓</span>
+            <div><strong>Order Placed</strong><small>{{ order.created_at|date:"M d, h:i A" }}</small></div>
+          </div>
+          <span class="od-step-line {% if order.status != 'draft' and order.status != 'pending' and order.status != 'cancelled' %}active{% endif %}"></span>
+          <div class="od-step {% if order.status == 'confirmed' %}current{% elif order.status == 'processing' or order.status == 'completed' %}done{% endif %}">
+            <span class="od-step-icon">▣</span>
+            <div><strong>Confirmed</strong><small>{% if order.status == 'draft' or order.status == 'pending' %}Waiting{% else %}Order confirmed{% endif %}</small></div>
+          </div>
+          <span class="od-step-line {% if order.status == 'processing' or order.status == 'completed' %}active{% endif %}"></span>
+          <div class="od-step {% if order.status == 'processing' %}current{% elif order.status == 'completed' %}done{% endif %}">
+            <span class="od-step-icon">⚙</span>
+            <div><strong>Processing</strong><small>{% if order.status == 'processing' %}Current{% elif order.status == 'completed' %}Processed{% else %}Waiting{% endif %}</small></div>
+          </div>
+          <span class="od-step-line {% if order.shipment and order.shipment.status != 'draft' and order.shipment.status != 'ready' %}active{% endif %}"></span>
+          <div class="od-step {% if order.shipment and order.shipment.status == 'delivered' %}done{% elif order.shipment and order.shipment.status != 'draft' and order.shipment.status != 'ready' %}current{% endif %}">
+            <span class="od-step-icon">▰</span>
+            <div><strong>Shipped</strong><small>{% if order.shipment %}{{ order.shipment.get_status_display }}{% else %}Not shipped yet{% endif %}</small></div>
+          </div>
+          <span class="od-step-line {% if order.shipment and order.shipment.status == 'delivered' %}active{% endif %}"></span>
+          <div class="od-step {% if order.shipment and order.shipment.status == 'delivered' %}done{% endif %}">
+            <span class="od-step-icon">✓</span>
+            <div><strong>Delivered</strong><small>{% if order.shipment and order.shipment.delivered_at %}{{ order.shipment.delivered_at|date:"M d, h:i A" }}{% else %}Not delivered yet{% endif %}</small></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="od-card od-items-card">
+        <div class="od-section-head"><h2>Order Items ({{ order.item_count }})</h2></div>
+        <div class="od-table-scroll">
+          <table class="od-items-table">
+            <thead><tr><th>#</th><th>Product</th><th>SKU</th><th class="od-money-col">Price</th><th class="od-qty-col">Qty</th><th class="od-money-col">Total</th></tr></thead>
+            <tbody>
+            {% for item in order.items.all %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>
+                  <div class="od-product">
+                    {% with product_image=item.variant.product.images.first %}
+                    <div class="od-product-thumb">
+                      {% if product_image and product_image.image %}<img src="{{ product_image.image.url }}" alt="{{ product_image.alt_text|default:item.product_snapshot }}">
+                      {% elif product_image and product_image.static_path %}<img src="{% static product_image.static_path %}" alt="{{ product_image.alt_text|default:item.product_snapshot }}">
+                      {% else %}<span>{{ item.product_snapshot|slice:":1"|upper }}</span>{% endif %}
+                    </div>
+                    {% endwith %}
+                    <div><strong>{{ item.product_snapshot }}</strong><small>{{ item.variant_snapshot|default:"Default" }}</small></div>
+                  </div>
+                </td>
+                <td><span class="od-sku">{{ item.sku_snapshot }}</span></td>
+                <td class="od-money-col">{{ item.unit_price|money }}</td>
+                <td class="od-qty-col">{{ item.quantity }}</td>
+                <td class="od-money-col od-row-total">{{ item.line_total|money }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="od-totals-wrap">
+          <div class="od-totals">
+            <div><span>Subtotal</span><strong>{{ order.subtotal|money }}</strong></div>
+            <div><span>Shipping</span><strong>{{ order.shipping_charge|money }}</strong></div>
+            <div><span>Discount</span><strong class="od-negative">- {{ order.discount_amount|money }}</strong></div>
+            {% if order.return_credit_amount > 0 %}<div><span>Return Credit</span><strong class="od-negative">- {{ order.return_credit_amount|money }}</strong></div>{% endif %}
+            <div class="od-total-line"><span>Total</span><strong>{{ order.payable_total|money }}</strong></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="od-card">
+        <div class="od-section-head"><h2>Payment &amp; Delivery Status</h2></div>
+        <div class="od-status-grid">
+          <div class="od-mini-card od-mini-green"><span class="od-mini-icon">▣</span><div><small>Payment Status</small><span class="od-pill od-pill-green">{{ order.get_payment_status_display }}</span><strong>{{ order.amount_paid|money }} / {{ order.payable_total|money }}</strong></div></div>
+          <div class="od-mini-card od-mini-orange"><span class="od-mini-icon">▰</span><div><small>Delivery Status</small><span class="od-pill od-pill-orange">{% if order.shipment %}{{ order.shipment.get_status_display }}{% else %}Pending{% endif %}</span><strong>{% if order.shipment %}{{ order.shipment.courier.name }}{% else %}Not shipped yet{% endif %}</strong></div></div>
+          <div class="od-mini-card od-mini-blue"><span class="od-mini-icon">▣</span><div><small>Order Channel</small><span class="od-pill od-pill-blue">{{ order.get_channel_display }}</span><strong>{{ order.warehouse.name }}</strong></div></div>
+          <div class="od-mini-card od-mini-sky"><span class="od-mini-icon">□</span><div><small>Estimated Delivery</small><span class="od-pill od-pill-neutral">{% if order.shipment and order.shipment.expected_delivery_date %}{{ order.shipment.expected_delivery_date|date:"M d, Y" }}{% else %}—{% endif %}</span><strong>{% if order.shipment and order.shipment.expected_delivery_date %}Scheduled{% else %}Not available{% endif %}</strong></div></div>
+        </div>
+      </article>
+
+      <article class="od-card od-timeline-card">
+        <div class="od-section-head"><h2>Order Timeline</h2></div>
+        <div class="od-timeline">
+          {% for event in order.history.all %}
+          <div class="od-timeline-row">
+            <span class="od-timeline-dot {% if event.event == 'created' %}green{% elif event.event == 'payment' %}blue{% elif event.event == 'status' %}purple{% else %}gray{% endif %}"></span>
+            <div class="od-timeline-meta"><strong>{{ event.get_event_display }}</strong><small>{{ event.created_at|date:"M d, Y, h:i A" }}</small></div>
+            <div class="od-timeline-note">{% if event.note %}{{ event.note }}{% elif event.new_status %}Status changed to {{ event.new_status }}{% else %}Order activity recorded{% endif %}</div>
+          </div>
+          {% empty %}<div class="od-empty">No order history recorded.</div>{% endfor %}
+        </div>
+      </article>
+
+      <details class="od-card od-more-card">
+        <summary>More Order Records &amp; Actions</summary>
+        <div class="od-more-grid">
+          <section>
+            <h3>Payment Transactions</h3>
+            <div class="od-table-scroll"><table class="od-subtable"><thead><tr><th>Transaction</th><th>Date</th><th>Method</th><th class="od-money-col">Amount</th><th>Status</th></tr></thead><tbody>{% for transaction in order.payment_transactions.all %}<tr><td><a href="{% url 'backoffice:payment_detail' transaction.id %}">{{ transaction.transaction_no }}</a></td><td>{{ transaction.transaction_date }}</td><td>{{ transaction.get_method_display }}</td><td class="od-money-col">{% if transaction.direction == 'out' %}- {% endif %}{{ transaction.amount|money }}</td><td>{{ transaction.get_status_display }}</td></tr>{% empty %}<tr><td colspan="5">No payment transactions recorded.</td></tr>{% endfor %}</tbody></table></div>
+          </section>
+          <section>
+            <h3>Returns &amp; Refunds</h3>
+            <div class="od-table-scroll"><table class="od-subtable"><thead><tr><th>Return</th><th>Date</th><th>Status</th><th class="od-money-col">Credit</th><th class="od-money-col">Refunded</th></tr></thead><tbody>{% for sales_return in order.sales_returns.all %}<tr><td><a href="{% url 'backoffice:return_detail' sales_return.id %}">{{ sales_return.return_no }}</a></td><td>{{ sales_return.requested_date }}</td><td>{{ sales_return.get_status_display }}</td><td class="od-money-col">{{ sales_return.credit_total|money }}</td><td class="od-money-col">{{ sales_return.refunded_total|money }}</td></tr>{% empty %}<tr><td colspan="5">No returns recorded for this order.</td></tr>{% endfor %}</tbody></table></div>
+          </section>
+        </div>
+        <div class="od-operational-actions">
+          {% if order.status != 'draft' and order.status != 'cancelled' and order.outstanding_amount > 0 %}<a class="od-btn od-btn-primary" href="{% url 'backoffice:payment_add' %}?order={{ order.id }}">Record Payment</a>{% endif %}
+          <a class="od-btn od-btn-outline" href="{% url 'backoffice:payments' %}?q={{ order.order_number }}">Open Payment Ledger</a>
+          {% if order.status != 'completed' and order.status != 'cancelled' %}<form method="post" action="{% url 'backoffice:order_cancel' order.id %}" onsubmit="return confirm('Cancel this order and release reserved stock?');">{% csrf_token %}<input type="hidden" name="note" value="Cancelled from order detail"><button class="od-btn od-btn-danger" type="submit">Cancel Order</button></form>{% endif %}
+          {% if order.status == 'draft' %}<form method="post" action="{% url 'backoffice:order_delete' order.id %}" onsubmit="return confirm('Delete this draft order permanently?');">{% csrf_token %}<button class="od-btn od-btn-danger" type="submit">Delete Draft</button></form>{% endif %}
+        </div>
+      </details>
+    </div>
+
+    <aside class="od-side-column">
+      <article class="od-card od-side-card">
+        <div class="od-side-title"><span class="od-side-icon blue">👤</span><h3>Customer Information</h3></div>
+        <div class="od-customer-block">
+          <span class="od-avatar">{{ order.customer_name|slice:":1"|upper }}</span>
+          <div><strong>{{ order.customer_name }}</strong><span>{{ order.customer_phone|default:"No phone" }}</span>{% if order.customer %}<span>{{ order.customer.email|default:"No email" }}</span><a href="{% url 'backoffice:customer_detail_id' order.customer.id %}">View Customer →</a>{% elif order.shipping_email %}<span>{{ order.shipping_email }}</span>{% endif %}</div>
+        </div>
+      </article>
+
+      <article class="od-card od-side-card">
+        <div class="od-side-title"><span class="od-side-icon pink">●</span><h3>Shipping Information</h3></div>
+        <div class="od-side-copy"><strong>{{ order.shipping_name|default:order.customer_name }}</strong>{% if order.shipping_phone %}<span>{{ order.shipping_phone }}</span>{% endif %}<span>{{ order.shipping_summary|default:"No shipping address supplied." }}</span></div>
+      </article>
+
+      <article class="od-card od-side-card">
+        <div class="od-side-title"><span class="od-side-icon green">▣</span><h3>Payment Information</h3></div>
+        {% with latest_payment=order.payment_transactions.first %}
+        <div class="od-kv-list">
+          <div><span>Method</span><strong>{% if latest_payment %}{{ latest_payment.get_method_display }}{% elif order.payment_method %}{{ order.get_payment_method_display }}{% else %}—{% endif %}</strong></div>
+          <div><span>Status</span><strong><em class="od-pill od-pill-green">{{ order.get_payment_status_display }}</em></strong></div>
+          <div><span>Paid Amount</span><strong>{{ order.amount_paid|money }}</strong></div>
+          {% if latest_payment %}<div><span>Paid At</span><strong>{{ latest_payment.transaction_date|date:"M d, Y" }}</strong></div>{% endif %}
+          {% if latest_payment.provider_reference %}<div><span>Reference</span><strong>{{ latest_payment.provider_reference }}</strong></div>{% elif order.payment_reference %}<div><span>Reference</span><strong>{{ order.payment_reference }}</strong></div>{% endif %}
+        </div>
+        {% endwith %}
+      </article>
+
+      <article class="od-card od-side-card">
+        <div class="od-side-title"><span class="od-side-icon orange">▤</span><h3>Order Notes</h3></div>
+        <div class="od-notes">{% if order.notes %}{{ order.notes|linebreaksbr }}{% else %}No internal notes yet.{% endif %}</div>
+        {% if order.status == 'draft' or order.status == 'pending' %}<a class="od-note-link" href="{% url 'backoffice:order_add' %}?id={{ order.id }}">Edit Notes</a>{% endif %}
+      </article>
+    </aside>
   </div>
-  <div class="card orders-table-card" style="margin-top:16px"><div class="section-head"><h3>Payment Transactions</h3></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Transaction</th><th>Date</th><th>Type</th><th>Method</th><th>Amount</th><th>Status</th><th>Reconciliation</th></tr></thead><tbody>{% for transaction in order.payment_transactions.all %}<tr><td><a href="{% url 'backoffice:payment_detail' transaction.id %}">{{ transaction.transaction_no }}</a></td><td>{{ transaction.transaction_date }}</td><td>{{ transaction.get_kind_display }}</td><td>{{ transaction.get_method_display }}</td><td>{% if transaction.direction == 'out' %}- {% else %}+ {% endif %}{{ transaction.amount|money }}</td><td>{{ transaction.get_status_display }}</td><td>{{ transaction.get_reconciliation_status_display }}</td></tr>{% empty %}<tr><td colspan="7">No payment transactions recorded.</td></tr>{% endfor %}</tbody></table></div></div>
-
-  <div class="card orders-table-card" style="margin-top:16px"><div class="section-head"><h3>Returns & Refunds</h3>{% if order.status == 'completed' %}<a class="btn" href="{% url 'backoffice:return_add' %}?order={{ order.id }}">Add Return</a>{% endif %}</div><div class="table-scroll"><table class="data-table"><thead><tr><th>Return</th><th>Date</th><th>Status</th><th>Source</th><th>Credit</th><th>Cash Refund</th><th>Restocked</th></tr></thead><tbody>{% for sales_return in order.sales_returns.all %}<tr><td><a href="{% url 'backoffice:return_detail' sales_return.id %}">{{ sales_return.return_no }}</a></td><td>{{ sales_return.requested_date }}</td><td>{{ sales_return.get_status_display }}</td><td>{{ sales_return.get_source_display }}</td><td>{{ sales_return.credit_total|money }}</td><td>{{ sales_return.refunded_total|money }}</td><td>{{ sales_return.restocked_total }}</td></tr>{% empty %}<tr><td colspan="7">No returns recorded for this order.</td></tr>{% endfor %}</tbody></table></div></div>
-
-  <div class="card orders-table-card" style="margin-top:16px"><div class="section-head"><h3>Order History</h3></div><div class="table-scroll"><table class="data-table"><thead><tr><th>When</th><th>Event</th><th>From</th><th>To</th><th>Actor</th><th>Note</th></tr></thead><tbody>{% for event in order.history.all %}<tr><td>{{ event.created_at }}</td><td>{{ event.get_event_display }}</td><td>{{ event.previous_status|default:"—" }}</td><td>{{ event.new_status|default:"—" }}</td><td>{{ event.actor|default:"System" }}</td><td>{{ event.note }}</td></tr>{% empty %}<tr><td colspan="6">No history recorded.</td></tr>{% endfor %}</tbody></table></div></div>
-  {% if order.notes %}<div class="card info-card" style="margin-top:16px"><div class="section-head"><h3>Order Notes</h3></div><div class="info-body">{{ order.notes|linebreaksbr }}</div></div>{% endif %}
 </section>
 {% endblock %}
