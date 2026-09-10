@@ -32,6 +32,22 @@
     return form.querySelector(`input[name="${name}"]:checked`);
   }
 
+  // The searchable controls are created by checkout-v160.js immediately after
+  // this file loads. Once they exist, typing a different label clears the
+  // underlying native selection until the user chooses a real option.
+  window.setTimeout(() => {
+    ['id_division', 'id_district', 'id_upazila'].forEach((selectId) => {
+      const select = document.getElementById(selectId);
+      const input = document.getElementById(`${selectId}_search`);
+      if (!select || !input) return;
+      input.addEventListener('input', () => {
+        const selected = select.options[select.selectedIndex];
+        const selectedLabel = selected && selected.value ? selected.textContent.trim() : '';
+        if (input.value.trim() !== selectedLabel) select.value = '';
+      });
+    });
+  }, 0);
+
   form.addEventListener('submit', (event) => {
     clearError();
 
