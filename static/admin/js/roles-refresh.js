@@ -12,8 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const query = (search?.value || "").trim().toLowerCase();
     let visible = 0;
     rows.forEach((row) => {
-      const policy = row.dataset.policy || "editable";
-      const matchesFilter = activeFilter === "all" || policy === activeFilter;
+      const kind = row.dataset.kind || "system";
+      const matchesFilter = activeFilter === "all" || kind === activeFilter;
       const matchesSearch = !query || (row.dataset.search || "").includes(query);
       row.hidden = !(matchesFilter && matchesSearch);
       if (!row.hidden) visible += 1;
@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const donut = root.querySelector("[data-role-donut]");
   const legendRows = Array.from(root.querySelectorAll("[data-role-legend]"));
-  const colors = ["#1677ff", "#7c4dff", "#2d9bf0", "#1bb7a8", "#f49a22", "#e95b67"];
+  const colors = ["#1677ff", "#7c4dff", "#2d9bf0", "#1bb7a8", "#f49a22", "#e95b67", "#0f9d8a", "#9a6bff"];
   const counts = legendRows.map((row) => Number(row.dataset.staffCount || 0));
   const total = counts.reduce((sum, value) => sum + value, 0);
 
