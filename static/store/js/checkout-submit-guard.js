@@ -1,14 +1,26 @@
 (() => {
   const form = document.getElementById('checkoutForm');
-  const currentButton = document.getElementById('placeOrder');
   const errorNode = document.getElementById('checkoutClientError');
-  if (!form || !currentButton) return;
+  if (!form) return;
 
-  // app.js still binds a legacy demo click handler directly to #placeOrder.
-  // Replacing the node removes that stale listener before the real checkout
-  // controller is initialized, while preserving the button markup/attributes.
-  const submitButton = currentButton.cloneNode(true);
-  currentButton.replaceWith(submitButton);
+  // app.js registers its legacy demo Place Order handler from its
+  // DOMContentLoaded callback. Because app.js is loaded before this file, its
+  // callback runs first. Clone the button immediately afterwards so the demo
+  // listener is genuinely removed, while checkout-v160's delegated document
+  // handler continues to work with the replacement button.
+  function removeLegacyPlaceOrderHandler() {
+    const currentButton = document.getElementById('placeOrder');
+    if (!currentButton || currentButton.dataset.checkoutSubmitGuarded === '1') return;
+    const cleanButton = currentButton.cloneNode(true);
+    cleanButton.dataset.checkoutSubmitGuarded = '1';
+    currentButton.replaceWith(cleanButton);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', removeLegacyPlaceOrderHandler, { once: true });
+  } else {
+    removeLegacyPlaceOrderHandler();
+  }
 
   function showError(message, target = null) {
     if (errorNode) {
@@ -32,9 +44,9 @@
     return form.querySelector(`input[name="${name}"]:checked`);
   }
 
-  // The searchable controls are created by checkout-v160.js immediately after
-  // this file loads. Once they exist, typing a different label clears the
-  // underlying native selection until the user chooses a real option.
+  // checkout-v160 creates the searchable controls later in the same page load.
+  // Typing a label that is not the currently selected option clears the native
+  // value so a user cannot submit text that was never actually selected.
   window.setTimeout(() => {
     ['id_division', 'id_district', 'id_upazila'].forEach((selectId) => {
       const select = document.getElementById(selectId);
