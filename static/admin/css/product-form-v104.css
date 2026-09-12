@@ -92,6 +92,61 @@
 .product-form-page .add-product-empty-media input{display:none}
 .product-form-page .add-product-image-strip{margin-top:10px}
 .product-form-page .add-product-note{margin:10px 0 0}
+
+/* Professional inline SVG icon system for Product forms */
+.product-form-page .section-icon{
+  flex:0 0 auto;
+  line-height:0;
+}
+.product-form-page .section-icon svg{
+  width:17px;
+  height:17px;
+  display:block;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.product-form-page .section-icon.blue{
+  background:#eaf4ff;
+  color:#0b74f7;
+}
+.product-form-page .section-icon.purple{
+  background:#f1edff;
+  color:#6c4ff8;
+}
+.product-form-page .btn-icon{
+  width:15px;
+  height:15px;
+  flex:0 0 auto;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.product-form-page .head-actions .btn,
+.product-form-page .section-title-line .btn,
+.product-form-page .product-form-action{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+}
+.product-form-page .media-upload-icon svg{
+  width:24px;
+  height:24px;
+  display:block;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.product-form-page .status-toggle-row>span svg{
+  width:19px;
+  height:19px;
+  display:block;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
 @media (prefers-reduced-motion:reduce){
   .product-form-page .btn,
   .product-form-page .switch span,
