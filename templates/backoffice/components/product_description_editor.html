@@ -6,6 +6,21 @@
       <option value="H3">Heading 3</option>
       <option value="BLOCKQUOTE">Quote</option>
     </select>
+    <select class="cms-content-editor-size" data-editor-font-size aria-label="Font size" title="Font size">
+      <option value="12px">12 px</option>
+      <option value="14px" selected>14 px</option>
+      <option value="16px">16 px</option>
+      <option value="18px">18 px</option>
+      <option value="20px">20 px</option>
+      <option value="24px">24 px</option>
+      <option value="28px">28 px</option>
+      <option value="32px">32 px</option>
+    </select>
+    <label class="cms-content-editor-color" title="Text color">
+      <span aria-hidden="true">A</span>
+      <input type="color" value="#17355d" data-editor-color aria-label="Text color">
+    </label>
+    <span class="cms-content-editor-divider" aria-hidden="true"></span>
     <button type="button" data-editor-command="bold" title="Bold" aria-label="Bold"><strong>B</strong></button>
     <button type="button" data-editor-command="italic" title="Italic" aria-label="Italic"><em>I</em></button>
     <button type="button" data-editor-command="underline" title="Underline" aria-label="Underline"><u>U</u></button>
@@ -20,7 +35,7 @@
   <div class="cms-content-editor-surface" data-editor-surface contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true" data-placeholder="Write the full product description here..."></div>
   <textarea id="id_description" name="description" class="cms-content-editor-source" rows="9" data-editor-source>{{ form.description.value|default_if_none:'' }}</textarea>
   <div class="cms-content-editor-foot">
-    <span>Use headings, emphasis and lists to make the product description easier to scan.</span>
+    <span>Use headings, font size, color, emphasis and lists to make the product description easier to scan.</span>
     <span class="cms-content-editor-status" data-editor-status>Loading editor…</span>
   </div>
 </div>
