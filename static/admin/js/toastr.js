@@ -59,8 +59,7 @@
     node.querySelector('.techbari-toast-close').addEventListener('click',()=>removeToast(node));
     region().appendChild(node);
     requestAnimationFrame(()=>requestAnimationFrame(()=>node.classList.add('is-visible')));
-    const timer=setTimeout(()=>removeToast(node),duration);
-    node.addEventListener('mouseenter',()=>{clearTimeout(timer);const bar=node.querySelector('.techbari-toast-progress::after');void bar});
+    setTimeout(()=>removeToast(node),duration);
     node.addEventListener('click',e=>{if(!e.target.closest('.techbari-toast-close'))removeToast(node)});
     hideInlineDuplicate(message);
     return node;
