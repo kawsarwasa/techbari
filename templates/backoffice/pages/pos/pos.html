@@ -1,6 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Point of Sale | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/pos-held-ux.css' %}?v=1.0.0">{% endblock %}
 {% block content %}
 <section class="page" data-pos-real="1">
   <div class="page-head pos-page-head">
@@ -10,7 +11,10 @@
       <select class="control" data-real-pos-warehouse onchange="location.href='?warehouse='+this.value">
         {% for warehouse in warehouses_real %}<option value="{{ warehouse.id }}"{% if warehouse.id == selected_warehouse.id %} selected{% endif %}>{{ warehouse.name }}</option>{% endfor %}
       </select>
-      <button type="button" class="btn" data-real-pos-held-toggle>Held Orders ({{ held_orders_real|length }})</button>
+      <button type="button" class="btn pos-held-orders-btn" data-real-pos-held-toggle aria-controls="heldPosOrdersPanel" aria-expanded="false">
+        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M9 7v10M15 7v10"/><circle cx="12" cy="12" r="9"/></svg>
+        <span>Held Orders (<strong data-real-pos-held-count>{{ held_orders_real|length }}</strong>)</span>
+      </button>
     </div>
   </div>
 
@@ -31,7 +35,7 @@
       <div class="pos-ref-grid" data-real-pos-grid></div>
     </section>
 
-    <aside class="pos-order-panel">
+    <aside class="pos-order-panel" data-real-pos-order-panel>
       <div class="pos-order-head"><div><h2>Current Order</h2></div><button type="button" class="pos-clear" data-real-pos-clear>Clear Cart</button></div>
       <div class="pos-ref-cart" data-real-pos-cart></div>
 
@@ -68,19 +72,22 @@
         <div class="muted" style="margin-top:8px">Cash may exceed total and returns change. Card/bKash/Nagad must exactly match total and include a reference.</div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-top:14px">
-        <button type="button" class="btn" data-real-pos-hold>Hold</button>
+      <div class="pos-final-actions">
+        <button type="button" class="pos-hold-btn" data-real-pos-hold>
+          <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M9 7v10M15 7v10"/><circle cx="12" cy="12" r="9"/></svg>
+          <span>Hold</span>
+        </button>
         <button type="button" class="pos-complete-btn" data-real-pos-complete><span>Complete Sale</span><strong data-real-pos-complete-total>৳ 0</strong></button>
       </div>
       <div class="coupon-feedback" data-real-pos-feedback></div>
     </aside>
   </div>
 
-  <div class="card" data-real-pos-held-panel hidden style="margin-top:18px">
-    <div class="card-head"><h2>Held POS Orders</h2></div>
+  <div class="card pos-held-panel" id="heldPosOrdersPanel" data-real-pos-held-panel hidden>
+    <div class="card-head"><h2>Held POS Orders</h2><span class="pos-held-panel-count"><strong data-real-pos-held-panel-count>{{ held_orders_real|length }}</strong> held</span></div>
     <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Created</th><th>Action</th></tr></thead><tbody data-real-pos-held-body></tbody></table></div>
   </div>
 </section>
 {{ pos_data|json_script:"pos-real-data" }}
 {% endblock %}
-{% block extra_js %}<script src="{% static 'admin/js/pos-v170.js' %}?v=1.7.0"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/pos-v170.js' %}?v=1.7.1"></script>{% endblock %}
