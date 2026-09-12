@@ -147,6 +147,19 @@
   stroke-linejoin:round;
 }
 
+/* Remove the legacy decorative dot before Product form section headings. */
+.product-form-page .form-card::before,
+.product-form-page .form-card > h2::before,
+.product-form-page .section-title-line > h2::before{
+  content:none!important;
+  display:none!important;
+}
+.product-form-page .form-card > h2,
+.product-form-page .section-title-line > h2{
+  padding-left:0!important;
+  list-style:none!important;
+}
+
 @media (prefers-reduced-motion:reduce){
   .product-form-page .btn,
   .product-form-page .switch span,
