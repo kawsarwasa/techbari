@@ -116,8 +116,7 @@
     const selectedOption = () => select.options[select.selectedIndex] || null;
     const selectedText = () => {
       const option = selectedOption();
-      if (!option) return '';
-      if (!select.value) return cleanBlankText(option.text);
+      if (!option || !select.value) return '';
       return option.text.trim();
     };
     const syncInput = () => { input.value = selectedText(); };
