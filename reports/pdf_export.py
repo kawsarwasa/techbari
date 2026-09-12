@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from html import escape
 from io import BytesIO
 from typing import Any
 
@@ -16,6 +17,10 @@ def _plain(value: Any) -> str:
     if isinstance(value, Decimal):
         return f"{value:,.2f}"
     return str(value)
+
+
+def _paragraph_text(value: Any) -> str:
+    return escape(_plain(value)).replace("\n", "<br/>")
 
 
 def _kpi_value(kpi: dict[str, Any], currency_code: str) -> str:
@@ -35,11 +40,7 @@ def _kpi_value(kpi: dict[str, Any], currency_code: str) -> str:
 
 
 def build_report_pdf(report: dict[str, Any], store) -> bytes:
-    """Render a dashboard report as a landscape A4 PDF.
-
-    ReportLab is imported lazily so the regular reports page keeps working even
-    before the optional PDF dependency is installed in an existing environment.
-    """
+    """Render a dashboard report as a professional landscape A4 PDF."""
 
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_LEFT, TA_RIGHT
@@ -142,9 +143,9 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
 
     contact_parts = [part for part in [store.address, store.business_email or store.support_email, store.support_phone] if part]
     company_block = [
-        Paragraph(str(store.store_name), title_style),
-        Paragraph(str(store.tagline or ""), subtitle_style),
-        Paragraph(" | ".join(map(str, contact_parts)), meta_style),
+        Paragraph(_paragraph_text(store.store_name), title_style),
+        Paragraph(_paragraph_text(store.tagline or ""), subtitle_style),
+        Paragraph(_paragraph_text(" | ".join(map(str, contact_parts))), meta_style),
     ]
     if logo_flowable:
         header = Table([[logo_flowable, company_block]], colWidths=[34 * mm, doc.width - 34 * mm])
@@ -167,8 +168,8 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
         period = f"{_plain(filters.get('date_from'))} - {_plain(filters.get('date_to'))}"
 
     report_meta = Table([
-        [Paragraph(report["report_title"], title_style), Paragraph(period, table_cell_right_style)],
-        [Paragraph(report.get("report_description", ""), subtitle_style), Paragraph(f"Currency: {store.currency_code}", table_cell_right_style)],
+        [Paragraph(_paragraph_text(report["report_title"]), title_style), Paragraph(_paragraph_text(period), table_cell_right_style)],
+        [Paragraph(_paragraph_text(report.get("report_description", "")), subtitle_style), Paragraph(_paragraph_text(f"Currency: {store.currency_code}"), table_cell_right_style)],
     ], colWidths=[doc.width * 0.73, doc.width * 0.27])
     report_meta.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -185,8 +186,8 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
         kpi_cells = []
         for kpi in kpis:
             kpi_cells.append([
-                Paragraph(_plain(kpi.get("label")), kpi_label_style),
-                Paragraph(_kpi_value(kpi, store.currency_code), kpi_value_style),
+                Paragraph(_paragraph_text(kpi.get("label")), kpi_label_style),
+                Paragraph(_paragraph_text(_kpi_value(kpi, store.currency_code)), kpi_value_style),
             ])
         kpi_table = Table([kpi_cells], colWidths=[doc.width / len(kpi_cells)] * len(kpi_cells))
         kpi_table.setStyle(TableStyle([
@@ -199,7 +200,7 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
             ("TOPPADDING", (0, 0), (-1, -1), 7),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
         ]))
-        story.append(KeepTogether(kpi_table))
+        story.append(KeepTogether([kpi_table]))
         story.append(Spacer(1, 4 * mm))
 
     headers = list(report.get("csv_headers") or report.get("columns") or [])
@@ -208,17 +209,16 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
         headers = ["Report"]
         rows = [[report.get("empty_message", "No data available")]]
 
-    header_row = [Paragraph(_plain(value), table_head_style) for value in headers]
+    header_row = [Paragraph(_paragraph_text(value), table_head_style) for value in headers]
     body_rows = []
     for row in rows:
         cells = []
         for value in row:
-            raw = _plain(value)
             style = table_cell_right_style if isinstance(value, (int, float, Decimal)) else table_cell_style
-            cells.append(Paragraph(raw.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"), style))
+            cells.append(Paragraph(_paragraph_text(value), style))
         body_rows.append(cells)
     if not body_rows:
-        body_rows = [[Paragraph(report.get("empty_message", "No data available"), table_cell_style)] + [""] * (len(headers) - 1)]
+        body_rows = [[Paragraph(_paragraph_text(report.get("empty_message", "No data available")), table_cell_style)] + [""] * (len(headers) - 1)]
 
     col_width = doc.width / max(len(headers), 1)
     data_table = Table([header_row, *body_rows], colWidths=[col_width] * len(headers), repeatRows=1, hAlign="LEFT")
@@ -247,7 +247,7 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
         canvas.line(margin_x, 10 * mm, page_size[0] - margin_x, 10 * mm)
         canvas.setFont("Helvetica", 7.5)
         canvas.setFillColor(colors.HexColor("#829AB1"))
-        canvas.drawString(margin_x, 6.5 * mm, f"Generated {generated} | {store.store_name}")
+        canvas.drawString(margin_x, 6.5 * mm, f"Generated {generated} | {_plain(store.store_name)}")
         canvas.drawRightString(page_size[0] - margin_x, 6.5 * mm, f"Page {canvas.getPageNumber()}")
         canvas.restoreState()
 
