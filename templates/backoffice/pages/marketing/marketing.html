@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Promotion / Marketing | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/marketing-responsive.css' %}?v=1.0.1">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/marketing-responsive.css' %}?v=1.0.2">{% endblock %}
 {% block content %}
 <section class="page marketing-page">
   <div class="page-head">
@@ -172,3 +172,4 @@
   </div>
 </section>
 {% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/marketing-product-select.js' %}?v=1.0.0"></script>{% endblock %}
