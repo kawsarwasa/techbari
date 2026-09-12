@@ -12,7 +12,7 @@
       if (rows.length <= 1) {
         row.querySelectorAll('input').forEach((input) => {
           if (input.name === 'ordered_quantity') input.value = '1';
-          else if (input.name === 'unit_cost' || input.name === 'line_discount') input.value = '0.00';
+          else if (input.name === 'unit_cost') input.value = '0.00';
           else input.value = '';
         });
         const select = row.querySelector('select');

@@ -23,8 +23,8 @@
         <div class="section-head"><h3>Items</h3><span class="purchase-status {{ purchase.status }}">{{ purchase.get_status_display }}</span></div>
         <div class="table-scroll">
           <table class="purchase-items">
-            <thead><tr><th>Product / SKU</th><th>Ordered</th><th>Received</th><th>Returned</th><th>Unit Cost</th><th>Discount</th><th>Line Total</th></tr></thead>
-            <tbody>{% for item in purchase.items.all %}<tr><td><strong>{{ item.variant.product.name }}</strong><div class="muted">{{ item.variant.sku }}</div></td><td>{{ item.ordered_quantity }}</td><td>{{ item.received_quantity }}</td><td>{{ item.returned_quantity }}</td><td>৳ {{ item.unit_cost|floatformat:2 }}</td><td>৳ {{ item.discount_amount|floatformat:2 }}</td><td><strong>৳ {{ item.line_total|floatformat:2 }}</strong></td></tr>{% empty %}<tr><td colspan="7" class="purchase-empty">No items.</td></tr>{% endfor %}</tbody>
+            <thead><tr><th>Product / SKU</th><th>Ordered</th><th>Received</th><th>Returned</th><th>Unit Cost</th><th>Line Total</th></tr></thead>
+            <tbody>{% for item in purchase.items.all %}<tr><td><strong>{{ item.variant.product.name }}</strong><div class="muted">{{ item.variant.sku }}</div></td><td>{{ item.ordered_quantity }}</td><td>{{ item.received_quantity }}</td><td>{{ item.returned_quantity }}</td><td>৳ {{ item.unit_cost|floatformat:2 }}</td><td><strong>৳ {{ item.line_total|floatformat:2 }}</strong></td></tr>{% empty %}<tr><td colspan="6" class="purchase-empty">No items.</td></tr>{% endfor %}</tbody>
           </table>
         </div>
       </div>
@@ -55,7 +55,7 @@
           <div><span>Subtotal</span><strong>৳ {{ purchase.subtotal|floatformat:2 }}</strong></div>
           <div><span>Shipping</span><strong>৳ {{ purchase.shipping_cost|floatformat:2 }}</strong></div>
           <div><span>Other Cost</span><strong>৳ {{ purchase.other_cost|floatformat:2 }}</strong></div>
-          <div><span>Discount</span><strong>− ৳ {{ purchase.discount_amount|floatformat:2 }}</strong></div>
+          <div><span>Order Discount</span><strong>− ৳ {{ purchase.discount_amount|floatformat:2 }}</strong></div>
           <div class="grand"><span>Grand Total</span><strong>৳ {{ purchase.grand_total|floatformat:2 }}</strong></div>
           <div><span>Paid</span><strong>৳ {{ purchase.paid_amount|floatformat:2 }}</strong></div>
           <div><span>Returns</span><strong>৳ {{ purchase.returned_amount|floatformat:2 }}</strong></div>

@@ -83,6 +83,10 @@ class PurchaseOrderForm(forms.ModelForm):
         if not self.is_bound and not (self.instance and self.instance.pk):
             self.fields["purchase_date"].initial = timezone.localdate()
             self.fields["status"].initial = PurchaseOrder.Status.DRAFT
+        if not self.is_bound and self.instance and self.instance.pk:
+            legacy_line_discount = sum(item.discount_amount for item in self.instance.items.all())
+            if legacy_line_discount:
+                self.initial["discount_amount"] = self.instance.discount_amount + legacy_line_discount
         if self.instance and self.instance.pk and self.instance.status in {
             PurchaseOrder.Status.PARTIALLY_RECEIVED,
             PurchaseOrder.Status.RECEIVED,

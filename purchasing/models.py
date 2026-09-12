@@ -152,7 +152,12 @@ class PurchaseOrderItem(models.Model):
     received_quantity = models.PositiveIntegerField(default=0)
     returned_quantity = models.PositiveIntegerField(default=0)
     unit_cost = models.DecimalField(max_digits=14, decimal_places=2)
-    discount_amount = models.DecimalField(max_digits=14, decimal_places=2, default=ZERO)
+
+    def __init__(self, *args, **kwargs):
+        # Backward compatibility for older internal callers/tests while the
+        # database no longer stores line-level discounts.
+        kwargs.pop("discount_amount", None)
+        super().__init__(*args, **kwargs)
 
     class Meta:
         ordering = ("id",)
@@ -162,7 +167,6 @@ class PurchaseOrderItem(models.Model):
             models.CheckConstraint(condition=models.Q(received_quantity__gte=0), name="purchase_received_nonnegative"),
             models.CheckConstraint(condition=models.Q(returned_quantity__gte=0), name="purchase_returned_nonnegative"),
             models.CheckConstraint(condition=models.Q(unit_cost__gte=0), name="purchase_unit_cost_nonnegative"),
-            models.CheckConstraint(condition=models.Q(discount_amount__gte=0), name="purchase_line_discount_nonnegative"),
             models.CheckConstraint(condition=models.Q(received_quantity__lte=models.F("ordered_quantity")), name="purchase_received_not_over_ordered"),
             models.CheckConstraint(condition=models.Q(returned_quantity__lte=models.F("received_quantity")), name="purchase_returned_not_over_received"),
         ]
@@ -172,12 +176,16 @@ class PurchaseOrderItem(models.Model):
             raise ValidationError("Received quantity cannot exceed ordered quantity.")
         if self.returned_quantity > self.received_quantity:
             raise ValidationError("Returned quantity cannot exceed received quantity.")
-        if self.discount_amount > Decimal(self.ordered_quantity) * self.unit_cost:
-            raise ValidationError("Line discount cannot exceed the line value.")
+
+    @property
+    def discount_amount(self):
+        # Compatibility read for legacy templates/callers. Line discounts are
+        # no longer persisted; Order Discount on PurchaseOrder is authoritative.
+        return ZERO
 
     @property
     def line_total(self):
-        return max(ZERO, Decimal(self.ordered_quantity) * self.unit_cost - self.discount_amount)
+        return Decimal(self.ordered_quantity) * self.unit_cost
 
     @property
     def remaining_to_receive(self):
