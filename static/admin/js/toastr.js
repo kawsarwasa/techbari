@@ -42,7 +42,7 @@
   function removeToast(node){
     if(!node||node.dataset.leaving==='1')return;
     node.dataset.leaving='1';node.classList.remove('is-visible');node.classList.add('is-leaving');
-    setTimeout(()=>node.remove(),330);
+    setTimeout(()=>node.remove(),520);
   }
 
   function show(message,requestedType,title){
