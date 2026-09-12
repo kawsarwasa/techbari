@@ -14,7 +14,6 @@
 .marketing-form-grid input:not([type="checkbox"]),
 .marketing-form-grid select,
 .marketing-form-grid textarea{width:100%;max-width:100%;min-width:0}
-.marketing-form-grid select[multiple]{min-height:120px;padding:8px 10px;overflow:auto}
 .marketing-form-footer{margin-top:18px;padding-top:16px;border-top:1px solid #e7eef7;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .marketing-toggle{position:relative;display:inline-flex;align-items:center;gap:11px;min-width:0;cursor:pointer;user-select:none}
 .marketing-toggle input[type="checkbox"]{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
@@ -27,6 +26,20 @@
 .marketing-toggle-copy strong{font-size:13px;color:#16395f;line-height:1.2}
 .marketing-toggle-copy small{font-size:11px;color:#7a8da8;line-height:1.35}
 .marketing-form-footer>.btn{flex:0 0 auto;min-width:138px}
+
+/* Compact searchable multi-select for Flash Sale products. */
+.marketing-product-select{max-width:100%}
+.marketing-product-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.marketing-product-chips[hidden]{display:none}
+.marketing-product-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:5px 8px 5px 10px;border:1px solid #d8e7fb;border-radius:999px;background:#eef6ff;color:#245a93;font-size:12px;font-weight:700;line-height:1.25}
+.marketing-product-chip>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px}
+.marketing-product-chip-remove{width:18px;height:18px;padding:0;border:0;border-radius:50%;background:#d9eaff;color:#356895;display:grid;place-items:center;font-size:15px;line-height:1;cursor:pointer}
+.marketing-product-chip-remove:hover{background:#c7dfff;color:#174a7e}
+.marketing-product-menu .marketing-product-option{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:center;gap:9px;min-height:38px}
+.marketing-product-menu .marketing-product-option strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.marketing-product-check{width:18px;height:18px;border:1px solid #bfd0e4;border-radius:5px;background:#fff;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:900;line-height:1}
+.marketing-product-menu .marketing-product-option.selected .marketing-product-check{background:var(--primary);border-color:var(--primary)}
+
 .marketing-table-wrap{margin-top:18px;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
 .marketing-table-wrap .data-table{min-width:720px}
 .marketing-table-wrap td:last-child{white-space:nowrap}
@@ -66,7 +79,7 @@
   .marketing-form-grid input:not([type="checkbox"]),
   .marketing-form-grid select,
   .marketing-form-grid textarea{min-height:42px;font-size:13px}
-  .marketing-form-grid select[multiple]{min-height:130px}
+  .marketing-product-chip>span{max-width:210px}
   .marketing-form-footer{display:grid;grid-template-columns:1fr;gap:13px;margin-top:15px;padding-top:14px}
   .marketing-form-footer>.btn{width:100%;min-width:0}
   .marketing-toggle{width:100%;padding:2px 0}
@@ -80,4 +93,5 @@
 @media(max-width:390px){
   .marketing-page .head-actions{grid-template-columns:1fr}
   .marketing-kpis{grid-template-columns:1fr}
+  .marketing-product-chip>span{max-width:165px}
 }
