@@ -1,5 +1,5 @@
 (function(){
-  const defaults={timeOut:4200,errorTimeOut:6000,warningTimeOut:5200,positionClass:'toast-top-right'};
+  const defaults={timeOut:500,errorTimeOut:500,warningTimeOut:500,positionClass:'toast-top-right'};
   const state={lastLegacyText:'',lastLegacyAt:0};
 
   function escapeText(value){return String(value==null?'':value)}
@@ -42,7 +42,7 @@
   function removeToast(node){
     if(!node||node.dataset.leaving==='1')return;
     node.dataset.leaving='1';node.classList.remove('is-visible');node.classList.add('is-leaving');
-    setTimeout(()=>node.remove(),520);
+    setTimeout(()=>node.remove(),220);
   }
 
   function show(message,requestedType,title){
