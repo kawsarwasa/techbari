@@ -7,7 +7,7 @@
   <title>{% block title %}TechBari Admin{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'admin/css/admin.css' %}">
   <link rel="stylesheet" href="{% static 'admin/css/admin-shell-refresh.css' %}?v=3.0.1">
-  <link rel="stylesheet" href="{% static 'admin/css/toastr.css' %}?v=1.0.1">
+  <link rel="stylesheet" href="{% static 'admin/css/toastr.css' %}?v=1.0.2">
   {% block extra_css %}{% endblock %}
   {% if active_section == 'products' %}
   <link rel="stylesheet" href="{% static 'admin/css/catalog-v102.css' %}">
@@ -29,7 +29,7 @@
   {% include "backoffice/includes/messages.html" %}
   {{ admin_data|json_script:"admin-data" }}
   {{ routes|json_script:"admin-routes" }}
-  <script src="{% static 'admin/js/toastr.js' %}?v=1.0.1"></script>
+  <script src="{% static 'admin/js/toastr.js' %}?v=1.0.2"></script>
   <script src="{% static 'admin/js/admin.js' %}"></script>
   {% if active_section == 'products' %}
   <script src="{% static 'admin/js/techbari-rich-editor-v109.js' %}?v=1.0.9"></script>
