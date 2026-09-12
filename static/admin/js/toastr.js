@@ -1,5 +1,5 @@
 (function(){
-  const defaults={timeOut:500,errorTimeOut:500,warningTimeOut:500,positionClass:'toast-top-right'};
+  const defaults={timeOut:1000,errorTimeOut:1000,warningTimeOut:1000,positionClass:'toast-top-right'};
   const state={lastLegacyText:'',lastLegacyAt:0};
 
   function escapeText(value){return String(value==null?'':value)}
