@@ -23,31 +23,16 @@ def _paragraph_text(value: Any) -> str:
     return escape(_plain(value)).replace("\n", "<br/>")
 
 
-def _kpi_value(kpi: dict[str, Any], currency_code: str) -> str:
-    kind = kpi.get("kind")
-    value = kpi.get("value")
-    if kind == "money":
-        try:
-            return f"{currency_code} {Decimal(value):,.2f}"
-        except Exception:
-            return f"{currency_code} {_plain(value)}"
-    if kind == "percent":
-        try:
-            return f"{Decimal(value):,.2f}%"
-        except Exception:
-            return f"{_plain(value)}%"
-    return _plain(value)
-
-
 def build_report_pdf(report: dict[str, Any], store) -> bytes:
     """Render a dashboard report as a professional landscape A4 PDF."""
 
+    from django.contrib.staticfiles import finders
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_LEFT, TA_RIGHT
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import mm
-    from reportlab.platypus import Image, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
     buffer = BytesIO()
     page_size = landscape(A4)
@@ -66,12 +51,21 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
     )
 
     styles = getSampleStyleSheet()
+    company_name_style = ParagraphStyle(
+        "CompanyName",
+        parent=styles["Heading1"],
+        fontName="Helvetica-Bold",
+        fontSize=17,
+        leading=20,
+        textColor=colors.HexColor("#102A43"),
+        spaceAfter=2,
+    )
     title_style = ParagraphStyle(
         "ReportTitle",
         parent=styles["Heading1"],
         fontName="Helvetica-Bold",
-        fontSize=18,
-        leading=22,
+        fontSize=16,
+        leading=20,
         textColor=colors.HexColor("#102A43"),
         spaceAfter=3,
     )
@@ -111,25 +105,11 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
         parent=table_cell_style,
         alignment=TA_RIGHT,
     )
-    kpi_label_style = ParagraphStyle(
-        "KpiLabel",
-        parent=styles["BodyText"],
-        fontName="Helvetica-Bold",
-        fontSize=7,
-        leading=8.5,
-        textColor=colors.HexColor("#627D98"),
-    )
-    kpi_value_style = ParagraphStyle(
-        "KpiValue",
-        parent=styles["BodyText"],
-        fontName="Helvetica-Bold",
-        fontSize=11,
-        leading=13,
-        textColor=colors.HexColor("#102A43"),
-    )
 
     story = []
 
+    # Prefer the CMS / Store Settings logo. If none is uploaded (or storage
+    # cannot read it), use the existing TechBari raster logo as a safe fallback.
     logo_flowable = None
     logo = getattr(store, "logo", None)
     if logo:
@@ -137,18 +117,30 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
             logo.open("rb")
             logo_bytes = BytesIO(logo.read())
             logo.close()
-            logo_flowable = Image(logo_bytes, width=28 * mm, height=16 * mm, kind="proportional")
+            logo_flowable = Image(logo_bytes, width=34 * mm, height=18 * mm, kind="proportional")
         except Exception:
             logo_flowable = None
 
-    contact_parts = [part for part in [store.address, store.business_email or store.support_email, store.support_phone] if part]
+    if logo_flowable is None:
+        try:
+            fallback_logo = finders.find("admin/images/logo-reference.webp")
+            if fallback_logo:
+                logo_flowable = Image(fallback_logo, width=34 * mm, height=18 * mm, kind="proportional")
+        except Exception:
+            logo_flowable = None
+
+    contact_parts = [
+        part
+        for part in [store.address, store.business_email or store.support_email, store.support_phone]
+        if part
+    ]
     company_block = [
-        Paragraph(_paragraph_text(store.store_name), title_style),
+        Paragraph(_paragraph_text(store.store_name), company_name_style),
         Paragraph(_paragraph_text(store.tagline or ""), subtitle_style),
         Paragraph(_paragraph_text(" | ".join(map(str, contact_parts))), meta_style),
     ]
     if logo_flowable:
-        header = Table([[logo_flowable, company_block]], colWidths=[34 * mm, doc.width - 34 * mm])
+        header = Table([[logo_flowable, company_block]], colWidths=[40 * mm, doc.width - 40 * mm])
     else:
         header = Table([[company_block]], colWidths=[doc.width])
     header.setStyle(TableStyle([
@@ -168,8 +160,14 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
         period = f"{_plain(filters.get('date_from'))} - {_plain(filters.get('date_to'))}"
 
     report_meta = Table([
-        [Paragraph(_paragraph_text(report["report_title"]), title_style), Paragraph(_paragraph_text(period), table_cell_right_style)],
-        [Paragraph(_paragraph_text(report.get("report_description", "")), subtitle_style), Paragraph(_paragraph_text(f"Currency: {store.currency_code}"), table_cell_right_style)],
+        [
+            Paragraph(_paragraph_text(report["report_title"]), title_style),
+            Paragraph(_paragraph_text(period), table_cell_right_style),
+        ],
+        [
+            Paragraph(_paragraph_text(report.get("report_description", "")), subtitle_style),
+            Paragraph(_paragraph_text(f"Currency: {store.currency_code}"), table_cell_right_style),
+        ],
     ], colWidths=[doc.width * 0.73, doc.width * 0.27])
     report_meta.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -181,28 +179,8 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
     story.append(report_meta)
     story.append(Spacer(1, 4 * mm))
 
-    kpis = report.get("kpis") or []
-    if kpis:
-        kpi_cells = []
-        for kpi in kpis:
-            kpi_cells.append([
-                Paragraph(_paragraph_text(kpi.get("label")), kpi_label_style),
-                Paragraph(_paragraph_text(_kpi_value(kpi, store.currency_code)), kpi_value_style),
-            ])
-        kpi_table = Table([kpi_cells], colWidths=[doc.width / len(kpi_cells)] * len(kpi_cells))
-        kpi_table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F4F8FC")),
-            ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#D9E2EC")),
-            ("INNERGRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#D9E2EC")),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 9),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 9),
-            ("TOPPADDING", (0, 0), (-1, -1), 7),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-        ]))
-        story.append(KeepTogether([kpi_table]))
-        story.append(Spacer(1, 4 * mm))
-
+    # PDF intentionally omits the dashboard KPI cards. The exported document
+    # starts directly with the detailed report table requested by the user.
     headers = list(report.get("csv_headers") or report.get("columns") or [])
     rows = list(report.get("csv_rows") or [])
     if not headers:
@@ -218,10 +196,17 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
             cells.append(Paragraph(_paragraph_text(value), style))
         body_rows.append(cells)
     if not body_rows:
-        body_rows = [[Paragraph(_paragraph_text(report.get("empty_message", "No data available")), table_cell_style)] + [""] * (len(headers) - 1)]
+        body_rows = [[
+            Paragraph(_paragraph_text(report.get("empty_message", "No data available")), table_cell_style)
+        ] + [""] * (len(headers) - 1)]
 
     col_width = doc.width / max(len(headers), 1)
-    data_table = Table([header_row, *body_rows], colWidths=[col_width] * len(headers), repeatRows=1, hAlign="LEFT")
+    data_table = Table(
+        [header_row, *body_rows],
+        colWidths=[col_width] * len(headers),
+        repeatRows=1,
+        hAlign="LEFT",
+    )
     style_commands = [
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1677FF")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
