@@ -1,3 +1,38 @@
+<style>
+  .product-form-page[data-product-form-page="add"] .form-card{
+    padding:16px 16px 20px!important;
+  }
+  .product-form-page[data-product-form-page="add"] .form-card>small{
+    display:block!important;
+    margin:12px 2px 2px!important;
+    line-height:1.55!important;
+  }
+  .product-form-page[data-product-form-page="add"] .product-description-field{
+    margin-bottom:16px!important;
+  }
+  .product-form-page[data-product-form-page="add"] .product-description-field>label{
+    margin-bottom:8px!important;
+  }
+  .product-form-page[data-product-form-page="add"] .product-quill-editor{
+    margin-top:0!important;
+    margin-bottom:0!important;
+  }
+  .product-form-page[data-product-form-page="add"] .product-quill-editor .product-quill-foot{
+    margin-top:12px!important;
+    padding:0 2px!important;
+    line-height:1.5!important;
+  }
+  .product-form-page[data-product-form-page="add"] .product-description-fallback{
+    display:block!important;
+    margin:10px 2px 0!important;
+    line-height:1.5!important;
+  }
+  @media(max-width:700px){
+    .product-form-page[data-product-form-page="add"] .form-card{
+      padding:14px 14px 18px!important;
+    }
+  }
+</style>
 <div class="product-quill-editor" data-product-rich-editor>
   <div class="product-quill-shell" data-product-quill-shell>
     <div data-product-quill-host aria-label="Product full description editor"></div>
@@ -8,5 +43,5 @@
     <span class="product-quill-status" data-product-rich-status>Editor loading…</span>
   </div>
 </div>
-<small>If the rich editor cannot load, the normal description textarea remains available.</small>
+<small class="product-description-fallback">If the rich editor cannot load, the normal description textarea remains available.</small>
 {{ form.description.errors }}
