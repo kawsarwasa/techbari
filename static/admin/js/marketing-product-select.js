@@ -88,6 +88,7 @@
       remove.textContent = '×';
       remove.addEventListener('click', () => {
         option.selected = false;
+        wrapper.classList.remove('invalid');
         select.dispatchEvent(new Event('change', { bubbles: true }));
         syncChips();
         render(input.value);
@@ -102,6 +103,7 @@
 
   const toggleOption = (option) => {
     option.selected = !option.selected;
+    wrapper.classList.remove('invalid');
     select.dispatchEvent(new Event('change', { bubbles: true }));
     input.value = '';
     syncChips();
@@ -168,6 +170,7 @@
   });
   input.addEventListener('focus', open);
   input.addEventListener('input', () => {
+    wrapper.classList.remove('invalid');
     open();
     render(input.value);
   });
@@ -186,7 +189,13 @@
   window.addEventListener('resize', positionMenu);
   document.addEventListener('scroll', positionMenu, true);
   select.addEventListener('change', syncChips);
+  select.addEventListener('invalid', () => {
+    wrapper.classList.add('invalid');
+    open();
+    setTimeout(() => input.focus(), 0);
+  });
   select.form?.addEventListener('reset', () => setTimeout(() => {
+    wrapper.classList.remove('invalid');
     syncChips();
     render('');
   }, 0));
