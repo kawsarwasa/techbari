@@ -11,8 +11,14 @@
     </div>
     <div class="head-actions">
       <a class="btn" href="{% url 'backoffice:products' %}">Cancel</a>
-      <button class="btn" type="button" data-product-save-draft>▣ Save Draft</button>
-      <button class="btn btn-primary" type="submit" form="productAddForm">▣ Save Product</button>
+      <button class="btn" type="button" data-product-save-draft>
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+        Save Draft
+      </button>
+      <button class="btn btn-primary" type="submit" form="productAddForm">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+        Save Product
+      </button>
     </div>
   </div>
 
@@ -25,7 +31,12 @@
 
     <div class="product-edit-left">
       <section class="form-card">
-        <h2><span class="section-icon blue">▤</span> Basic Information</h2>
+        <h2>
+          <span class="section-icon blue" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m7.5 4.27 9 5.15M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/></svg>
+          </span>
+          Basic Information
+        </h2>
         <div class="field-grid two">
           <label>Product Name <em>*</em>{{ form.name }}{{ form.name.errors }}</label>
           <label>URL Slug{{ form.slug }}{{ form.slug.errors }}<small>Leave blank to generate automatically.</small></label>
@@ -46,7 +57,14 @@
       </section>
 
       <section class="form-card">
-        <div class="section-title-line"><h2><span class="section-icon purple">▱</span> Default Variant / SKU</h2></div>
+        <div class="section-title-line">
+          <h2>
+            <span class="section-icon purple" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/><path d="M2 8h20M2 16h20"/></svg>
+            </span>
+            Default Variant / SKU
+          </h2>
+        </div>
         <div class="field-grid four">
           <label>Default SKU <em>*</em>{{ form.sku }}{{ form.sku.errors }}</label>
           <label>Barcode{{ form.barcode }}{{ form.barcode.errors }}</label>
@@ -57,7 +75,12 @@
       </section>
 
       <section class="form-card">
-        <h2><span class="section-icon blue">◆</span> Product Pricing</h2>
+        <h2>
+          <span class="section-icon blue" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.59 13.41 11 3.83V3H4v7h.83l9.58 9.59a2 2 0 0 0 2.82 0l3.36-3.36a2 2 0 0 0 0-2.82Z"/><circle cx="7.5" cy="6.5" r="1.25"/></svg>
+          </span>
+          Product Pricing
+        </h2>
         <div class="field-grid two">
           <label>Regular Price <em>*</em><div class="money-input"><span>৳</span>{{ form.regular_price }}</div>{{ form.regular_price.errors }}</label>
           <label>Sale Price<div class="money-input"><span>৳</span>{{ form.sale_price }}</div>{{ form.sale_price.errors }}</label>
@@ -67,8 +90,16 @@
 
       <section class="form-card">
         <div class="section-title-line">
-          <h2><span class="section-icon blue">▤</span> Product Specifications</h2>
-          <button class="btn small product-form-action" type="button" id="addSpecificationBtn">＋ Add Specification</button>
+          <h2>
+            <span class="section-icon blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </span>
+            Product Specifications
+          </h2>
+          <button class="btn small product-form-action" type="button" id="addSpecificationBtn">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Add Specification
+          </button>
         </div>
         <div class="spec-list" id="specEditor">
           {% if request.method == "POST" %}
@@ -83,9 +114,19 @@
 
     <div class="product-edit-right">
       <section class="form-card">
-        <div class="section-title-line"><h2><span class="section-icon blue">▣</span> Product Images</h2><span>Up to 8 images</span></div>
+        <div class="section-title-line">
+          <h2>
+            <span class="section-icon blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            </span>
+            Product Images
+          </h2>
+          <span>Up to 8 images</span>
+        </div>
         <label class="add-product-empty-media" for="productImageInput">
-          <span class="media-upload-icon">▣</span>
+          <span class="media-upload-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M20 15v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4"/></svg>
+          </span>
           <strong>Click to add product images</strong>
           <span>or drag and choose multiple images</span>
           <small>JPG, PNG, WebP — maximum 2MB each. First image becomes primary.</small>
@@ -95,22 +136,36 @@
       </section>
 
       <section class="form-card">
-        <h2><span class="section-icon blue">⚙</span> Product Status</h2>
+        <h2>
+          <span class="section-icon blue" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="7" width="18" height="10" rx="5"/><circle cx="16" cy="12" r="3"/></svg>
+          </span>
+          Product Status
+        </h2>
         <label>Product Status{{ form.status }}{{ form.status.errors }}</label>
         <div class="status-toggle-row">
-          <span class="status-star">★</span>
+          <span class="status-star" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3 2.78 5.63 6.22.9-4.5 4.39 1.06 6.2L12 17.2l-5.56 2.92 1.06-6.2L3 9.53l6.22-.9L12 3Z"/></svg>
+          </span>
           <div><strong>Featured Product</strong><small>Show in featured sections</small></div>
           <label class="switch">{{ form.is_featured }}<span></span></label>
         </div>
         <div class="status-toggle-row">
-          <span class="status-cube">◇</span>
+          <span class="status-cube" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></svg>
+          </span>
           <div><strong>New Arrival</strong><small>Mark as new arrival</small></div>
           <label class="switch">{{ form.is_new_arrival }}<span></span></label>
         </div>
       </section>
 
       <section class="form-card">
-        <h2><span class="section-icon blue">🚚</span> Shipping Information</h2>
+        <h2>
+          <span class="section-icon blue" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 17h4V5H2v12h3"/><path d="M14 9h4l4 4v4h-3"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/></svg>
+          </span>
+          Shipping Information
+        </h2>
         <div class="field-grid two">
           <label>Weight (kg){{ form.weight }}{{ form.weight.errors }}</label>
           <label>Shipping Class{{ form.shipping_class }}{{ form.shipping_class.errors }}</label>
@@ -119,7 +174,12 @@
       </section>
 
       <section class="form-card">
-        <h2><span class="section-icon blue">⌕</span> SEO Information</h2>
+        <h2>
+          <span class="section-icon blue" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+          </span>
+          SEO Information
+        </h2>
         <label>Meta Title{{ form.meta_title }}{{ form.meta_title.errors }}</label>
         <label>Meta Description{{ form.meta_description }}{{ form.meta_description.errors }}</label>
         <div class="field-grid two">
@@ -129,16 +189,27 @@
       </section>
 
       <section class="form-card metadata-card">
-        <h2><span class="section-icon blue">◷</span> Product Setup</h2>
+        <h2>
+          <span class="section-icon blue" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></svg>
+          </span>
+          Product Setup
+        </h2>
         <div class="soft-note">Product data is stored in the MySQL catalog database. Save Draft keeps the product in draft status; Save Product uses the selected status.</div>
         <div class="head-actions" style="margin-top:12px">
-          <button class="btn btn-primary product-form-action" type="submit">▣ Save Product</button>
-          <button class="btn product-form-action" type="button" data-product-save-draft>▣ Save Draft</button>
+          <button class="btn btn-primary product-form-action" type="submit">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+            Save Product
+          </button>
+          <button class="btn product-form-action" type="button" data-product-save-draft>
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+            Save Draft
+          </button>
         </div>
       </section>
     </div>
   </form>
 </section>
 {% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-crud.css' %}"><link rel="stylesheet" href="{% static 'admin/css/product-form-v104.css' %}"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css"><link rel="stylesheet" href="{% static 'admin/css/product-quill-editor.css' %}?v=2.0.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-crud.css' %}"><link rel="stylesheet" href="{% static 'admin/css/product-form-v104.css' %}?v=1.0.5"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css"><link rel="stylesheet" href="{% static 'admin/css/product-quill-editor.css' %}?v=2.0.0">{% endblock %}
 {% block extra_js %}<script src="{% static 'admin/js/product-crud.js' %}"></script><script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script><script src="{% static 'admin/js/product-quill-editor.js' %}?v=2.0.0"></script>{% endblock %}
