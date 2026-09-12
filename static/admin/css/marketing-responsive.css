@@ -41,10 +41,13 @@
 .marketing-product-menu .marketing-product-option.selected .marketing-product-check{background:var(--primary);border-color:var(--primary)}
 
 .marketing-table-wrap{margin-top:18px;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
-.marketing-table-wrap .data-table{min-width:720px}
-.marketing-table-wrap td:last-child{white-space:nowrap}
+.marketing-table-wrap .data-table{min-width:720px;table-layout:auto}
+.marketing-table-wrap .data-table th:last-child,
+.marketing-table-wrap .data-table td:last-child{width:1%;white-space:nowrap;text-align:right}
 .marketing-table-wrap td:last-child form{display:inline-flex!important;margin-left:6px}
 .marketing-featured-table .data-table{min-width:620px}
+.marketing-featured-table .data-table th:nth-last-child(2),
+.marketing-featured-table .data-table td:nth-last-child(2){width:1%;white-space:nowrap}
 .marketing-activity-table .data-table{min-width:760px}
 
 @media(max-width:1180px){
