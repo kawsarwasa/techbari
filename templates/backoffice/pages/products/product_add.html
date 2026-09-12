@@ -140,5 +140,5 @@
   </form>
 </section>
 {% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-crud.css' %}"><link rel="stylesheet" href="{% static 'admin/css/product-form-v104.css' %}"><link rel="stylesheet" href="{% static 'admin/css/cms-content-page-editor.css' %}?v=1.0.3">{% endblock %}
-{% block extra_js %}<script src="{% static 'admin/js/product-crud.js' %}"></script><script src="{% static 'admin/js/cms-content-page-editor.js' %}?v=1.0.3"></script>{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-crud.css' %}"><link rel="stylesheet" href="{% static 'admin/css/product-form-v104.css' %}"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css"><link rel="stylesheet" href="{% static 'admin/css/product-quill-editor.css' %}?v=2.0.0">{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/product-crud.js' %}"></script><script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script><script src="{% static 'admin/js/product-quill-editor.js' %}?v=2.0.0"></script>{% endblock %}
