@@ -2,6 +2,7 @@
   const TRASH_ICON='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg>';
   const CONTROL_SELECTOR='button,a';
   const LIST_CONTEXT='table,[role="table"],.table-scroll,.data-table,.row-actions,.crud-actions,.list-actions,.item-actions,.list-card,.card-list,[class*="list-card"],[class*="-list"],[class*="list-"]';
+  const DIALOG_CONTEXT='dialog,[role="dialog"],.modal,.product-delete-modal,.product-delete-overlay';
 
   function attributeText(element){
     return Array.from(element.attributes||[]).map(attribute=>`${attribute.name}=${attribute.value}`).join(' ').toLowerCase();
@@ -19,13 +20,13 @@
 
   function isDeleteControl(element){
     if(!element.matches(CONTROL_SELECTOR))return false;
+    if(element.closest(DIALOG_CONTEXT))return false;
+    if(element.hasAttribute('data-close-product-delete'))return false;
+    if(!element.closest(LIST_CONTEXT))return false;
+
     const text=(element.textContent||'').trim().toLowerCase();
     const metadata=[attributeText(element),element.getAttribute('title')||'',element.getAttribute('aria-label')||'',text].join(' ').toLowerCase();
-    const explicit=/\bdelete\b/.test(metadata)||/(^|[-_:])delete($|[-_:])/.test(metadata)||formDeletes(element);
-    if(!explicit)return false;
-    const explicitData=Array.from(element.attributes||[]).some(attribute=>attribute.name.toLowerCase().includes('delete'));
-    const actionParent=element.closest('.row-actions,.crud-actions,.list-actions,.item-actions,[class*="action"]');
-    return Boolean(explicitData||actionParent||element.closest(LIST_CONTEXT));
+    return /\bdelete\b/.test(metadata)||/(^|[-_:])delete($|[-_:])/.test(metadata)||formDeletes(element);
   }
 
   function decorate(element){
