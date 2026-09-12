@@ -1,3 +1,5 @@
-<div class="toast" id="toast"></div>
-{% for message in messages %}<div class="inline-info {{ message.tags }}">{{ message }}</div>{% endfor %}
-{% for message in page_messages %}<div class="inline-info">{{ message.text }}</div>{% endfor %}
+{% load notification_tags %}
+{% collect_toast_messages as techbari_toasts %}
+{{ techbari_toasts|json_script:"techbari-toast-data" }}
+<div id="techbari-toast-region" class="techbari-toast-region" aria-live="polite" aria-atomic="false"></div>
+<div class="toast" id="toast" hidden aria-hidden="true"></div>
