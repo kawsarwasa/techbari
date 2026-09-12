@@ -12,6 +12,7 @@ _ALLOWED_TAGS = {
     "em",
     "i",
     "u",
+    "s",
     "ul",
     "ol",
     "li",
@@ -21,12 +22,23 @@ _ALLOWED_TAGS = {
     "span",
 }
 _ALLOWED_FONT_SIZES = {"12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"}
+_ALLOWED_TEXT_ALIGN = {"left", "center", "right", "justify"}
 _SAFE_HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
+_SAFE_RGB_COLOR = re.compile(
+    r"^rgb\(\s*(?:25[0-5]|2[0-4]\d|1?\d?\d)\s*,\s*"
+    r"(?:25[0-5]|2[0-4]\d|1?\d?\d)\s*,\s*"
+    r"(?:25[0-5]|2[0-4]\d|1?\d?\d)\s*\)$",
+    re.IGNORECASE,
+)
 _VOID_TAGS = {"br"}
 _DROP_CONTENT_TAGS = {"script", "style", "iframe", "object", "embed"}
 
 
-def _safe_span_style(attrs):
+def _is_safe_color(value):
+    return bool(_SAFE_HEX_COLOR.fullmatch(value) or _SAFE_RGB_COLOR.fullmatch(value))
+
+
+def _safe_style(tag, attrs):
     attributes = {str(name).lower(): (value or "") for name, value in attrs}
     raw_style = attributes.get("style", "")
     safe = []
@@ -36,10 +48,12 @@ def _safe_span_style(attrs):
         name, value = declaration.split(":", 1)
         name = name.strip().lower()
         value = value.strip().lower()
-        if name == "font-size" and value in _ALLOWED_FONT_SIZES:
+        if tag == "span" and name == "font-size" and value in _ALLOWED_FONT_SIZES:
             safe.append(f"font-size:{value}")
-        elif name == "color" and _SAFE_HEX_COLOR.fullmatch(value):
-            safe.append(f"color:{value}")
+        elif tag == "span" and name in {"color", "background-color"} and _is_safe_color(value):
+            safe.append(f"{name}:{value}")
+        elif tag in {"p", "h2", "h3", "blockquote", "li"} and name == "text-align" and value in _ALLOWED_TEXT_ALIGN:
+            safe.append(f"text-align:{value}")
     return ";".join(safe)
 
 
@@ -59,22 +73,16 @@ class _RichTextSanitizer(HTMLParser):
         if self.drop_depth:
             return
         if tag in _ALLOWED_TAGS:
-            if tag == "span":
-                style = _safe_span_style(attrs)
-                self.parts.append(f'<span style="{style}">' if style else "<span>")
-            else:
-                self.parts.append(f"<{tag}>")
+            style = _safe_style(tag, attrs)
+            self.parts.append(f'<{tag} style="{style}">' if style else f"<{tag}>")
 
     def handle_startendtag(self, tag, attrs):
         tag = tag.lower()
         if self.drop_depth or tag in _DROP_CONTENT_TAGS:
             return
         if tag in _ALLOWED_TAGS:
-            if tag == "span":
-                style = _safe_span_style(attrs)
-                self.parts.append(f'<span style="{style}">' if style else "<span>")
-            else:
-                self.parts.append(f"<{tag}>")
+            style = _safe_style(tag, attrs)
+            self.parts.append(f'<{tag} style="{style}">' if style else f"<{tag}>")
 
     def handle_endtag(self, tag):
         tag = tag.lower()
