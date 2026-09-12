@@ -1,7 +1,6 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{% if is_edit %}Edit Order{% else %}Create Order{% endif %} | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/order-sku-search.css' %}?v=1.0.1">{% endblock %}
 {% block content %}
 <section class="page">
   <div class="page-head"><div><h1>{% if is_edit %}Edit Sales Order{% else %}Create Sales Order{% endif %}</h1><p>Create Draft/Pending orders. Pending orders reserve inventory immediately.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:orders' %}">Cancel</a><button class="btn btn-primary" type="submit" form="salesOrderForm">Save Order</button></div></div>
@@ -30,4 +29,4 @@
   </form>
 </section>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'admin/js/sales-v150.js' %}?v=1.6.1"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/sales-v150.js' %}?v=1.7.0"></script>{% endblock %}
