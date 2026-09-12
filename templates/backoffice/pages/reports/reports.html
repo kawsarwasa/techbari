@@ -1,16 +1,25 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{{ report_title }} | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/reports-v220.css' %}?v=2.2.3">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/reports-v220.css' %}?v=2.3.1">{% endblock %}
 {% block content %}
 <section class="page reports-page">
   <div class="page-head reports-head">
-    <div>
-      <span class="report-eyebrow">Reports v2.2.3</span>
+    <div class="reports-head-copy">
+      <span class="report-eyebrow">Reports v2.3</span>
       <h1>Business Reports</h1>
       <p>Operational reporting plus General Ledger-backed P&amp;L, Balance Sheet, Cash Flow and Trial Balance.</p>
     </div>
-    <a class="btn btn-primary" href="{{ export_url }}">Export CSV</a>
+    <div class="reports-export-actions" aria-label="Report export actions">
+      <a class="btn reports-export-btn reports-export-csv" href="{{ export_csv_url }}" title="Download CSV">
+        <svg class="svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
+        <span>CSV</span>
+      </a>
+      <a class="btn btn-primary reports-export-btn reports-export-pdf" href="{{ export_pdf_url }}" target="_blank" rel="noopener" title="Open professional PDF in a new tab">
+        <svg class="svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l4 4v16H6z"></path><path d="M14 2v5h5"></path><path d="M8.5 16.5h7"></path><path d="M8.5 13h7"></path></svg>
+        <span>Open PDF</span>
+      </a>
+    </div>
   </div>
 
   <form class="report-filter" method="get">
@@ -24,6 +33,16 @@
     <div class="report-filter-actions"><button class="btn btn-primary" type="submit">Apply Filter</button><a class="btn" href="{{ reset_url }}">Reset</a></div>
   </form>
 
+  <div class="report-type-picker">
+    <label for="reportTypeSelect">Report Type</label>
+    <div class="report-type-select-wrap">
+      <select id="reportTypeSelect" data-report-type-select aria-label="Select report type">
+        {% for tab in report_tabs %}<option value="{{ tab.url }}"{% if report_key == tab.key %} selected{% endif %}>{{ tab.label }}</option>{% endfor %}
+      </select>
+      <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>
+    </div>
+  </div>
+
   <nav class="report-tabs" aria-label="Business report types">
     {% for tab in report_tabs %}<a href="{{ tab.url }}" class="{% if report_key == tab.key %}active{% endif %}">{{ tab.label }}</a>{% endfor %}
   </nav>
@@ -36,7 +55,7 @@
 
   <div class="report-panel">
     <div class="report-panel-head"><div><h2>{{ report_title }}</h2><p>{{ report_description }}</p></div><span class="report-range">{% if date_scope_label == "As of" %}As of {{ filters.date_to|date:"d M Y" }}{% else %}{{ filters.date_from|date:"d M Y" }} — {{ filters.date_to|date:"d M Y" }}{% endif %}</span></div>
-    <div class="report-table-wrap">
+    <div class="report-table-wrap" tabindex="0" aria-label="{{ report_title }} table. Scroll horizontally on smaller screens.">
       <table class="report-table">
         <thead><tr>{% for column in columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
         <tbody>
@@ -49,3 +68,4 @@
   </div>
 </section>
 {% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/reports-v230.js' %}?v=1.0.0"></script>{% endblock %}

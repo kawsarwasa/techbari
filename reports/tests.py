@@ -9,6 +9,7 @@ from accounting.services import SYSTEM_ACCOUNTS, post_journal
 from catalog.models import Brand, Category, Product, ProductVariant
 from inventory.models import Warehouse
 from sales.models import SalesOrder, SalesOrderItem
+from store_settings.models import StoreSettings
 
 from .services import build_sales_profit_report
 
@@ -73,6 +74,22 @@ class SalesProfitReportTests(TestCase):
         body = response.content.decode("utf-8-sig")
         self.assertIn("Original COGS", body)
         self.assertIn("RPT-POS-1", body)
+
+    def test_pdf_export_is_inline_and_uses_store_settings(self):
+        store = StoreSettings.get_solo()
+        store.store_name = "Report Test Store"
+        store.address = "Dhaka, Bangladesh"
+        store.save()
+
+        url = reverse("backoffice:reports")
+        response = self.client.get(url, {**self.params("profit"), "export": "pdf"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertTrue(response["Content-Disposition"].startswith("inline;"))
+        self.assertIn("report-test-store-profit", response["Content-Disposition"])
+        self.assertTrue(response.content.startswith(b"%PDF"))
+        self.assertGreater(len(response.content), 1000)
 
     def test_reversed_date_range_is_normalized(self):
         result = build_sales_profit_report({"report": "sales", "date_from": "2026-09-30", "date_to": "2026-09-01"})
