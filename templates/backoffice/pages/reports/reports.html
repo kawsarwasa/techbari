@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{{ report_title }} | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/reports-v220.css' %}?v=2.3.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/reports-v220.css' %}?v=2.3.1">{% endblock %}
 {% block content %}
 <section class="page reports-page">
   <div class="page-head reports-head">
@@ -33,6 +33,16 @@
     <div class="report-filter-actions"><button class="btn btn-primary" type="submit">Apply Filter</button><a class="btn" href="{{ reset_url }}">Reset</a></div>
   </form>
 
+  <div class="report-type-picker">
+    <label for="reportTypeSelect">Report Type</label>
+    <div class="report-type-select-wrap">
+      <select id="reportTypeSelect" data-report-type-select aria-label="Select report type">
+        {% for tab in report_tabs %}<option value="{{ tab.url }}"{% if report_key == tab.key %} selected{% endif %}>{{ tab.label }}</option>{% endfor %}
+      </select>
+      <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>
+    </div>
+  </div>
+
   <nav class="report-tabs" aria-label="Business report types">
     {% for tab in report_tabs %}<a href="{{ tab.url }}" class="{% if report_key == tab.key %}active{% endif %}">{{ tab.label }}</a>{% endfor %}
   </nav>
@@ -58,3 +68,4 @@
   </div>
 </section>
 {% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/reports-v230.js' %}?v=1.0.0"></script>{% endblock %}
