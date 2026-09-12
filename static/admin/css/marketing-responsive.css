@@ -15,8 +15,18 @@
 .marketing-form-grid select,
 .marketing-form-grid textarea{width:100%;max-width:100%;min-width:0}
 .marketing-form-grid select[multiple]{min-height:120px;padding:8px 10px;overflow:auto}
-.marketing-form-grid input[type="checkbox"]{width:20px;height:20px;margin:2px 0;accent-color:var(--primary)}
-.marketing-submit-row{margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.marketing-form-footer{margin-top:18px;padding-top:16px;border-top:1px solid #e7eef7;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.marketing-toggle{position:relative;display:inline-flex;align-items:center;gap:11px;min-width:0;cursor:pointer;user-select:none}
+.marketing-toggle input[type="checkbox"]{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.marketing-toggle-track{position:relative;flex:0 0 44px;width:44px;height:24px;border-radius:999px;background:#cbd8e8;box-shadow:inset 0 0 0 1px rgba(20,63,110,.08);transition:.18s ease}
+.marketing-toggle-track:after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(16,42,67,.18);transition:.18s ease}
+.marketing-toggle input[type="checkbox"]:checked + .marketing-toggle-track{background:var(--primary)}
+.marketing-toggle input[type="checkbox"]:checked + .marketing-toggle-track:after{transform:translateX(20px)}
+.marketing-toggle input[type="checkbox"]:focus-visible + .marketing-toggle-track{outline:3px solid rgba(22,119,255,.18);outline-offset:2px}
+.marketing-toggle-copy{display:grid;gap:2px;min-width:0}
+.marketing-toggle-copy strong{font-size:13px;color:#16395f;line-height:1.2}
+.marketing-toggle-copy small{font-size:11px;color:#7a8da8;line-height:1.35}
+.marketing-form-footer>.btn{flex:0 0 auto;min-width:138px}
 .marketing-table-wrap{margin-top:18px;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
 .marketing-table-wrap .data-table{min-width:720px}
 .marketing-table-wrap td:last-child{white-space:nowrap}
@@ -57,8 +67,10 @@
   .marketing-form-grid select,
   .marketing-form-grid textarea{min-height:42px;font-size:13px}
   .marketing-form-grid select[multiple]{min-height:130px}
-  .marketing-submit-row{display:grid;grid-template-columns:1fr;margin-top:14px}
-  .marketing-submit-row .btn{width:100%}
+  .marketing-form-footer{display:grid;grid-template-columns:1fr;gap:13px;margin-top:15px;padding-top:14px}
+  .marketing-form-footer>.btn{width:100%;min-width:0}
+  .marketing-toggle{width:100%;padding:2px 0}
+  .marketing-toggle-copy small{font-size:10px}
   .marketing-table-wrap{margin-inline:-14px;padding-inline:14px}
   .marketing-table-wrap .data-table{min-width:660px}
   .marketing-table-wrap .data-table th,
