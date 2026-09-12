@@ -1,6 +1,6 @@
-<div class="techbari-editor" data-techbari-editor>
-  <div class="techbari-editor-toolbar" role="toolbar" aria-label="Product description formatting">
-    <select type="button" data-editor-block aria-label="Paragraph style">
+<div class="cms-content-editor" data-cms-content-editor>
+  <div class="cms-content-editor-toolbar" aria-label="Product description formatting toolbar">
+    <select data-editor-block aria-label="Text style">
       <option value="P">Paragraph</option>
       <option value="H2">Heading 2</option>
       <option value="H3">Heading 3</option>
@@ -9,10 +9,20 @@
     <button type="button" data-editor-command="bold" title="Bold" aria-label="Bold"><strong>B</strong></button>
     <button type="button" data-editor-command="italic" title="Italic" aria-label="Italic"><em>I</em></button>
     <button type="button" data-editor-command="underline" title="Underline" aria-label="Underline"><u>U</u></button>
-    <button type="button" data-editor-command="ul" title="Bulleted list" aria-label="Bulleted list">•</button>
-    <button type="button" data-editor-command="ol" title="Numbered list" aria-label="Numbered list">1.</button>
+    <span class="cms-content-editor-divider" aria-hidden="true"></span>
+    <button type="button" data-editor-command="ul" title="Bulleted list" aria-label="Bulleted list">•≡</button>
+    <button type="button" data-editor-command="ol" title="Numbered list" aria-label="Numbered list">1≡</button>
+    <span class="cms-content-editor-divider" aria-hidden="true"></span>
+    <button type="button" data-editor-command="clear" title="Clear formatting" aria-label="Clear formatting">Tx</button>
+    <button type="button" data-editor-command="undo" title="Undo" aria-label="Undo">↶</button>
+    <button type="button" data-editor-command="redo" title="Redo" aria-label="Redo">↷</button>
   </div>
-  <div class="techbari-editor-surface" contenteditable="true" role="textbox" aria-multiline="true" data-editor-surface data-placeholder="Write the full product description..."></div>
-  <textarea name="description" class="techbari-editor-source" rows="7" data-editor-source>{{ form.description.value|default_if_none:'' }}</textarea>
+  <div class="cms-content-editor-surface" data-editor-surface contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true" data-placeholder="Write the full product description here..."></div>
+  <textarea id="id_description" name="description" class="cms-content-editor-source" rows="9" data-editor-source>{{ form.description.value|default_if_none:'' }}</textarea>
+  <div class="cms-content-editor-foot">
+    <span>Use headings, emphasis and lists to make the product description easier to scan.</span>
+    <span class="cms-content-editor-status" data-editor-status>Loading editor…</span>
+  </div>
 </div>
+<small>The rich editor loads automatically. If it cannot initialize, the normal textarea stays available.</small>
 {{ form.description.errors }}
