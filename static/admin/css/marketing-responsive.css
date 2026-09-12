@@ -1,0 +1,100 @@
+/* Responsive refinements for /dashboard/marketing/ */
+.marketing-page{display:grid;gap:18px;min-width:0}
+.marketing-page .page-head{margin-bottom:0}
+.marketing-kpis{margin:0}
+.marketing-kpis .card{padding:18px;min-width:0}
+.marketing-section{padding:22px;margin:0;min-width:0;overflow:hidden}
+.marketing-section h2{margin:0 0 8px;font-size:22px;line-height:1.2}
+.marketing-section>p{margin:0 0 18px;color:#62799d}
+.marketing-form{min-width:0}
+.marketing-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px;align-items:start}
+.marketing-form-grid .field{display:grid;gap:7px;min-width:0}
+.marketing-form-grid .field-full{grid-column:1/-1}
+.marketing-form-grid label{font-weight:600;color:#24486f}
+.marketing-form-grid input:not([type="checkbox"]),
+.marketing-form-grid select,
+.marketing-form-grid textarea{width:100%;max-width:100%;min-width:0}
+.marketing-form-footer{margin-top:18px;padding-top:16px;border-top:1px solid #e7eef7;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.marketing-toggle{position:relative;display:inline-flex;align-items:center;gap:11px;min-width:0;cursor:pointer;user-select:none}
+.marketing-toggle input[type="checkbox"]{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.marketing-toggle-track{position:relative;flex:0 0 44px;width:44px;height:24px;border-radius:999px;background:#cbd8e8;box-shadow:inset 0 0 0 1px rgba(20,63,110,.08);transition:.18s ease}
+.marketing-toggle-track:after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(16,42,67,.18);transition:.18s ease}
+.marketing-toggle input[type="checkbox"]:checked + .marketing-toggle-track{background:var(--primary)}
+.marketing-toggle input[type="checkbox"]:checked + .marketing-toggle-track:after{transform:translateX(20px)}
+.marketing-toggle input[type="checkbox"]:focus-visible + .marketing-toggle-track{outline:3px solid rgba(22,119,255,.18);outline-offset:2px}
+.marketing-toggle-copy{display:grid;gap:2px;min-width:0}
+.marketing-toggle-copy strong{font-size:13px;color:#16395f;line-height:1.2}
+.marketing-toggle-copy small{font-size:11px;color:#7a8da8;line-height:1.35}
+.marketing-form-footer>.btn{flex:0 0 auto;min-width:138px}
+
+/* Compact searchable multi-select for Flash Sale products. */
+.marketing-product-select{max-width:100%}
+.marketing-product-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.marketing-product-chips[hidden]{display:none}
+.marketing-product-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:5px 8px 5px 10px;border:1px solid #d8e7fb;border-radius:999px;background:#eef6ff;color:#245a93;font-size:12px;font-weight:700;line-height:1.25}
+.marketing-product-chip>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px}
+.marketing-product-chip-remove{width:18px;height:18px;padding:0;border:0;border-radius:50%;background:#d9eaff;color:#356895;display:grid;place-items:center;font-size:15px;line-height:1;cursor:pointer}
+.marketing-product-chip-remove:hover{background:#c7dfff;color:#174a7e}
+.marketing-product-menu .marketing-product-option{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:center;gap:9px;min-height:38px}
+.marketing-product-menu .marketing-product-option strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.marketing-product-check{width:18px;height:18px;border:1px solid #bfd0e4;border-radius:5px;background:#fff;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:900;line-height:1}
+.marketing-product-menu .marketing-product-option.selected .marketing-product-check{background:var(--primary);border-color:var(--primary)}
+
+.marketing-table-wrap{margin-top:18px;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
+.marketing-table-wrap .data-table{min-width:720px;table-layout:auto}
+.marketing-table-wrap .data-table th:last-child,
+.marketing-table-wrap .data-table td:last-child{width:1%;white-space:nowrap;text-align:right}
+.marketing-table-wrap td:last-child form{display:inline-flex!important;margin-left:6px}
+.marketing-featured-table .data-table{min-width:620px}
+.marketing-featured-table .data-table th:nth-last-child(2),
+.marketing-featured-table .data-table td:nth-last-child(2){width:1%;white-space:nowrap}
+.marketing-activity-table .data-table{min-width:760px}
+
+@media(max-width:1180px){
+  .marketing-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:820px){
+  .marketing-page{gap:14px}
+  .marketing-page .page-head{display:grid;grid-template-columns:1fr;gap:14px}
+  .marketing-page .head-actions{width:100%;justify-content:flex-start}
+  .marketing-section{padding:18px}
+  .marketing-form-grid{grid-template-columns:1fr}
+  .marketing-form-grid .field-full{grid-column:auto}
+  .marketing-table-wrap{margin-inline:-18px;border-radius:0;padding-inline:18px}
+}
+
+@media(max-width:560px){
+  .marketing-page{gap:12px}
+  .marketing-page .page-head h1{font-size:25px}
+  .marketing-page .page-head p{font-size:13px}
+  .marketing-page .head-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .marketing-page .head-actions .btn{width:100%;padding-inline:10px}
+  .marketing-kpis{grid-template-columns:1fr 1fr;gap:9px}
+  .marketing-kpis .card{padding:14px;min-height:96px}
+  .marketing-kpis small{font-size:11px}
+  .marketing-kpis h2{font-size:22px;margin:12px 0 0}
+  .marketing-section{padding:14px;border-radius:12px}
+  .marketing-section h2{font-size:19px}
+  .marketing-section>p{font-size:12px;line-height:1.5;margin-bottom:14px;overflow-wrap:anywhere}
+  .marketing-form-grid{gap:12px}
+  .marketing-form-grid .field label{font-size:13px}
+  .marketing-form-grid input:not([type="checkbox"]),
+  .marketing-form-grid select,
+  .marketing-form-grid textarea{min-height:42px;font-size:13px}
+  .marketing-product-chip>span{max-width:210px}
+  .marketing-form-footer{display:grid;grid-template-columns:1fr;gap:13px;margin-top:15px;padding-top:14px}
+  .marketing-form-footer>.btn{width:100%;min-width:0}
+  .marketing-toggle{width:100%;padding:2px 0}
+  .marketing-toggle-copy small{font-size:10px}
+  .marketing-table-wrap{margin-inline:-14px;padding-inline:14px}
+  .marketing-table-wrap .data-table{min-width:660px}
+  .marketing-table-wrap .data-table th,
+  .marketing-table-wrap .data-table td{padding:10px;font-size:12px}
+}
+
+@media(max-width:390px){
+  .marketing-page .head-actions{grid-template-columns:1fr}
+  .marketing-kpis{grid-template-columns:1fr}
+  .marketing-product-chip>span{max-width:165px}
+}
