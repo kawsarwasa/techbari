@@ -1,18 +1,74 @@
-<div class="techbari-editor" data-techbari-editor>
-  <div class="techbari-editor-toolbar" role="toolbar" aria-label="Product description formatting">
-    <select type="button" data-editor-block aria-label="Paragraph style">
-      <option value="P">Paragraph</option>
-      <option value="H2">Heading 2</option>
-      <option value="H3">Heading 3</option>
-      <option value="BLOCKQUOTE">Quote</option>
-    </select>
-    <button type="button" data-editor-command="bold" title="Bold" aria-label="Bold"><strong>B</strong></button>
-    <button type="button" data-editor-command="italic" title="Italic" aria-label="Italic"><em>I</em></button>
-    <button type="button" data-editor-command="underline" title="Underline" aria-label="Underline"><u>U</u></button>
-    <button type="button" data-editor-command="ul" title="Bulleted list" aria-label="Bulleted list">•</button>
-    <button type="button" data-editor-command="ol" title="Numbered list" aria-label="Numbered list">1.</button>
+<style>
+  /* Shared Add/Edit Product spacing and helper treatment. */
+  .product-form-page .form-card{
+    padding:16px 16px 22px!important;
+  }
+  .product-form-page .form-card>small{
+    display:block!important;
+    margin:12px 0 0!important;
+    padding:9px 11px!important;
+    border-radius:8px!important;
+    background:#f7faff!important;
+    color:#6f84a0!important;
+    line-height:1.5!important;
+  }
+  .product-form-page .product-description-field{
+    margin-bottom:18px!important;
+  }
+  .product-form-page .product-description-field>label{
+    margin-bottom:8px!important;
+  }
+  .product-form-page .product-quill-editor{
+    margin:0!important;
+  }
+  .product-form-page .product-quill-editor .product-quill-foot{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:14px!important;
+    margin:12px 0 0!important;
+    padding:10px 12px!important;
+    border:1px solid #e2ebf5!important;
+    border-radius:8px!important;
+    background:#f7faff!important;
+    color:#6f84a0!important;
+    line-height:1.45!important;
+  }
+  .product-form-page .product-quill-editor .product-quill-status{
+    white-space:nowrap!important;
+  }
+  .product-form-page .product-description-fallback{
+    display:block!important;
+    margin:10px 0 0!important;
+    padding:9px 11px!important;
+    border-radius:8px!important;
+    background:#fff8e8!important;
+    color:#7b6a45!important;
+    line-height:1.5!important;
+  }
+  .product-form-page .product-quill-editor[data-product-rich-ready="true"] + .product-description-fallback{
+    display:none!important;
+  }
+  @media(max-width:700px){
+    .product-form-page .form-card{
+      padding:14px 14px 20px!important;
+    }
+    .product-form-page .product-quill-editor .product-quill-foot{
+      align-items:flex-start!important;
+      flex-direction:column!important;
+      gap:5px!important;
+    }
+  }
+</style>
+<div class="product-quill-editor" data-product-rich-editor>
+  <div class="product-quill-shell" data-product-quill-shell>
+    <div data-product-quill-host aria-label="Product full description editor"></div>
   </div>
-  <div class="techbari-editor-surface" contenteditable="true" role="textbox" aria-multiline="true" data-editor-surface data-placeholder="Write the full product description..."></div>
-  <textarea name="description" class="techbari-editor-source" rows="7" data-editor-source>{{ form.description.value|default_if_none:'' }}</textarea>
+  <textarea id="id_description" name="description" class="product-quill-source" rows="10" data-product-rich-source>{{ form.description.value|default_if_none:'' }}</textarea>
+  <div class="product-quill-foot">
+    <span>Format the product description with headings, font sizes, colors, lists and alignment.</span>
+    <span class="product-quill-status" data-product-rich-status>Editor loading…</span>
+  </div>
 </div>
+<small class="product-description-fallback">If the rich editor cannot load, use the normal description textarea above.</small>
 {{ form.description.errors }}
