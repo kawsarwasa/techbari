@@ -1,6 +1,16 @@
 (function () {
   const ROOT_SELECTOR = '[data-cms-content-editor]';
-  const ALLOWED = new Set(['P','BR','STRONG','B','EM','I','U','UL','OL','LI','H2','H3','BLOCKQUOTE']);
+  const ALLOWED = new Set(['P','BR','STRONG','B','EM','I','U','UL','OL','LI','H2','H3','BLOCKQUOTE','SPAN']);
+  const FONT_SIZES = new Set(['12px','14px','16px','18px','20px','24px','28px','32px']);
+  const LEGACY_FONT_SIZES = {
+    '1': '12px',
+    '2': '12px',
+    '3': '14px',
+    '4': '18px',
+    '5': '24px',
+    '6': '28px',
+    '7': '32px',
+  };
 
   function escapeText(text) {
     const holder = document.createElement('div');
@@ -17,9 +27,49 @@
       .join('');
   }
 
+  function normalizeColor(value) {
+    const raw = String(value || '').trim().toLowerCase();
+    if (/^#[0-9a-f]{6}$/.test(raw)) return raw;
+    if (/^#[0-9a-f]{3}$/.test(raw)) {
+      return `#${raw.slice(1).split('').map((part) => part + part).join('')}`;
+    }
+    const rgb = raw.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(?:1|1\.0+))?\s*\)$/);
+    if (!rgb) return '';
+    const channels = rgb.slice(1, 4).map(Number);
+    if (channels.some((channel) => channel < 0 || channel > 255)) return '';
+    return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+  }
+
+  function safeInlineStyle(node) {
+    const declarations = [];
+    const fontSize = String(node.style?.fontSize || '').trim().toLowerCase();
+    const color = normalizeColor(node.style?.color || '');
+    if (FONT_SIZES.has(fontSize)) declarations.push(`font-size:${fontSize}`);
+    if (color) declarations.push(`color:${color}`);
+    return declarations.join(';');
+  }
+
+  function replaceLegacyFont(font, forcedSize) {
+    const span = document.createElement('span');
+    const color = normalizeColor(font.getAttribute('color') || font.style?.color || '');
+    const legacySize = String(font.getAttribute('size') || '').trim();
+    const fontSize = forcedSize && FONT_SIZES.has(forcedSize)
+      ? forcedSize
+      : LEGACY_FONT_SIZES[legacySize] || '';
+    if (fontSize) span.style.fontSize = fontSize;
+    if (color) span.style.color = color;
+    while (font.firstChild) span.appendChild(font.firstChild);
+    font.replaceWith(span);
+  }
+
+  function normalizeLegacyFonts(container, forcedSize) {
+    Array.from(container.querySelectorAll('font')).forEach((font) => replaceLegacyFont(font, forcedSize));
+  }
+
   function sanitizeHTML(html) {
     const template = document.createElement('template');
     template.innerHTML = html || '';
+    normalizeLegacyFonts(template.content);
 
     function clean(parent) {
       Array.from(parent.childNodes).forEach((node) => {
@@ -45,7 +95,9 @@
           return;
         }
 
+        const style = node.tagName === 'SPAN' ? safeInlineStyle(node) : '';
         Array.from(node.attributes).forEach((attr) => node.removeAttribute(attr.name));
+        if (style) node.setAttribute('style', style);
         clean(node);
       });
     }
@@ -87,6 +139,8 @@
     const source = root.querySelector('[data-editor-source]');
     const surface = root.querySelector('[data-editor-surface]');
     const block = root.querySelector('[data-editor-block]');
+    const fontSize = root.querySelector('[data-editor-font-size]');
+    const color = root.querySelector('[data-editor-color]');
     const status = root.querySelector('[data-editor-status]');
     if (!source || !surface) return;
 
@@ -121,6 +175,7 @@
     };
 
     const sync = (message) => {
+      normalizeLegacyFonts(surface);
       source.value = sanitizeHTML(surface.innerHTML);
       if (status && message) status.textContent = message;
     };
@@ -128,6 +183,12 @@
     const focusEditor = () => {
       try { surface.focus({ preventScroll: true }); }
       catch (_) { surface.focus(); }
+    };
+
+    const prepareSelection = () => {
+      focusEditor();
+      restoreRange();
+      try { document.execCommand('styleWithCSS', false, false); } catch (_) {}
     };
 
     ['keyup','mouseup','focus'].forEach((eventName) => surface.addEventListener(eventName, saveRange));
@@ -142,8 +203,7 @@
         saveRange();
       });
       button.addEventListener('click', () => {
-        focusEditor();
-        restoreRange();
+        prepareSelection();
         const command = button.dataset.editorCommand;
         const commandMap = {
           bold: 'bold',
@@ -158,6 +218,7 @@
         const nativeCommand = commandMap[command];
         if (!nativeCommand) return;
         document.execCommand(nativeCommand, false, null);
+        normalizeLegacyFonts(surface);
         saveRange();
         sync('Unsaved changes');
       });
@@ -167,14 +228,42 @@
       block.addEventListener('mousedown', saveRange);
       block.addEventListener('focus', saveRange);
       block.addEventListener('change', () => {
-        focusEditor();
-        restoreRange();
+        prepareSelection();
         const tag = String(block.value || 'P').toLowerCase();
         let applied = false;
         try { applied = document.execCommand('formatBlock', false, tag); } catch (_) {}
         if (!applied) {
           try { document.execCommand('formatBlock', false, `<${tag}>`); } catch (_) {}
         }
+        saveRange();
+        sync('Unsaved changes');
+      });
+    }
+
+    if (fontSize) {
+      fontSize.addEventListener('mousedown', saveRange);
+      fontSize.addEventListener('focus', saveRange);
+      fontSize.addEventListener('change', () => {
+        const size = String(fontSize.value || '').toLowerCase();
+        if (!FONT_SIZES.has(size)) return;
+        prepareSelection();
+        normalizeLegacyFonts(surface);
+        document.execCommand('fontSize', false, '7');
+        normalizeLegacyFonts(surface, size);
+        saveRange();
+        sync('Unsaved changes');
+      });
+    }
+
+    if (color) {
+      color.addEventListener('mousedown', saveRange);
+      color.addEventListener('focus', saveRange);
+      color.addEventListener('input', () => {
+        const selectedColor = normalizeColor(color.value);
+        if (!selectedColor) return;
+        prepareSelection();
+        document.execCommand('foreColor', false, selectedColor);
+        normalizeLegacyFonts(surface);
         saveRange();
         sync('Unsaved changes');
       });
