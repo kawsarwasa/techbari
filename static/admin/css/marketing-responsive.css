@@ -1,0 +1,71 @@
+/* Responsive refinements for /dashboard/marketing/ */
+.marketing-page{display:grid;gap:18px;min-width:0}
+.marketing-page .page-head{margin-bottom:0}
+.marketing-kpis{margin:0}
+.marketing-kpis .card{padding:18px;min-width:0}
+.marketing-section{padding:22px;margin:0;min-width:0;overflow:hidden}
+.marketing-section h2{margin:0 0 8px;font-size:22px;line-height:1.2}
+.marketing-section>p{margin:0 0 18px;color:#62799d}
+.marketing-form{min-width:0}
+.marketing-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px;align-items:start}
+.marketing-form-grid .field{display:grid;gap:7px;min-width:0}
+.marketing-form-grid .field-full{grid-column:1/-1}
+.marketing-form-grid label{font-weight:600;color:#24486f}
+.marketing-form-grid input:not([type="checkbox"]),
+.marketing-form-grid select,
+.marketing-form-grid textarea{width:100%;max-width:100%;min-width:0}
+.marketing-form-grid select[multiple]{min-height:120px;padding:8px 10px;overflow:auto}
+.marketing-form-grid input[type="checkbox"]{width:20px;height:20px;margin:2px 0;accent-color:var(--primary)}
+.marketing-submit-row{margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.marketing-table-wrap{margin-top:18px;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
+.marketing-table-wrap .data-table{min-width:720px}
+.marketing-table-wrap td:last-child{white-space:nowrap}
+.marketing-table-wrap td:last-child form{display:inline-flex!important;margin-left:6px}
+.marketing-featured-table .data-table{min-width:620px}
+.marketing-activity-table .data-table{min-width:760px}
+
+@media(max-width:1180px){
+  .marketing-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:820px){
+  .marketing-page{gap:14px}
+  .marketing-page .page-head{display:grid;grid-template-columns:1fr;gap:14px}
+  .marketing-page .head-actions{width:100%;justify-content:flex-start}
+  .marketing-section{padding:18px}
+  .marketing-form-grid{grid-template-columns:1fr}
+  .marketing-form-grid .field-full{grid-column:auto}
+  .marketing-table-wrap{margin-inline:-18px;border-radius:0;padding-inline:18px}
+}
+
+@media(max-width:560px){
+  .marketing-page{gap:12px}
+  .marketing-page .page-head h1{font-size:25px}
+  .marketing-page .page-head p{font-size:13px}
+  .marketing-page .head-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .marketing-page .head-actions .btn{width:100%;padding-inline:10px}
+  .marketing-kpis{grid-template-columns:1fr 1fr;gap:9px}
+  .marketing-kpis .card{padding:14px;min-height:96px}
+  .marketing-kpis small{font-size:11px}
+  .marketing-kpis h2{font-size:22px;margin:12px 0 0}
+  .marketing-section{padding:14px;border-radius:12px}
+  .marketing-section h2{font-size:19px}
+  .marketing-section>p{font-size:12px;line-height:1.5;margin-bottom:14px;overflow-wrap:anywhere}
+  .marketing-form-grid{gap:12px}
+  .marketing-form-grid .field label{font-size:13px}
+  .marketing-form-grid input:not([type="checkbox"]),
+  .marketing-form-grid select,
+  .marketing-form-grid textarea{min-height:42px;font-size:13px}
+  .marketing-form-grid select[multiple]{min-height:130px}
+  .marketing-submit-row{display:grid;grid-template-columns:1fr;margin-top:14px}
+  .marketing-submit-row .btn{width:100%}
+  .marketing-table-wrap{margin-inline:-14px;padding-inline:14px}
+  .marketing-table-wrap .data-table{min-width:660px}
+  .marketing-table-wrap .data-table th,
+  .marketing-table-wrap .data-table td{padding:10px;font-size:12px}
+}
+
+@media(max-width:390px){
+  .marketing-page .head-actions{grid-template-columns:1fr}
+  .marketing-kpis{grid-template-columns:1fr}
+}
