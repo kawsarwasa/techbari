@@ -38,6 +38,28 @@
     return {subtotal: sub, discount, total: Math.max(0, sub - discount)};
   }
 
+  function syncHeldUi() {
+    const count = held.length;
+    const headerCount = $('[data-real-pos-held-count]');
+    const panelCount = $('[data-real-pos-held-panel-count]');
+    if (headerCount) headerCount.textContent = String(count);
+    if (panelCount) panelCount.textContent = String(count);
+  }
+
+  function setHeldPanel(open, {scroll = false} = {}) {
+    const panel = $('[data-real-pos-held-panel]');
+    const toggle = $('[data-real-pos-held-toggle]');
+    if (!panel) return;
+    panel.hidden = !open;
+    if (toggle) {
+      toggle.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    if (open && scroll) {
+      requestAnimationFrame(() => panel.scrollIntoView({behavior: 'smooth', block: 'start'}));
+    }
+  }
+
   function renderProducts() {
     const q = ($('[data-real-pos-search]')?.value || '').trim().toLowerCase();
     const sort = $('[data-real-pos-sort]')?.value || 'name';
@@ -89,7 +111,8 @@
   function renderHeld() {
     const body = $('[data-real-pos-held-body]');
     if (!body) return;
-    body.innerHTML = held.map((order) => `<tr><td><strong>${order.order_number}</strong></td><td>${order.customer_name}</td><td>${order.items.reduce((s, i) => s + i.qty, 0)}</td><td>${money(order.total)}</td><td>${new Date(order.created_at).toLocaleString()}</td><td><button class="btn" type="button" data-real-pos-resume="${order.id}">Resume</button> <button class="btn" type="button" data-real-pos-discard="${order.id}">Discard</button></td></tr>`).join('') || '<tr><td colspan="6"><div class="empty-state">No held POS orders.</div></td></tr>';
+    body.innerHTML = held.map((order) => `<tr><td><strong>${order.order_number}</strong></td><td>${order.customer_name}</td><td>${order.items.reduce((s, i) => s + i.qty, 0)}</td><td>${money(order.total)}</td><td>${new Date(order.created_at).toLocaleString()}</td><td><button class="btn" type="button" data-real-pos-resume="${order.id}">Resume</button><button class="btn" type="button" data-real-pos-discard="${order.id}">Discard</button></td></tr>`).join('') || '<tr><td colspan="6"><div class="empty-state">No held POS orders.</div></td></tr>';
+    syncHeldUi();
   }
 
   function payload(action) {
@@ -137,7 +160,9 @@
   $('[data-real-pos-clear]')?.addEventListener('click', clearOrder);
   $('[data-real-pos-held-toggle]')?.addEventListener('click', () => {
     const panel = $('[data-real-pos-held-panel]');
-    panel.hidden = !panel.hidden;
+    if (!panel) return;
+    const opening = panel.hidden;
+    setHeldPanel(opening, {scroll: opening});
   });
 
   root.addEventListener('click', async (event) => {
@@ -190,7 +215,11 @@
       $('[data-real-pos-discount-type]').value = 'fixed';
       $('[data-real-pos-discount]').value = order.discount_amount || 0;
       $('[data-real-pos-note]').value = order.notes || '';
-      renderCart(); feedback(`Resumed ${order.order_number}.`, true); return;
+      renderCart();
+      feedback(`Resumed ${order.order_number}.`, true);
+      setHeldPanel(false);
+      requestAnimationFrame(() => $('[data-real-pos-order-panel]')?.scrollIntoView({behavior: 'smooth', block: 'start'}));
+      return;
     }
     const discard = event.target.closest('[data-real-pos-discard]');
     if (discard) {
@@ -199,19 +228,25 @@
         await action({action: 'discard', order_id: Number(discard.dataset.realPosDiscard)});
         held = held.filter((row) => String(row.id) !== discard.dataset.realPosDiscard);
         if (String(activeHoldId) === discard.dataset.realPosDiscard) clearOrder();
-        renderHeld(); feedback('Held order discarded.', true);
+        renderHeld();
+        feedback('Held order discarded.', true);
       } catch (error) { feedback(error.message); }
     }
   });
 
   $('[data-real-pos-hold]')?.addEventListener('click', async () => {
     if (!cart.length) return feedback('Add products before holding the order.');
+    const button = $('[data-real-pos-hold]');
+    button.disabled = true;
     try {
       const result = await action(payload('hold'));
       const order = result.order;
-      held = [order, ...held.filter((row) => row.id !== order.id)];
-      renderHeld(); clearOrder(); feedback(`${order.order_number} held successfully.`, true);
+      held = [order, ...held.filter((row) => String(row.id) !== String(order.id))];
+      renderHeld();
+      clearOrder();
+      feedback(`${order.order_number} held successfully.`, true);
     } catch (error) { feedback(error.message); }
+    finally { button.disabled = false; }
   });
 
   $('[data-real-pos-complete]')?.addEventListener('click', async () => {
@@ -220,7 +255,8 @@
     button.disabled = true;
     try {
       const result = await action(payload('complete'));
-      held = held.filter((row) => row.id !== activeHoldId);
+      const completedHoldId = activeHoldId;
+      held = held.filter((row) => String(row.id) !== String(completedHoldId));
       renderHeld();
       const change = Number(result.change_amount || 0);
       feedback(`Sale ${result.order_number} completed.${change > 0 ? ` Change: ${money(change)}.` : ''}`, true);
@@ -231,5 +267,8 @@
     finally { button.disabled = false; }
   });
 
-  renderProducts(); renderCart(); renderHeld();
+  renderProducts();
+  renderCart();
+  renderHeld();
+  setHeldPanel(false);
 })();
