@@ -5,11 +5,13 @@
 
   let pickerSequence = 0;
 
+  const getPickerMenu = (picker) => picker?._skuMenu || null;
+
   const closeOtherPickers = (current) => {
     document.querySelectorAll('.sales-sku-picker.open').forEach((picker) => {
       if (picker === current) return;
       picker.classList.remove('open');
-      const menu = picker.querySelector('.sales-sku-picker-menu');
+      const menu = getPickerMenu(picker);
       const input = picker.querySelector('.sales-sku-picker-input');
       if (menu) menu.hidden = true;
       if (input) input.setAttribute('aria-expanded', 'false');
@@ -56,8 +58,10 @@
     input.setAttribute('aria-controls', menu.id);
 
     inputWrap.append(searchIcon, input, chevron);
-    picker.append(inputWrap, menu);
+    picker.append(inputWrap);
     select.insertAdjacentElement('afterend', picker);
+    document.body.appendChild(menu);
+    picker._skuMenu = menu;
 
     const availableOptions = [...select.options].filter((option) => option.value);
     let filteredOptions = [];
@@ -65,6 +69,30 @@
 
     const selectedOption = () => select.options[select.selectedIndex];
     const selectedText = () => (select.value && selectedOption() ? selectedOption().text.trim() : '');
+
+    const positionMenu = () => {
+      if (menu.hidden || !picker.isConnected) return;
+      const rect = inputWrap.getBoundingClientRect();
+      const gap = 6;
+      const viewportPadding = 10;
+      const desiredHeight = Math.min(280, menu.scrollHeight || 280);
+      const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+      const spaceAbove = rect.top - viewportPadding;
+      const openAbove = spaceBelow < Math.min(220, desiredHeight) && spaceAbove > spaceBelow;
+
+      menu.style.left = `${Math.max(viewportPadding, rect.left)}px`;
+      menu.style.width = `${rect.width}px`;
+      menu.style.maxWidth = `${Math.max(240, window.innerWidth - viewportPadding * 2)}px`;
+      menu.style.maxHeight = `${Math.max(120, Math.min(280, openAbove ? spaceAbove - gap : spaceBelow - gap))}px`;
+
+      if (openAbove) {
+        menu.style.top = 'auto';
+        menu.style.bottom = `${Math.max(viewportPadding, window.innerHeight - rect.top + gap)}px`;
+      } else {
+        menu.style.bottom = 'auto';
+        menu.style.top = `${rect.bottom + gap}px`;
+      }
+    };
 
     const markActive = () => {
       const buttons = [...menu.querySelectorAll('.sales-sku-option')];
@@ -93,6 +121,7 @@
         empty.textContent = 'No matching product / SKU found';
         menu.appendChild(empty);
         activeIndex = -1;
+        positionMenu();
         return;
       }
 
@@ -126,6 +155,7 @@
       const selectedIndex = filteredOptions.findIndex((option) => option.value === select.value);
       activeIndex = selectedIndex >= 0 ? selectedIndex : -1;
       markActive();
+      positionMenu();
     };
 
     const openPicker = () => {
@@ -135,6 +165,7 @@
       input.setAttribute('aria-expanded', 'true');
       const currentSelectedText = selectedText();
       renderOptions(input.value.trim() === currentSelectedText ? '' : input.value);
+      positionMenu();
     };
 
     const closePicker = () => {
@@ -192,7 +223,18 @@
       setTimeout(() => input.focus(), 0);
     });
 
+    const keepMenuAligned = () => {
+      if (picker.classList.contains('open')) positionMenu();
+    };
+    window.addEventListener('resize', keepMenuAligned);
+    document.addEventListener('scroll', keepMenuAligned, true);
+
     picker._closeSkuPicker = closePicker;
+    picker._destroySkuPicker = () => {
+      window.removeEventListener('resize', keepMenuAligned);
+      document.removeEventListener('scroll', keepMenuAligned, true);
+      menu.remove();
+    };
   };
 
   const wireRow = (row) => {
@@ -211,7 +253,11 @@
     if (remove) {
       remove.addEventListener('click', () => {
         const rows = table.querySelectorAll('[data-sales-row]');
-        if (rows.length > 1) row.remove();
+        if (rows.length > 1) {
+          const picker = row.querySelector('.sales-sku-picker');
+          if (picker && typeof picker._destroySkuPicker === 'function') picker._destroySkuPicker();
+          row.remove();
+        }
       });
     }
   };
@@ -244,7 +290,8 @@
 
   document.addEventListener('click', (event) => {
     document.querySelectorAll('.sales-sku-picker.open').forEach((picker) => {
-      if (picker.contains(event.target)) return;
+      const menu = getPickerMenu(picker);
+      if (picker.contains(event.target) || menu?.contains(event.target)) return;
       if (typeof picker._closeSkuPicker === 'function') picker._closeSkuPicker();
     });
   });
