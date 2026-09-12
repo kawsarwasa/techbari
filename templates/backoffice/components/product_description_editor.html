@@ -1,35 +1,62 @@
 <style>
+  /* Shared Add/Edit Product spacing and helper treatment. */
   .product-form-page .form-card{
-    padding:16px 16px 20px!important;
+    padding:16px 16px 22px!important;
   }
   .product-form-page .form-card>small{
     display:block!important;
-    margin:12px 2px 2px!important;
-    line-height:1.55!important;
+    margin:12px 0 0!important;
+    padding:9px 11px!important;
+    border-radius:8px!important;
+    background:#f7faff!important;
+    color:#6f84a0!important;
+    line-height:1.5!important;
   }
   .product-form-page .product-description-field{
-    margin-bottom:16px!important;
+    margin-bottom:18px!important;
   }
   .product-form-page .product-description-field>label{
     margin-bottom:8px!important;
   }
   .product-form-page .product-quill-editor{
-    margin-top:0!important;
-    margin-bottom:0!important;
+    margin:0!important;
   }
   .product-form-page .product-quill-editor .product-quill-foot{
-    margin-top:12px!important;
-    padding:0 2px!important;
-    line-height:1.5!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:14px!important;
+    margin:12px 0 0!important;
+    padding:10px 12px!important;
+    border:1px solid #e2ebf5!important;
+    border-radius:8px!important;
+    background:#f7faff!important;
+    color:#6f84a0!important;
+    line-height:1.45!important;
+  }
+  .product-form-page .product-quill-editor .product-quill-status{
+    white-space:nowrap!important;
   }
   .product-form-page .product-description-fallback{
     display:block!important;
-    margin:10px 2px 0!important;
+    margin:10px 0 0!important;
+    padding:9px 11px!important;
+    border-radius:8px!important;
+    background:#fff8e8!important;
+    color:#7b6a45!important;
     line-height:1.5!important;
+  }
+  .product-form-page .product-quill-editor[data-product-rich-ready="true"] + .product-description-fallback{
+    display:none!important;
   }
   @media(max-width:700px){
     .product-form-page .form-card{
-      padding:14px 14px 18px!important;
+      padding:14px 14px 20px!important;
+    }
+    .product-form-page .product-quill-editor .product-quill-foot{
+      align-items:flex-start!important;
+      flex-direction:column!important;
+      gap:5px!important;
     }
   }
 </style>
@@ -43,5 +70,5 @@
     <span class="product-quill-status" data-product-rich-status>Editor loading…</span>
   </div>
 </div>
-<small class="product-description-fallback">If the rich editor cannot load, the normal description textarea remains available.</small>
+<small class="product-description-fallback">If the rich editor cannot load, use the normal description textarea above.</small>
 {{ form.description.errors }}
