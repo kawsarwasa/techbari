@@ -3,7 +3,7 @@
 {% block title %}Variant Presets | TechBari Admin{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'admin/css/variant-library.css' %}?v=1.1.0">
-<link rel="stylesheet" href="{% static 'admin/css/variant-presets-v2.css' %}?v=1.0.0">
+<link rel="stylesheet" href="{% static 'admin/css/variant-presets-v2.css' %}?v=1.1.0">
 {% endblock %}
 {% block content %}
 <section class="page variant-library-page variant-presets-page">
@@ -111,12 +111,12 @@
         <div class="library-form-grid">
           <label class="form-field"><span>Preset Name</span>{{ preset_form.name }}{{ preset_form.name.errors }}<small>Examples: Smartphone, Laptop, TWS / Earbuds.</small></label>
 
-          <label class="form-field preset-attributes-field">
+          <div class="form-field preset-attributes-field">
             <span>Attributes</span>
             <div class="preset-select-shell">{{ preset_form.attributes }}</div>
             {{ preset_form.attributes.errors }}
             <small>{{ preset_form.attributes.help_text }}</small>
-          </label>
+          </div>
 
           <label class="modern-check">{{ preset_form.is_active }}<span><strong>Active</strong><small>Available to use from Variant Builder.</small></span></label>
 
