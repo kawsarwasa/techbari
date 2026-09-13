@@ -1,13 +1,17 @@
 {% extends "backoffice/base.html" %}
 {% load static demo %}
 {% block title %}Variant Builder | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/variant-library.css' %}?v=1.0.0">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/variant-library.css' %}?v=1.1.0">
+<link rel="stylesheet" href="{% static 'admin/css/variant-builder-v2.css' %}?v=2.0.0">
+{% endblock %}
 {% block content %}
-<section class="page variant-builder-page">
-  <div class="page-head">
+<section class="page variant-builder-page variant-builder-v2">
+  <div class="page-head variant-builder-head">
     <div>
+      <div class="page-kicker">CATALOG CONFIGURATION</div>
       <h1>Variant Builder</h1>
-      <p>Select reusable attributes once, generate every valid SKU combination, then edit price and stock in bulk.</p>
+      <p>Choose only the attributes you need, preview every combination, then generate the exact SKUs you want to sell.</p>
     </div>
     <div class="variant-nav">
       <a class="btn" href="{% url 'backoffice:products' %}">Products</a>
@@ -17,115 +21,274 @@
     </div>
   </div>
 
-  {% if catalog_notice %}<div class="generation-result">✓ {{ catalog_notice }}{% if generation_created or generation_reused or generation_skipped %} Created: {{ generation_created|default:"0" }} · Reused safe default: {{ generation_reused|default:"0" }} · Existing skipped: {{ generation_skipped|default:"0" }}{% endif %}</div>{% endif %}
+  {% if catalog_notice %}
+  <div class="generation-result builder-notice">✓ {{ catalog_notice }}{% if generation_created or generation_reused or generation_skipped %}<span>Created {{ generation_created|default:"0" }} · Reused {{ generation_reused|default:"0" }} · Existing skipped {{ generation_skipped|default:"0" }}</span>{% endif %}</div>
+  {% endif %}
   {% if generator_error %}<div class="generation-error">{{ generator_error }}</div>{% endif %}
 
-  <div class="variant-builder-shell">
-    <div>
-      <div class="card builder-card">
-        <div class="variant-library-card-head" style="padding:0 0 14px;border-bottom:1px solid #e8edf5">
-          <div><h3>1. Choose Product & Preset</h3><p>Preset is optional; it only filters which global attributes you want to use.</p></div>
+  <div class="builder-progress" aria-label="Variant builder workflow">
+    <span class="builder-progress-step is-active"><b>1</b>Product</span>
+    <span class="builder-progress-line"></span>
+    <span class="builder-progress-step"><b>2</b>Attributes</span>
+    <span class="builder-progress-line"></span>
+    <span class="builder-progress-step"><b>3</b>Preview</span>
+    <span class="builder-progress-line"></span>
+    <span class="builder-progress-step"><b>4</b>Manage</span>
+  </div>
+
+  <div class="builder-layout">
+    <div class="builder-main-stack">
+      <section class="card builder-section builder-product-card">
+        <div class="builder-section-head">
+          <div class="builder-section-icon blue" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h16v12H4z"/><path d="m7 7 1-3h8l1 3M8 12h8"/></svg>
+          </div>
+          <div>
+            <span class="builder-step-label">STEP 1</span>
+            <h3>Choose Product & Preset</h3>
+            <p>Select the product first. A preset can preselect common attributes, but you can still add or remove attributes below.</p>
+          </div>
         </div>
-        <div class="builder-top-grid">
-          <label>Product
+
+        <div class="builder-top-grid polished-controls">
+          <label class="builder-field"><span>Product</span>
             <select class="control" data-builder-product>
               <option value="">Select Product</option>
               {% for product in catalog_products %}<option value="{{ product.id }}"{% if product_filter == product.id %} selected{% endif %}>{{ product.name }}</option>{% endfor %}
             </select>
           </label>
-          <label>Variant Preset
+          <label class="builder-field"><span>Variant Preset <em>Optional</em></span>
             <select class="control" data-builder-preset>
-              <option value="">All Active Attributes</option>
+              <option value="">Custom setup</option>
               {% for preset in presets %}<option value="{{ preset.id }}"{% if selected_preset and selected_preset.id == preset.id %} selected{% endif %}>{{ preset.name }}</option>{% endfor %}
             </select>
           </label>
         </div>
-        {% if selected_product %}<div class="builder-side-note"><strong>{{ selected_product.name }}</strong><br>Existing sellable SKUs stay stable. If this is a new product, TechBari can safely reuse its transaction-free default SKU for the first generated combination instead of leaving an unnecessary placeholder.</div>{% endif %}
-      </div>
+
+        {% if selected_product %}
+        <div class="selected-product-strip">
+          <div>
+            <span class="selected-product-dot"></span>
+            <div><small>Selected product</small><strong>{{ selected_product.name }}</strong></div>
+          </div>
+          <span>{{ builder_variants|length }} existing SKU{{ builder_variants|length|pluralize }}</span>
+        </div>
+        {% else %}
+        <div class="builder-empty builder-empty-soft">Select a product to configure its variant combinations.</div>
+        {% endif %}
+      </section>
 
       {% if selected_product %}
-      <form method="post" class="card builder-card" style="margin-top:18px" data-variant-generator>
-        {% csrf_token %}<input type="hidden" name="action" value="generate"><input type="hidden" name="product" value="{{ selected_product.id }}">{% if selected_preset %}<input type="hidden" name="preset" value="{{ selected_preset.id }}">{% endif %}
-        <div class="variant-library-card-head" style="padding:0 0 14px;border-bottom:1px solid #e8edf5">
-          <div><h3>2. Select Attribute Values</h3><p>Choose any values you sell. TechBari creates the Cartesian product automatically.</p></div>
-          <a class="mini-link" href="{% url 'backoffice:catalog_variant_attributes' %}">Manage library →</a>
+      <form method="post" class="card builder-section builder-configurator" data-variant-generator>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="generate">
+        <input type="hidden" name="product" value="{{ selected_product.id }}">
+        {% if selected_preset %}<input type="hidden" name="preset" value="{{ selected_preset.id }}">{% endif %}
+
+        <div class="builder-section-head with-action">
+          <div class="builder-section-heading-wrap">
+            <div class="builder-section-icon purple" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg>
+            </div>
+            <div>
+              <span class="builder-step-label">STEP 2</span>
+              <h3>Choose Attributes & Values</h3>
+              <p>Only checked attributes participate in combination generation. Existing values are marked, but never auto-selected.</p>
+            </div>
+          </div>
+          <a class="builder-manage-link" href="{% url 'backoffice:catalog_variant_attributes' %}">Manage attribute library →</a>
         </div>
 
-        {% for attribute in builder_attributes %}
-        <div class="builder-attribute" data-builder-attribute>
-          <div class="builder-attribute-head">
-            <strong>{{ attribute.name }}</strong>
-            <span class="status blue">{{ attribute.get_display_type_display }}</span>
+        <div class="attribute-picker-block">
+          <div class="attribute-picker-head">
+            <div><strong>Attributes</strong><small>Select the dimensions this product actually varies by.</small></div>
+            {% if selected_preset %}<span class="preset-applied-badge">{{ selected_preset.name }} preset applied</span>{% endif %}
           </div>
-          <div class="builder-value-list">
-            {% for value in attribute.values.all %}{% if value.is_active %}
-            <label class="builder-value">
-              <input type="checkbox" name="value_ids" value="{{ value.id }}"{% if value.id in existing_value_ids %} checked{% endif %}>
-              <span>{% if value.color_hex %}<i class="builder-value-swatch" style="background:{{ value.color_hex }}"></i>{% elif value.symbol %}<i>{{ value.symbol }}</i>{% endif %}{{ value.value }}</span>
+          <div class="attribute-toggle-grid" data-attribute-toggle-grid>
+            {% for attribute in builder_attributes %}
+            <label class="attribute-toggle-card{% if attribute.id in preset_attribute_ids %} is-selected{% endif %}" data-attribute-toggle-card>
+              <input type="checkbox" name="attribute_ids" value="{{ attribute.id }}" data-attribute-toggle{% if attribute.id in preset_attribute_ids %} checked{% endif %}>
+              <span class="attribute-toggle-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m5 12 4 4L19 6"/></svg>
+              </span>
+              <span class="attribute-toggle-copy">
+                <strong>{{ attribute.name }}</strong>
+                <small>{{ attribute.values.all|length }} value{{ attribute.values.all|length|pluralize }}</small>
+              </span>
+              <span class="attribute-display-pill">{{ attribute.get_display_type_display }}</span>
             </label>
-            {% endif %}{% empty %}<span class="muted">No active values. Add values in the Attribute Library first.</span>{% endfor %}
+            {% empty %}
+            <div class="builder-empty">No active attributes are available. Add attributes first.</div>
+            {% endfor %}
           </div>
         </div>
-        {% empty %}<div class="builder-empty">No active attributes are available{% if selected_preset %} in this preset{% endif %}. Create attributes or update the preset first.</div>{% endfor %}
 
-        <div class="builder-summary" data-combination-summary>
-          <div><small class="muted">Combinations to generate</small><br><strong><span data-combination-count>0</span> variants</strong></div>
-          <small class="muted">Existing exact combinations are skipped; maximum 250 at once.</small>
+        <div class="builder-value-groups" data-builder-value-groups>
+          {% for attribute in builder_attributes %}
+          <section class="builder-attribute{% if attribute.id not in preset_attribute_ids %} is-hidden{% endif %}" data-builder-attribute data-attribute-id="{{ attribute.id }}">
+            <div class="builder-attribute-head">
+              <div><strong>{{ attribute.name }}</strong><small>Select one or more values</small></div>
+              <span class="status blue">{{ attribute.get_display_type_display }}</span>
+            </div>
+            <div class="builder-value-list">
+              {% for value in attribute.values.all %}{% if value.is_active %}
+              <label class="builder-value" data-builder-value-card>
+                <input type="checkbox" name="value_ids" value="{{ value.id }}" data-value-label="{{ value.value|escape }}" data-attribute-name="{{ attribute.name|escape }}"{% if attribute.id not in preset_attribute_ids %} disabled{% endif %}>
+                <span>
+                  {% if value.color_hex %}<i class="builder-value-swatch" style="background:{{ value.color_hex }}"></i>{% elif value.symbol %}<i class="builder-value-symbol">{{ value.symbol }}</i>{% endif %}
+                  <b>{{ value.value }}</b>
+                  {% if value.id in existing_value_ids %}<em class="value-used-badge">Used</em>{% endif %}
+                </span>
+              </label>
+              {% endif %}{% empty %}<span class="muted">No active values. Add values in the Attribute Library first.</span>{% endfor %}
+            </div>
+          </section>
+          {% endfor %}
         </div>
-        <div class="builder-actions"><button class="btn btn-primary" type="submit" disabled><span data-generate-label>Select values to generate</span></button></div>
+
+        <div class="builder-summary modern-summary" data-combination-summary>
+          <div class="summary-count-block">
+            <small>Possible combinations</small>
+            <strong><span data-combination-count>0</span></strong>
+          </div>
+          <div class="summary-copy" data-summary-copy>Select at least one attribute and one or more values from every selected attribute.</div>
+          <button class="btn preview-button" type="button" data-preview-button disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+            Preview combinations
+          </button>
+        </div>
+
+        <section class="variant-preview-panel" data-preview-panel hidden>
+          <div class="preview-panel-head">
+            <div>
+              <span class="builder-step-label">STEP 3</span>
+              <h3>Preview Combinations</h3>
+              <p>Existing combinations are protected. Uncheck any new combination you do not want to create.</p>
+            </div>
+            <div class="preview-head-actions">
+              <button class="btn btn-compact" type="button" data-preview-select-all>Select all new</button>
+              <button class="btn btn-compact" type="button" data-preview-clear>Clear new</button>
+            </div>
+          </div>
+
+          <div class="preview-stats">
+            <span><b data-preview-total>0</b> possible</span>
+            <span class="success"><b data-preview-new>0</b> new</span>
+            <span><b data-preview-existing>0</b> existing</span>
+            <span class="primary"><b data-preview-selected>0</b> selected to create</span>
+          </div>
+
+          <div class="preview-table-wrap">
+            <table class="data-table preview-table">
+              <thead><tr><th class="preview-check-col">Create</th><th>Combination</th><th>Status</th><th>Existing SKU</th></tr></thead>
+              <tbody data-preview-body></tbody>
+            </table>
+          </div>
+
+          <div data-selected-signatures></div>
+          <div class="preview-footer">
+            <p data-preview-message>Review the combinations before generating.</p>
+            <button class="btn btn-primary generate-selected-button" type="submit" data-generate-selected disabled>
+              Generate selected variants
+            </button>
+          </div>
+        </section>
       </form>
       {% endif %}
     </div>
 
-    <aside class="card builder-card">
-      <h3>How it works</h3>
-      <div class="builder-side-note">
-        <strong>Global, not per-product.</strong><br>
-        Color, Storage, Region, RAM, Size and every custom attribute live once in the library. A product only receives generated SKU combinations that reference those reusable values.
+    <aside class="builder-help-stack">
+      <div class="card builder-help-card">
+        <div class="builder-help-title"><span>✓</span><div><strong>Safe generation</strong><small>No accidental Cartesian expansion</small></div></div>
+        <p>Values already used by this product are only marked as <b>Used</b>. They are not selected automatically.</p>
       </div>
-      <div class="builder-side-note">
-        <strong>No duplicate business database.</strong><br>
-        Purchase, POS, Inventory, Serial/IMEI, Returns and Accounting continue to reference the same stable ProductVariant IDs. The builder changes only how those SKUs are configured.
+      <div class="card builder-help-card">
+        <div class="builder-help-title"><span>↗</span><div><strong>Preset = shortcut</strong><small>Not a restriction</small></div></div>
+        <p>A preset preselects common attributes. You can still add or remove attributes before choosing values.</p>
       </div>
-      <div class="builder-side-note">
-        <strong>Preset example.</strong><br>
-        Smartphone → Color + Storage + Region. Laptop → Color + RAM + Storage. Presets never create extra stock or pricing records.
+      <div class="card builder-help-card">
+        <div class="builder-help-title"><span>⌁</span><div><strong>Stable SKU identity</strong><small>Business history stays safe</small></div></div>
+        <p>Purchase, POS, Inventory, Serial/IMEI, Returns and Accounting continue to use the same ProductVariant records.</p>
+      </div>
+      <div class="card builder-help-card emphasis">
+        <div class="builder-help-title"><span>250</span><div><strong>Generation limit</strong><small>Per confirmed batch</small></div></div>
+        <p>Preview can show up to 1,000 combinations. Select a maximum of 250 new combinations per generation batch.</p>
       </div>
     </aside>
   </div>
 
   {% if selected_product %}
-  <div class="card builder-card builder-existing">
-    <div class="variant-library-card-head" style="padding:0 0 14px;border-bottom:1px solid #e8edf5">
-      <div><h3>3. Bulk Variant Editor</h3><p>Set exact pricing, stock, default and availability without opening every SKU separately.</p></div>
+  <section class="card builder-section builder-existing">
+    <div class="builder-section-head bulk-editor-heading">
+      <div class="builder-section-heading-wrap">
+        <div class="builder-section-icon green" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v14H4zM4 10h16M9 5v14"/></svg>
+        </div>
+        <div>
+          <span class="builder-step-label">STEP 4</span>
+          <h3>Bulk Variant Editor</h3>
+          <p>Edit exact prices, stock, low-stock alerts and availability without opening every SKU individually.</p>
+        </div>
+      </div>
       <a class="btn" href="{% url 'backoffice:catalog_variant_form' %}?product={{ selected_product.id }}">+ Add Single SKU</a>
     </div>
-    <form method="post">
-      {% csrf_token %}<input type="hidden" name="action" value="bulk_save"><input type="hidden" name="product" value="{{ selected_product.id }}">{% if selected_preset %}<input type="hidden" name="preset" value="{{ selected_preset.id }}">{% endif %}
-      <div class="table-scroll" style="margin-top:14px">
-        <table class="data-table variant-bulk-table">
-          <thead><tr><th>Default</th><th>Variant</th><th>SKU</th><th>Regular Price</th><th>Selling Price</th><th>Stock</th><th>Low Alert</th><th>Active</th><th>Edit</th></tr></thead>
+
+    <form method="post" data-bulk-form>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="bulk_save">
+      <input type="hidden" name="product" value="{{ selected_product.id }}">
+      {% if selected_preset %}<input type="hidden" name="preset" value="{{ selected_preset.id }}">{% endif %}
+
+      {% if builder_variants %}
+      <div class="bulk-toolbar">
+        <label class="bulk-select-all"><input type="checkbox" data-bulk-select-all><span>Select all visible</span></label>
+        <div class="bulk-search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" placeholder="Search variant or SKU..." data-bulk-search>
+        </div>
+        <select class="control bulk-action-select" data-bulk-action>
+          <option value="">Bulk action</option>
+          <option value="regular">Set regular price</option>
+          <option value="price">Set selling price</option>
+          <option value="stock">Set stock</option>
+          <option value="low">Set low-stock alert</option>
+          <option value="activate">Activate selected</option>
+          <option value="deactivate">Deactivate selected</option>
+        </select>
+        <input class="control bulk-action-value" type="number" min="0" step="0.01" placeholder="Value" data-bulk-value>
+        <button class="btn bulk-apply-button" type="button" data-bulk-apply>Apply</button>
+        <span class="bulk-selected-count"><b data-bulk-selected-count>0</b> selected</span>
+      </div>
+      <div class="bulk-feedback" data-bulk-feedback hidden></div>
+      {% endif %}
+
+      <div class="table-scroll variant-table-scroll">
+        <table class="data-table variant-bulk-table polished-bulk-table">
+          <thead><tr><th class="bulk-row-check"></th><th>Default</th><th>Variant</th><th>SKU</th><th>Regular Price</th><th>Selling Price</th><th>Stock</th><th>Low Alert</th><th>Active</th><th>Edit</th></tr></thead>
           <tbody>
             {% for variant in builder_variants %}
-            <tr>
-              <td><input type="hidden" name="variant_ids" value="{{ variant.id }}"><input type="radio" name="default_variant_id" value="{{ variant.id }}"{% if variant.is_default %} checked{% endif %}></td>
-              <td class="combo-cell"><strong>{{ variant.display_name }}</strong><div style="margin-top:5px">{% for link in variant.variant_values.all %}<span class="status blue" style="margin:2px 4px 2px 0">{{ link.value.attribute.name }}: {{ link.value.value }}</span>{% empty %}<span class="muted">Simple / legacy SKU</span>{% endfor %}</div></td>
-              <td class="sku-cell"><strong>{{ variant.sku }}</strong>{% if variant.barcode %}<br><span class="muted">{{ variant.barcode }}</span>{% endif %}</td>
+            <tr data-bulk-row data-search-text="{{ variant.display_name|lower }} {{ variant.sku|lower }}">
+              <td class="bulk-row-check"><input type="checkbox" data-bulk-row-select aria-label="Select {{ variant.display_name }}"></td>
+              <td><input type="hidden" name="variant_ids" value="{{ variant.id }}"><input type="radio" name="default_variant_id" value="{{ variant.id }}"{% if variant.is_default %} checked{% endif %} aria-label="Set {{ variant.display_name }} as default"></td>
+              <td class="combo-cell"><strong>{{ variant.display_name }}</strong><div class="variant-attribute-pills">{% for link in variant.variant_values.all %}<span>{{ link.value.attribute.name }}: {{ link.value.value }}</span>{% empty %}<span class="legacy">Simple / legacy SKU</span>{% endfor %}</div></td>
+              <td class="sku-cell"><strong>{{ variant.sku }}</strong>{% if variant.barcode %}<small>{{ variant.barcode }}</small>{% endif %}</td>
               <td><input class="control" type="number" min="0" step="0.01" name="regular_{{ variant.id }}" value="{% if variant.regular_price_override != None %}{{ variant.regular_price_override }}{% endif %}" placeholder="Product"></td>
               <td><input class="control" type="number" min="0" step="0.01" name="price_{{ variant.id }}" value="{% if variant.price_override != None %}{{ variant.price_override }}{% endif %}" placeholder="Product"></td>
               <td><input class="control" type="number" min="0" name="stock_{{ variant.id }}" value="{{ variant.stock_quantity }}"></td>
               <td><input class="control" type="number" min="0" name="low_{{ variant.id }}" value="{{ variant.low_stock_alert }}"></td>
-              <td><label class="status-toggle-inline"><input type="checkbox" name="active_{{ variant.id }}"{% if variant.is_active %} checked{% endif %}> Active</label></td>
-              <td><a class="mini-link" href="{% url 'backoffice:catalog_variant_form' %}?id={{ variant.id }}">Edit</a></td>
+              <td><label class="status-toggle-inline"><input type="checkbox" name="active_{{ variant.id }}"{% if variant.is_active %} checked{% endif %}><span>Active</span></label></td>
+              <td><a class="edit-variant-link" href="{% url 'backoffice:catalog_variant_form' %}?id={{ variant.id }}" title="Edit {{ variant.display_name }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></a></td>
             </tr>
-            {% empty %}<tr><td colspan="9"><div class="builder-empty">No SKUs yet. Select values above and generate the first combinations.</div></td></tr>{% endfor %}
+            {% empty %}<tr><td colspan="10"><div class="builder-empty">No SKUs yet. Choose attributes and preview combinations above to create the first variants.</div></td></tr>{% endfor %}
           </tbody>
         </table>
       </div>
-      {% if builder_variants %}<div class="builder-actions"><button class="btn btn-primary" type="submit">Save Bulk Changes</button></div>{% endif %}
+      {% if builder_variants %}<div class="bulk-save-footer"><span>Changes are saved to the existing ProductVariant records.</span><button class="btn btn-primary" type="submit">Save Bulk Changes</button></div>{% endif %}
     </form>
-  </div>
+  </section>
   {% endif %}
+
+  {{ existing_combinations|json_script:"variant-builder-existing" }}
 </section>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'admin/js/variant-builder.js' %}?v=1.0.0"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/variant-builder.js' %}?v=2.0.0"></script>{% endblock %}
