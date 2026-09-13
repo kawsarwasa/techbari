@@ -1,7 +1,16 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Product Media | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-media-v2.css' %}?v=2.4.0">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/product-media-v2.css' %}?v=2.4.1">
+<style>
+.product-media-v2 .media-image-wrap{height:210px!important;aspect-ratio:auto!important;min-height:210px!important;max-height:210px!important;overflow:hidden!important}
+.product-media-v2 .media-image-wrap img{width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-height:100%!important;object-fit:contain!important}
+@media(max-width:1450px){.product-media-v2 .media-image-wrap{height:200px!important;min-height:200px!important;max-height:200px!important}}
+@media(max-width:900px){.product-media-v2 .media-image-wrap{height:220px!important;min-height:220px!important;max-height:220px!important}}
+@media(max-width:620px){.product-media-v2 .media-image-wrap{height:250px!important;min-height:250px!important;max-height:250px!important}}
+</style>
+{% endblock %}
 {% block content %}
 <section class="page product-media-v2" data-product-media-manager data-product-id="{{ product_filter|default:'' }}" data-product-name="{% for product in catalog_products %}{% if product.id == product_filter %}{{ product.name|escape }}{% endif %}{% endfor %}" data-media-url="{% url 'backoffice:catalog_media' %}{% if product_filter %}?product={{ product_filter }}{% endif %}" data-upload-url="{% url 'backoffice:catalog_media_form' %}{% if product_filter %}?product={{ product_filter }}{% endif %}" data-max-images="24" data-current-count="{{ media_rows|length }}">
   <div class="page-head media-head">
@@ -109,4 +118,26 @@
   </div>
 </section>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'admin/js/product-media-v2.js' %}?v=2.1.0"></script>{% endblock %}
+{% block extra_js %}
+<script src="{% static 'admin/js/product-media-v2.js' %}?v=2.1.0"></script>
+<script>
+(() => {
+  const root = document.querySelector('[data-product-media-manager]');
+  if (!root) return;
+  root.addEventListener('submit', (event) => {
+    const submitter = event.submitter;
+    if (!submitter || submitter.value !== 'set_detail') return;
+    const card = submitter.closest('[data-media-card]');
+    if (!card) return;
+    const productId = card.dataset.productId || '';
+    const imageCount = [...root.querySelectorAll('[data-media-card]')]
+      .filter(item => (item.dataset.productId || '') === productId).length;
+    if (imageCount > 1) return;
+    event.preventDefault();
+    const message = 'Upload another image before setting Detail. A product must keep one Primary image.';
+    if (window.toastr && typeof window.toastr.warning === 'function') window.toastr.warning(message);
+    else window.alert(message);
+  });
+})();
+</script>
+{% endblock %}
