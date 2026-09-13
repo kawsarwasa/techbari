@@ -13,7 +13,7 @@ def replay_business_history(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("accounting", "0003_expense_source"),
-        ("catalog", "0004_global_variant_library"),
+        ("catalog", "0003_product_variant_options"),
         ("purchasing", "0003_purchase_item_snapshots"),
     ]
 
