@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.test import TestCase
 from django.utils import timezone
 
@@ -30,7 +32,7 @@ class PurchaseItemSnapshotTests(TestCase):
             slug="snapshot-phone",
             category=category,
             brand=brand,
-            regular_price="1000.00",
+            regular_price=Decimal("1000.00"),
         )
         color = ProductOption.objects.create(product=self.product, name="Color", sort_order=0)
         storage = ProductOption.objects.create(product=self.product, name="Storage", sort_order=1)
@@ -60,7 +62,7 @@ class PurchaseItemSnapshotTests(TestCase):
             purchase=self.purchase,
             variant=self.variant,
             ordered_quantity=2,
-            unit_cost="700.00",
+            unit_cost=Decimal("700.00"),
         )
         self.assertEqual(item.product_snapshot, "Snapshot Phone")
         self.assertEqual(item.variant_snapshot, "Black / 256GB")
@@ -78,4 +80,4 @@ class PurchaseItemSnapshotTests(TestCase):
         self.assertEqual(item.product_snapshot, "Snapshot Phone")
         self.assertEqual(item.variant_snapshot, "Black / 256GB")
         self.assertEqual(item.sku_snapshot, "SNAP-BLK-256")
-        self.assertEqual(item.line_total, 1400)
+        self.assertEqual(item.line_total, Decimal("1400.00"))
