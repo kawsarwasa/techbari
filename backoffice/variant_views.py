@@ -73,6 +73,34 @@ def _ensure_default_variant(product):
     return replacement
 
 
+def _protect_used_variant_identity(form, instance):
+    """A variant used by stock or transactions keeps the same SKU and option identity forever."""
+    if not instance or not _variant_usage_reasons(instance):
+        return
+
+    selected_values = form.cleaned_data.get("option_values")
+    selected_ids = set(selected_values.values_list("id", flat=True)) if selected_values is not None else set()
+    existing_ids = set(instance.option_selections.values_list("value_id", flat=True))
+    intended_name = (form.cleaned_data.get("name") or "").strip()
+    intended_sku = (form.cleaned_data.get("sku") or "").strip()
+
+    if selected_ids != existing_ids:
+        form.add_error(
+            "option_values",
+            "This SKU already has stock or business history. Its option combination cannot be changed; create a new variant instead.",
+        )
+    elif intended_name != instance.name:
+        form.add_error(
+            "name",
+            "This SKU already has stock or business history. Its variant identity cannot be renamed; create a new variant instead.",
+        )
+    if intended_sku != instance.sku:
+        form.add_error(
+            "sku",
+            "This SKU already has stock or business history and cannot be changed. Create a new variant instead.",
+        )
+
+
 def variants(request):
     product_id = _product_id(request)
     if request.method == "POST" and request.POST.get("action") == "delete":
@@ -126,15 +154,21 @@ def variant_form(request):
         product_id=product_id,
     )
     if request.method == "POST" and form.is_valid():
-        with transaction.atomic():
-            variant = form.save(commit=False)
-            product = variant.product
-            if variant.is_default:
-                product.variants.exclude(pk=variant.pk).update(is_default=False)
-            variant.save()
-            form.save_option_selections(variant)
-            _ensure_default_variant(product)
-        return redirect(reverse("backoffice:catalog_variants") + f"?product={variant.product_id}&notice=saved")
+        _protect_used_variant_identity(form, instance)
+        if instance and instance.is_active and not form.cleaned_data.get("is_active"):
+            if not instance.product.variants.filter(is_active=True).exclude(pk=instance.pk).exists():
+                form.add_error("is_active", "A product must keep at least one active variant/SKU.")
+
+        if not form.errors:
+            with transaction.atomic():
+                variant = form.save(commit=False)
+                product = variant.product
+                if variant.is_default:
+                    product.variants.exclude(pk=variant.pk).update(is_default=False)
+                variant.save()
+                form.save_option_selections(variant)
+                _ensure_default_variant(product)
+            return redirect(reverse("backoffice:catalog_variants") + f"?product={variant.product_id}&notice=saved")
 
     context = _context(request, product_id)
     context.update(
