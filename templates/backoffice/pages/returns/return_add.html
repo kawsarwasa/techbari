@@ -2,7 +2,7 @@
 {% load static %}
 {% load demo %}
 {% block title %}Create Return | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/returns-responsive.css' %}?v=1.0.1">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/returns-responsive.css' %}?v=1.0.2">{% endblock %}
 {% block content %}
 <section class="page returns-add-page">
   <div class="page-head"><div><h1>Create Return / Refund</h1><p>Select a completed sale, then choose exactly what came back and how it should affect stock.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:returns' %}">Cancel</a></div></div>
@@ -14,8 +14,8 @@
   </div>
 
   {% if selected_order %}
-  <form method="post" class="form-layout">{% csrf_token %}<input type="hidden" name="order" value="{{ selected_order.id }}">
-    <div>
+  <form method="post" class="form-layout return-form-layout">{% csrf_token %}<input type="hidden" name="order" value="{{ selected_order.id }}">
+    <div class="return-main-column">
       <div class="card form-card">
         <div class="section-head"><h3>2. Return Header</h3></div>
         <div class="form-grid">
@@ -49,13 +49,19 @@
         </tbody></table></div>
       </div>
     </div>
-    <aside class="card form-side"><div class="section-head"><h3>Return Safety</h3></div><div class="info-body">
-      <p><strong>Requested → Approved → Received → Completed</strong></p>
-      <p>Creating or approving a return does not change stock or money.</p>
-      <p>Completed return posts Inventory Return-In only for Restock lines. Damaged/Warranty/Scrap items never inflate sellable stock.</p>
-      <p>Return credit reduces the order payable balance. Cash is refunded only if the customer is overpaid after that credit, using the existing Payment ledger.</p>
-      <button class="btn btn-primary" type="submit" style="width:100%;margin-top:12px">Create Return Request</button>
-    </div></aside>
+
+    <section class="card return-safety-card">
+      <div class="section-head"><h3>Return Safety</h3></div>
+      <div class="return-safety-body">
+        <div class="return-safety-copy">
+          <div class="return-safety-flow"><strong>Requested → Approved → Received → Completed</strong></div>
+          <p>Creating or approving a return does not change stock or money.</p>
+          <p>Completed return posts Inventory Return-In only for Restock lines. Damaged/Warranty/Scrap items never inflate sellable stock.</p>
+          <p>Return credit reduces the order payable balance. Cash is refunded only if the customer is overpaid after that credit, using the existing Payment ledger.</p>
+        </div>
+        <button class="btn btn-primary return-submit-btn" type="submit">Create Return Request</button>
+      </div>
+    </section>
   </form>
   {% else %}<div class="soft-note">Load a Completed / Sold order to start a return.</div>{% endif %}
 </section>
