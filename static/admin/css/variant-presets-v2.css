@@ -1,0 +1,46 @@
+.variant-presets-page .preset-library-grid{grid-template-columns:minmax(0,1.5fr) minmax(360px,.72fr)}
+.variant-presets-page .preset-library-panel{min-width:0}
+.variant-presets-page .preset-library-summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px;margin-bottom:14px;border-color:#dfe7f1;background:linear-gradient(180deg,#fff 0%,#fbfdff 100%)}
+.variant-presets-page .preset-library-summary h3{margin:0;font-size:16px;color:#102a4c}
+.variant-presets-page .preset-library-summary p{margin:4px 0 0;max-width:650px;color:#6b7d98;font-size:12px;line-height:1.5}
+.variant-presets-page .polished-preset-list{gap:12px}
+.variant-presets-page .polished-preset-card{padding:0;border-color:#dfe7f1;overflow:hidden;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.variant-presets-page .polished-preset-card:hover{transform:translateY(-1px);border-color:#cbd9ea;box-shadow:0 10px 30px rgba(25,48,79,.075)}
+.variant-presets-page .polished-preset-card.is-inactive{background:#fafbfc;opacity:.78}
+.variant-presets-page .preset-card-head{display:flex;align-items:stretch;justify-content:space-between;gap:0}
+.variant-presets-page .preset-card-content{min-width:0;flex:1;padding:17px 19px}
+.variant-presets-page .preset-title-row{gap:8px}
+.variant-presets-page .preset-title-row strong{font-size:15px;color:#102a4c}
+.variant-presets-page .preset-meta-line{display:flex;align-items:center;gap:6px;margin-top:11px;color:#7b8da7;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.variant-presets-page .preset-meta-count{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#eef4ff;color:#176ed3;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}
+.variant-presets-page .preset-attributes{margin-top:8px;gap:7px}
+.variant-presets-page .preset-pill{display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:5px 9px;border:1px solid #d9e7f8;border-radius:9px;background:#f3f8ff;color:#2c63ad;font-size:11px;font-weight:800}
+.variant-presets-page .preset-pill svg{width:13px;height:13px;stroke-width:1.9}
+.variant-presets-page .preset-card-actions{display:flex;align-items:center;gap:7px;padding:14px;border-left:1px solid #edf1f6;background:#fbfdff;flex:0 0 auto}
+.variant-presets-page .preset-card-actions form{margin:0}
+.variant-presets-page .preset-use-action{min-height:36px;padding:0 12px;border:1px solid #bcd6f7;border-radius:9px;background:#f3f8ff;color:#146dcc;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-decoration:none;transition:.15s ease}
+.variant-presets-page .preset-use-action:hover{background:#eaf4ff;border-color:#80afe7;color:#0e60bc}
+.variant-presets-page .preset-use-action svg{width:15px;height:15px;stroke-width:2}
+.variant-presets-page .preset-form-stack{display:block;position:sticky;top:18px}
+.variant-presets-page .preset-form-card{padding:19px 20px}
+.variant-presets-page .preset-info-note{display:flex;align-items:flex-start;gap:9px;margin:-2px 0 15px;padding:10px 11px;border:1px solid #dce9f8;border-radius:10px;background:#f4f9ff;color:#58708f;font-size:10px;line-height:1.5}
+.variant-presets-page .preset-info-note svg{width:16px;height:16px;flex:0 0 16px;margin-top:1px;color:#1976f3;stroke-width:2}
+.variant-presets-page .preset-select-shell{border:1px solid #d8e2ee;border-radius:12px;background:#f9fbfe;padding:9px;transition:border-color .15s,box-shadow .15s,background .15s}
+.variant-presets-page .preset-select-shell:focus-within{border-color:#7eafea;box-shadow:0 0 0 3px rgba(25,118,243,.09);background:#fff}
+.variant-presets-page .preset-select-shell>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.variant-presets-page .preset-select-shell>div>div{min-width:0}
+.variant-presets-page .preset-select-shell label{position:relative;display:flex;align-items:center;gap:9px;min-height:42px;padding:9px 11px;border:1px solid #dbe4ef;border-radius:10px;background:#fff;color:#35506f;font-size:12px;font-weight:750;cursor:pointer;transition:border-color .15s,background .15s,color .15s,box-shadow .15s}
+.variant-presets-page .preset-select-shell label:hover{border-color:#9fc3ec;background:#f7fbff;color:#1767bd}
+.variant-presets-page .preset-select-shell input[type=checkbox]{width:17px!important;height:17px!important;margin:0!important;accent-color:#1976f3;flex:0 0 17px;cursor:pointer}
+.variant-presets-page .preset-select-shell label:has(input:checked){border-color:#8fbbea;background:#edf6ff;color:#0f65c7;box-shadow:0 0 0 2px rgba(25,118,243,.05)}
+.variant-presets-page .preset-select-shell label:has(input:checked)::after{content:'Selected';margin-left:auto;padding:3px 6px;border-radius:999px;background:#ddecff;color:#0d64c2;font-size:9px;font-weight:800;letter-spacing:.02em}
+.variant-presets-page .preset-attributes-field>small{margin-top:2px;color:#69809d!important}
+.variant-presets-page .preset-empty-state{padding:38px 22px;text-align:center;color:#6b7d98;border-style:dashed}
+.variant-presets-page .preset-empty-state strong{display:block;margin-top:10px;color:#284462;font-size:14px}
+.variant-presets-page .preset-empty-state p{margin:5px 0 0;font-size:11px}
+.variant-presets-page .preset-empty-icon{width:42px;height:42px;margin:0 auto;border-radius:12px;background:#eef5ff;color:#1976f3;display:grid;place-items:center}
+.variant-presets-page .preset-empty-icon svg{width:20px;height:20px;stroke-width:1.9}
+@media(max-width:1180px){.variant-presets-page .preset-library-grid{grid-template-columns:minmax(0,1.32fr) minmax(340px,.78fr)}.variant-presets-page .preset-card-actions{padding:12px}}
+@media(max-width:1100px){.variant-presets-page .preset-library-grid{grid-template-columns:1fr}.variant-presets-page .preset-form-stack{position:static}}
+@media(max-width:760px){.variant-presets-page .preset-library-summary{align-items:flex-start;flex-direction:column}.variant-presets-page .preset-card-head{flex-direction:column}.variant-presets-page .preset-card-actions{border-left:0;border-top:1px solid #edf1f6;justify-content:flex-end}.variant-presets-page .preset-use-action{margin-right:auto}.variant-presets-page .preset-card-content{padding:15px}.variant-presets-page .preset-select-shell>div{grid-template-columns:1fr}}
+@media(max-width:520px){.variant-presets-page .preset-card-actions{justify-content:flex-start;flex-wrap:wrap}.variant-presets-page .preset-use-action{width:100%;justify-content:center;margin:0 0 2px}.variant-presets-page .preset-title-row .status{order:3}.variant-presets-page .preset-library-summary{padding:15px}}

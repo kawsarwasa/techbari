@@ -14,8 +14,8 @@
         {% for item in purchase.items.all %}
         <div class="purchase-history-item" style="margin-bottom:12px">
           <div class="purchase-meta">
-            <div><small>Product</small><strong>{{ item.variant.product.name }}</strong></div>
-            <div><small>SKU</small><strong>{{ item.variant.sku }}</strong></div>
+            <div><small>Product</small><strong>{{ item.product_snapshot|default:item.variant.product.name }}</strong></div>
+            <div><small>Variant / SKU</small><strong>{{ item.variant_snapshot|default:item.variant.display_name }} · {{ item.sku_snapshot|default:item.variant.sku }}</strong></div>
             <div><small>Ordered</small><strong>{{ item.ordered_quantity }}</strong></div>
             <div><small>Remaining</small><strong>{{ item.remaining_to_receive }}</strong></div>
           </div>

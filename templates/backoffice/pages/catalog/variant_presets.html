@@ -1,0 +1,140 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Variant Presets | TechBari Admin{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/variant-library.css' %}?v=1.1.0">
+<link rel="stylesheet" href="{% static 'admin/css/variant-presets-v2.css' %}?v=1.1.0">
+{% endblock %}
+{% block content %}
+<section class="page variant-library-page variant-presets-page">
+  <div class="page-head variant-library-head">
+    <div>
+      <div class="page-kicker">CATALOG CONFIGURATION</div>
+      <h1>Variant Presets</h1>
+      <p>Bundle reusable attributes into ready-made product setups, then apply them instantly in Variant Builder.</p>
+    </div>
+    <div class="variant-nav">
+      <a class="btn" href="{% url 'backoffice:products' %}">Products</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_builder' %}">Variant Builder</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_attributes' %}">Attributes</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variants' %}">Variants / SKUs</a>
+    </div>
+  </div>
+
+  {% if catalog_notice %}<div class="generation-result">✓ {{ catalog_notice }}</div>{% endif %}
+  {% if preset_form.errors %}<div class="generation-error">Please fix the highlighted preset fields below.</div>{% endif %}
+
+  <div class="variant-library-grid preset-library-grid">
+    <div class="preset-library-panel">
+      <div class="preset-library-summary card">
+        <div class="library-heading">
+          <span class="library-heading-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M8 7h8M8 17h8"/></svg>
+          </span>
+          <div>
+            <h3>Reusable Preset Library</h3>
+            <p>Presets only choose which attributes belong together. Product-specific values and SKUs are generated later.</p>
+          </div>
+        </div>
+        <span class="library-count">{{ presets|length }} <span>presets</span></span>
+      </div>
+
+      <div class="preset-list polished-preset-list">
+        {% for preset in presets %}
+        <article class="card preset-card polished-preset-card{% if not preset.is_active %} is-inactive{% endif %}">
+          <div class="preset-card-head">
+            <div class="preset-card-content">
+              <div class="attribute-title preset-title-row">
+                <strong>{{ preset.name }}</strong>
+                <span class="attribute-code">{{ preset.code }}</span>
+                <span class="status {% if preset.is_active %}green{% else %}gray{% endif %}">{% if preset.is_active %}Active{% else %}Inactive{% endif %}</span>
+              </div>
+
+              <div class="preset-meta-line">
+                <span class="preset-meta-label">Attributes</span>
+                <span class="preset-meta-count">{{ preset.attribute_links.all|length }}</span>
+              </div>
+
+              <div class="preset-attributes">
+                {% for link in preset.attribute_links.all %}
+                <span class="preset-pill">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M20.59 13.41 11 3.83V3H4v7h.83l9.58 9.59a2 2 0 0 0 2.82 0l3.36-3.36a2 2 0 0 0 0-2.82Z"/><circle cx="7.5" cy="6.5" r="1.25"/></svg>
+                  {{ link.attribute.name }}
+                </span>
+                {% empty %}<span class="attribute-empty-value">No attributes assigned yet.</span>{% endfor %}
+              </div>
+            </div>
+
+            <div class="preset-card-actions">
+              <a class="preset-use-action" href="{% url 'backoffice:catalog_variant_builder' %}?preset={{ preset.id }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                Use preset
+              </a>
+              <a class="attribute-action icon-only" href="{% url 'backoffice:catalog_variant_presets' %}?id={{ preset.id }}" title="Edit preset" aria-label="Edit {{ preset.name }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </a>
+              <form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle_preset"><input type="hidden" name="preset_id" value="{{ preset.id }}"><button class="attribute-action icon-only{% if preset.is_active %} danger{% else %} success{% endif %}" type="submit" title="{% if preset.is_active %}Deactivate{% else %}Activate{% endif %} preset" aria-label="{% if preset.is_active %}Deactivate{% else %}Activate{% endif %} {{ preset.name }}">
+                {% if preset.is_active %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><path d="M12 2v10"/></svg>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>{% endif %}
+              </button></form>
+            </div>
+          </div>
+        </article>
+        {% empty %}
+        <div class="card preset-empty-state">
+          <span class="preset-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+          <strong>No presets yet</strong>
+          <p>Create your first reusable attribute set from the form.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <aside class="variant-library-stack preset-form-stack">
+      <form method="post" class="card library-form-card preset-form-card">
+        {% csrf_token %}<input type="hidden" name="action" value="save_preset">{% if edit_preset %}<input type="hidden" name="preset_id" value="{{ edit_preset.id }}">{% endif %}
+
+        <div class="library-form-heading">
+          <span class="form-heading-icon purple" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h16M4 12h16M4 17h10"/><path d="M18 15v6M15 18h6"/></svg>
+          </span>
+          <div>
+            <h3>{% if edit_preset %}Edit Preset{% else %}Add Preset{% endif %}</h3>
+            <p>Choose the reusable attributes this type of product normally needs.</p>
+          </div>
+        </div>
+
+        <div class="preset-info-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg>
+          <span>A preset does not create product values or SKUs. It only prepares the attribute structure for Variant Builder.</span>
+        </div>
+
+        <div class="library-form-grid">
+          <label class="form-field"><span>Preset Name</span>{{ preset_form.name }}{{ preset_form.name.errors }}<small>Examples: Smartphone, Laptop, TWS / Earbuds.</small></label>
+
+          <div class="form-field preset-attributes-field">
+            <span>Attributes</span>
+            <div class="preset-select-shell">{{ preset_form.attributes }}</div>
+            {{ preset_form.attributes.errors }}
+            <small>{{ preset_form.attributes.help_text }}</small>
+          </div>
+
+          <label class="modern-check">{{ preset_form.is_active }}<span><strong>Active</strong><small>Available to use from Variant Builder.</small></span></label>
+
+          <details class="advanced-fields"{% if edit_preset or preset_form.code.errors or preset_form.sort_order.errors %} open{% endif %}>
+            <summary>Advanced settings <span>Internal code & sort order</span></summary>
+            <div class="advanced-fields-body">
+              <label class="form-field"><span>Internal Code</span>{{ preset_form.code }}{{ preset_form.code.errors }}<small>Leave blank to generate from the preset name when supported.</small></label>
+              <label class="form-field"><span>Sort Order</span>{{ preset_form.sort_order }}{{ preset_form.sort_order.errors }}</label>
+            </div>
+          </details>
+        </div>
+
+        <div class="library-form-actions">
+          {% if edit_preset %}<a class="btn" href="{% url 'backoffice:catalog_variant_presets' %}">Cancel</a>{% endif %}
+          <button class="btn btn-primary" type="submit">{% if edit_preset %}Update Preset{% else %}Save Preset{% endif %}</button>
+        </div>
+      </form>
+    </aside>
+  </div>
+</section>
+{% endblock %}

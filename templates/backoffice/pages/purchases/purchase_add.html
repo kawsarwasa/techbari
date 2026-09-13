@@ -6,7 +6,7 @@
 <section class="page">
   {% include "backoffice/includes/breadcrumbs/purchase_add.html" %}
   <div class="page-head">
-    <div><h1>{% if is_edit %}Edit Purchase Order{% else %}New Purchase Order{% endif %}</h1><p>Create a supplier purchase with real Variant/SKU line items.</p></div>
+    <div><h1>{% if is_edit %}Edit Purchase Order{% else %}New Purchase Order{% endif %}</h1><p>Create a supplier purchase with exact Variant/SKU line items.</p></div>
     <div class="head-actions"><a class="btn" href="{% url 'backoffice:purchases' %}">Back to Purchases</a></div>
   </div>
   {% if purchase_form_error %}<div class="purchase-error">{{ purchase_form_error }}</div>{% endif %}
@@ -32,7 +32,7 @@
         <div data-purchase-items>
           {% for row in item_rows %}
           <div class="purchase-item-row" data-purchase-row>
-            <label class="field variant-cell"><span>Variant / SKU</span><select class="control" name="variant_id" required><option value="">Choose Variant / SKU</option>{% for variant in purchase_variants %}<option value="{{ variant.id }}"{% if variant.id|stringformat:'s' == row.variant_id %} selected{% endif %}>{{ variant.product.name }} — {{ variant.sku }}</option>{% endfor %}</select></label>
+            <label class="field variant-cell"><span>Variant / SKU</span><select class="control" name="variant_id" required><option value="">Choose Variant / SKU</option>{% for variant in purchase_variants %}<option value="{{ variant.id }}"{% if variant.id|stringformat:'s' == row.variant_id %} selected{% endif %}>{{ variant.product.name }} — {{ variant.display_name }} — {{ variant.sku }}</option>{% endfor %}</select></label>
             <label class="field"><span>Qty</span><input class="control" type="number" min="1" name="ordered_quantity" value="{{ row.ordered_quantity }}" required></label>
             <label class="field"><span>Unit Cost</span><input class="control" type="number" min="0" step="0.01" name="unit_cost" value="{{ row.unit_cost }}" required></label>
             <button class="btn remove-purchase-row" type="button" data-remove-purchase-row>×</button>
@@ -41,7 +41,7 @@
         </div>
         <template id="purchase-item-template">
           <div class="purchase-item-row" data-purchase-row>
-            <label class="field variant-cell"><span>Variant / SKU</span><select class="control" name="variant_id" required><option value="">Choose Variant / SKU</option>{% for variant in purchase_variants %}<option value="{{ variant.id }}">{{ variant.product.name }} — {{ variant.sku }}</option>{% endfor %}</select></label>
+            <label class="field variant-cell"><span>Variant / SKU</span><select class="control" name="variant_id" required><option value="">Choose Variant / SKU</option>{% for variant in purchase_variants %}<option value="{{ variant.id }}">{{ variant.product.name }} — {{ variant.display_name }} — {{ variant.sku }}</option>{% endfor %}</select></label>
             <label class="field"><span>Qty</span><input class="control" type="number" min="1" name="ordered_quantity" value="1" required></label>
             <label class="field"><span>Unit Cost</span><input class="control" type="number" min="0" step="0.01" name="unit_cost" value="0.00" required></label>
             <button class="btn remove-purchase-row" type="button" data-remove-purchase-row>×</button>

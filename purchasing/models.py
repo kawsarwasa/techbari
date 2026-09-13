@@ -148,6 +148,9 @@ class PurchaseOrder(models.Model):
 class PurchaseOrderItem(models.Model):
     purchase = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name="items")
     variant = models.ForeignKey(ProductVariant, on_delete=models.PROTECT, related_name="purchase_items")
+    product_snapshot = models.CharField(max_length=255, blank=True)
+    variant_snapshot = models.CharField(max_length=120, blank=True)
+    sku_snapshot = models.CharField(max_length=64, blank=True)
     ordered_quantity = models.PositiveIntegerField()
     received_quantity = models.PositiveIntegerField(default=0)
     returned_quantity = models.PositiveIntegerField(default=0)
@@ -177,6 +180,21 @@ class PurchaseOrderItem(models.Model):
         if self.returned_quantity > self.received_quantity:
             raise ValidationError("Returned quantity cannot exceed received quantity.")
 
+    def _fill_snapshots(self):
+        if not self.variant_id:
+            return
+        variant = self.variant
+        if not self.product_snapshot:
+            self.product_snapshot = variant.product.name
+        if not self.variant_snapshot:
+            self.variant_snapshot = variant.display_name
+        if not self.sku_snapshot:
+            self.sku_snapshot = variant.sku
+
+    def save(self, *args, **kwargs):
+        self._fill_snapshots()
+        return super().save(*args, **kwargs)
+
     @property
     def discount_amount(self):
         # Compatibility read for legacy templates/callers. Line discounts are
@@ -196,7 +214,7 @@ class PurchaseOrderItem(models.Model):
         return max(0, self.received_quantity - self.returned_quantity)
 
     def __str__(self):
-        return f"{self.purchase.po_number} / {self.variant.sku} x {self.ordered_quantity}"
+        return f"{self.purchase.po_number} / {self.sku_snapshot or self.variant.sku} x {self.ordered_quantity}"
 
 
 class PurchaseReceipt(models.Model):
@@ -234,7 +252,8 @@ class PurchaseReceiptItem(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.receipt.receipt_no} / {self.purchase_item.variant.sku} x {self.quantity}"
+        sku = self.purchase_item.sku_snapshot or self.purchase_item.variant.sku
+        return f"{self.receipt.receipt_no} / {sku} x {self.quantity}"
 
 
 class PurchasePayment(models.Model):
@@ -321,7 +340,8 @@ class PurchaseReturnItem(models.Model):
         return Decimal(self.quantity) * self.unit_cost
 
     def __str__(self):
-        return f"{self.purchase_return.return_no} / {self.purchase_item.variant.sku} x {self.quantity}"
+        sku = self.purchase_item.sku_snapshot or self.purchase_item.variant.sku
+        return f"{self.purchase_return.return_no} / {sku} x {self.quantity}"
 
 
 class PurchaseReturnSerialUnit(models.Model):

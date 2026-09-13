@@ -10,15 +10,15 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from catalog.forms import (
+    MAX_PRODUCT_IMAGES,
     BrandForm,
     CategoryForm,
     ProductForm,
     ProductImageForm,
     ProductSpecificationForm,
-    ProductVariantForm,
     validate_product_images,
 )
-from catalog.models import Brand, Category, Product, ProductImage, ProductSpecification, ProductVariant
+from catalog.models import Brand, Category, Product, ProductImage, ProductSpecification
 from catalog.presentation import catalog_queryset, serialize_admin_product, serialize_product
 from catalog.services import save_product_bundle
 from .context import page_context
@@ -176,8 +176,10 @@ def product_edit(request):
         image_files = request.FILES.getlist("images")
         try:
             validate_product_images(image_files)
-            if product.images.count() + len(image_files) > 8:
-                raise ValidationError("A product can have a maximum of 8 images in total.")
+            if product.images.count() + len(image_files) > MAX_PRODUCT_IMAGES:
+                raise ValidationError(
+                    f"A product can have a maximum of {MAX_PRODUCT_IMAGES} images in total."
+                )
         except ValidationError as exc:
             form.add_error(None, exc)
         if form.is_valid():
@@ -299,57 +301,6 @@ def _filtered_product_id(request):
         return None
 
 
-def variants(request):
-    notice_map = {"saved": "Variant saved successfully.", "deleted": "Variant deleted successfully."}
-    error_map = {"last-variant": "A product must keep at least one variant/SKU. Create another variant before deleting this one."}
-    if request.method == "POST" and request.POST.get("action") == "delete":
-        variant = get_object_or_404(ProductVariant.objects.select_related("product"), pk=request.POST.get("variant_id"))
-        product = variant.product
-        if product.variants.count() <= 1:
-            return redirect(reverse("backoffice:catalog_variants") + f"?product={product.pk}&error=last-variant")
-        was_default = variant.is_default
-        variant.delete()
-        if was_default:
-            replacement = product.variants.filter(is_active=True).order_by("id").first() or product.variants.order_by("id").first()
-            if replacement:
-                product.variants.update(is_default=False)
-                replacement.is_default = True
-                replacement.save(update_fields=["is_default", "updated_at"])
-        return redirect(reverse("backoffice:catalog_variants") + f"?product={product.pk}&notice=deleted")
-    context = _catalog_management_context(request, notice_map, error_map)
-    product_id = _filtered_product_id(request)
-    qs = ProductVariant.objects.select_related("product", "product__category", "product__brand").order_by("product__name", "-is_default", "id")
-    if product_id:
-        qs = qs.filter(product_id=product_id)
-    context["variants"] = qs
-    context["product_filter"] = product_id
-    return render(request, "backoffice/pages/catalog/variants.html", context)
-
-
-def variant_form(request):
-    variant_id = request.GET.get("id")
-    product_id = _filtered_product_id(request)
-    instance = get_object_or_404(ProductVariant, pk=variant_id) if variant_id else None
-    if instance:
-        product_id = instance.product_id
-    form = ProductVariantForm(request.POST or None, instance=instance, product_id=product_id)
-    if request.method == "POST" and form.is_valid():
-        with transaction.atomic():
-            variant = form.save(commit=False)
-            product = variant.product
-            if variant.is_default:
-                product.variants.exclude(pk=variant.pk).update(is_default=False)
-            variant.save()
-            if not product.variants.filter(is_default=True).exists():
-                replacement = product.variants.filter(is_active=True).order_by("id").first() or variant
-                replacement.is_default = True
-                replacement.save(update_fields=["is_default", "updated_at"])
-        return redirect(reverse("backoffice:catalog_variants") + f"?product={variant.product_id}&notice=saved")
-    context = _catalog_management_context(request)
-    context.update(form=form, is_edit=bool(instance), variant_obj=instance, product_filter=product_id)
-    return render(request, "backoffice/pages/catalog/variant_form.html", context)
-
-
 def _image_preview_url(image):
     if image.image:
         try:
@@ -426,8 +377,11 @@ def media_form(request):
     if request.method == "POST" and form.is_valid():
         product = form.cleaned_data["product"]
         existing_count = product.images.exclude(pk=instance.pk if instance else None).count()
-        if not instance and existing_count >= 8:
-            form.add_error("image", "A product can have a maximum of 8 images.")
+        if not instance and existing_count >= MAX_PRODUCT_IMAGES:
+            form.add_error(
+                "image",
+                f"A product can have a maximum of {MAX_PRODUCT_IMAGES} images.",
+            )
         else:
             with transaction.atomic():
                 image = form.save(commit=False)
