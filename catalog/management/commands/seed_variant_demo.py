@@ -1,5 +1,5 @@
 from django.core.management import call_command
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from catalog.models import Product, ProductOption, ProductOptionValue, ProductVariantOptionValue
@@ -14,15 +14,16 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--seed-catalog-if-empty",
+            "--no-seed-catalog",
             action="store_true",
-            default=True,
-            help="Seed the existing storefront demo catalog first when the catalog is empty.",
+            help="Do not seed the existing demo catalog when the catalog is empty.",
         )
 
     @transaction.atomic
     def handle(self, *args, **options):
-        if not Product.objects.exists() and options["seed_catalog_if_empty"]:
+        if not Product.objects.exists():
+            if options["no_seed_catalog"]:
+                raise CommandError("Catalog is empty. Run python manage.py seed_catalog first.")
             call_command("seed_catalog")
 
         configured_products = 0
