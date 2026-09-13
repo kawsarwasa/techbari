@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="{% static 'admin/css/catalog-v102.css' %}">
   <link rel="stylesheet" href="{% static 'admin/css/catalog-v102-polish.css' %}">
   <link rel="stylesheet" href="{% static 'admin/css/techbari-rich-editor-v109.css' %}?v=1.0.9">
+  <link rel="stylesheet" href="{% static 'admin/css/variant-builder-polish-v3.css' %}?v=3.0.0">
   {% endif %}
   {% block page_theme_css %}{% endblock %}
 </head>
@@ -39,5 +40,8 @@
   <script src="{% static 'admin/js/techbari-rich-editor-v109.js' %}?v=1.0.9"></script>
   {% endif %}
   {% block extra_js %}{% endblock %}
+  {% if active_section == 'products' %}
+  <script src="{% static 'admin/js/variant-builder-polish-v3.js' %}?v=3.0.0"></script>
+  {% endif %}
 </body>
 </html>
