@@ -1,8 +1,10 @@
 {% extends "backoffice/base.html" %}
+{% load static %}
 {% load demo %}
 {% block title %}Create Return | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/returns-responsive.css' %}?v=1.0.5">{% endblock %}
 {% block content %}
-<section class="page">
+<section class="page returns-add-page">
   <div class="page-head"><div><h1>Create Return / Refund</h1><p>Select a completed sale, then choose exactly what came back and how it should affect stock.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:returns' %}">Cancel</a></div></div>
   {% if return_form_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ return_form_error }}</div>{% endif %}
 
@@ -12,8 +14,8 @@
   </div>
 
   {% if selected_order %}
-  <form method="post" class="form-layout">{% csrf_token %}<input type="hidden" name="order" value="{{ selected_order.id }}">
-    <div>
+  <form method="post" class="form-layout return-form-layout">{% csrf_token %}<input type="hidden" name="order" value="{{ selected_order.id }}">
+    <div class="return-main-column">
       <div class="card form-card">
         <div class="section-head"><h3>2. Return Header</h3></div>
         <div class="form-grid">
@@ -29,31 +31,37 @@
         <div class="form-grid" style="margin-top:14px"><label class="field"><span>Customer Note</span>{{ form.customer_note }}</label><label class="field"><span>Internal Note</span>{{ form.internal_note }}</label></div>
       </div>
 
-      <div class="card orders-table-card" style="margin-top:16px">
+      <div class="card orders-table-card return-items-card" style="margin-top:16px">
         <div class="section-head"><h3>3. Select Return Items</h3></div>
-        <div class="soft-note" style="margin:0 16px 14px">Only issued/sold quantity that is not already in another active return can be selected. Refund/Credit is capped by the original line value. Restock adds sellable inventory only when the return is finally completed.</div>
-        <div class="table-scroll"><table class="data-table"><thead><tr><th>Return?</th><th>Product / SKU</th><th>Sold / Remaining</th><th>Qty</th><th>Credit Amount</th><th>Condition</th><th>Disposition</th><th>Serial / IMEI</th><th>Note</th></tr></thead><tbody>
+        <div class="soft-note return-items-note" style="margin:0 16px 14px">Only issued/sold quantity that is not already in another active return can be selected. Refund/Credit is capped by the original line value. Restock adds sellable inventory only when the return is finally completed.</div>
+        <div class="table-scroll return-items-table-wrap"><table class="data-table return-items-table"><thead><tr><th>Return?</th><th>Product / SKU</th><th>Sold / Remaining</th><th>Qty</th><th>Credit Amount</th><th>Condition</th><th>Disposition</th><th>Serial / IMEI</th><th>Note</th></tr></thead><tbody>
           {% for row in return_item_rows %}<tr>
-            <td><input type="checkbox" name="include_{{ row.item.id }}" value="1"{% if row.checked %} checked{% endif %}></td>
-            <td><strong>{{ row.item.product_snapshot }}</strong><br><small>{{ row.item.sku_snapshot }}</small></td>
-            <td>{{ row.item.issued_quantity }} / {{ row.remaining_quantity }}</td>
-            <td><input class="control" style="min-width:80px" type="number" min="1" max="{{ row.remaining_quantity }}" name="quantity_{{ row.item.id }}" value="{{ row.posted_quantity }}"></td>
-            <td><input class="control" style="min-width:110px" type="number" min="0" max="{{ row.remaining_credit }}" step="0.01" name="refund_amount_{{ row.item.id }}" value="{{ row.posted_refund }}"><small>Max {{ row.remaining_credit|money }}</small></td>
-            <td><select class="control" name="condition_{{ row.item.id }}">{% for value,label in condition_choices %}<option value="{{ value }}"{% if row.posted_condition == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></td>
-            <td><select class="control" name="disposition_{{ row.item.id }}">{% for value,label in disposition_choices %}<option value="{{ value }}"{% if row.posted_disposition == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></td>
-            <td>{% if row.serials %}<select class="control" name="serialized_unit_{{ row.item.id }}"><option value="">Select exact unit</option>{% for unit in row.serials %}<option value="{{ unit.id }}"{% if row.posted_serial == unit.id|stringformat:'s' %} selected{% endif %}>{{ unit.display_identifier }}</option>{% endfor %}</select><small>Serialized return must be Qty 1.</small>{% else %}<input type="hidden" name="serialized_unit_{{ row.item.id }}" value=""><span>—</span>{% endif %}</td>
-            <td><input class="control" name="item_note_{{ row.item.id }}" value="{{ row.posted_note }}" placeholder="Optional"></td>
-          </tr>{% empty %}<tr><td colspan="9">Every issued item on this order is already allocated to another return, or no sold items remain.</td></tr>{% endfor %}
+            <td class="return-check-cell" data-label="Return item"><input type="checkbox" name="include_{{ row.item.id }}" value="1"{% if row.checked %} checked{% endif %}></td>
+            <td class="return-product-cell" data-label="Product / SKU"><strong>{{ row.item.product_snapshot }}</strong><br><small>{{ row.item.sku_snapshot }}</small></td>
+            <td data-label="Sold / Remaining">{{ row.item.issued_quantity }} / {{ row.remaining_quantity }}</td>
+            <td data-label="Qty"><input class="control" type="number" min="1" max="{{ row.remaining_quantity }}" name="quantity_{{ row.item.id }}" value="{{ row.posted_quantity }}"></td>
+            <td data-label="Credit Amount"><input class="control" type="number" min="0" max="{{ row.remaining_credit }}" step="0.01" name="refund_amount_{{ row.item.id }}" value="{{ row.posted_refund }}"><small>Max {{ row.remaining_credit|money }}</small></td>
+            <td data-label="Condition"><select class="control" name="condition_{{ row.item.id }}">{% for value,label in condition_choices %}<option value="{{ value }}"{% if row.posted_condition == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></td>
+            <td data-label="Disposition"><select class="control" name="disposition_{{ row.item.id }}">{% for value,label in disposition_choices %}<option value="{{ value }}"{% if row.posted_disposition == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></td>
+            <td data-label="Serial / IMEI">{% if row.serials %}<select class="control" name="serialized_unit_{{ row.item.id }}"><option value="">Select exact unit</option>{% for unit in row.serials %}<option value="{{ unit.id }}"{% if row.posted_serial == unit.id|stringformat:'s' %} selected{% endif %}>{{ unit.display_identifier }}</option>{% endfor %}</select><small>Serialized return must be Qty 1.</small>{% else %}<input type="hidden" name="serialized_unit_{{ row.item.id }}" value=""><span>—</span>{% endif %}</td>
+            <td data-label="Note"><input class="control" name="item_note_{{ row.item.id }}" value="{{ row.posted_note }}" placeholder="Optional"></td>
+          </tr>{% empty %}<tr class="return-empty-row"><td colspan="9">Every issued item on this order is already allocated to another return, or no sold items remain.</td></tr>{% endfor %}
         </tbody></table></div>
       </div>
     </div>
-    <aside class="card form-side"><div class="section-head"><h3>Return Safety</h3></div><div class="info-body">
-      <p><strong>Requested → Approved → Received → Completed</strong></p>
-      <p>Creating or approving a return does not change stock or money.</p>
-      <p>Completed return posts Inventory Return-In only for Restock lines. Damaged/Warranty/Scrap items never inflate sellable stock.</p>
-      <p>Return credit reduces the order payable balance. Cash is refunded only if the customer is overpaid after that credit, using the existing Payment ledger.</p>
-      <button class="btn btn-primary" type="submit" style="width:100%;margin-top:12px">Create Return Request</button>
-    </div></aside>
+
+    <section class="card return-safety-card">
+      <div class="section-head"><h3>Return Safety</h3></div>
+      <div class="return-safety-body">
+        <div class="return-safety-copy">
+          <div class="return-safety-flow"><strong>Requested → Approved → Received → Completed</strong></div>
+          <p>Creating or approving a return does not change stock or money.</p>
+          <p>Completed return posts Inventory Return-In only for Restock lines. Damaged/Warranty/Scrap items never inflate sellable stock.</p>
+          <p>Return credit reduces the order payable balance. Cash is refunded only if the customer is overpaid after that credit, using the existing Payment ledger.</p>
+        </div>
+        <button class="btn btn-primary return-submit-btn" type="submit">Create Return Request</button>
+      </div>
+    </section>
   </form>
   {% else %}<div class="soft-note">Load a Completed / Sold order to start a return.</div>{% endif %}
 </section>
