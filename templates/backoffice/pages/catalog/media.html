@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Product Media | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-media-v2.css' %}?v=2.1.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-media-v2.css' %}?v=2.2.0">{% endblock %}
 {% block content %}
 <section class="page product-media-v2" data-product-media-manager data-product-id="{{ product_filter|default:'' }}" data-product-name="{% for product in catalog_products %}{% if product.id == product_filter %}{{ product.name|escape }}{% endif %}{% endfor %}" data-media-url="{% url 'backoffice:catalog_media' %}{% if product_filter %}?product={{ product_filter }}{% endif %}" data-upload-url="{% url 'backoffice:catalog_media_form' %}{% if product_filter %}?product={{ product_filter }}{% endif %}" data-max-images="24" data-current-count="{{ media_rows|length }}">
   <div class="page-head media-head">
@@ -24,18 +24,23 @@
         <button class="btn btn-primary" type="submit">Open Media</button>
         {% if product_filter %}<a class="btn clear-filter" href="{% url 'backoffice:catalog_media' %}">Clear</a>{% endif %}
       </form>
+      {% if not product_filter %}
+      <div class="media-filter-hint">
+        <span class="media-filter-hint-icon">＋</span>
+        <span><strong>Select a product</strong> to unlock multi-image upload, drag ordering and product-specific media controls.</span>
+      </div>
+      {% endif %}
     </div>
 
+    {% if product_filter %}
     <section class="card media-upload-card">
       <div class="media-upload-head">
         <div>
           <h3>Quick Multi-image Upload</h3>
-          {% if product_filter %}<p>Drop several product images here. The first image becomes Primary automatically only when this product does not already have one.</p>{% else %}<p>Select a product above first, then you can upload several images in one batch.</p>{% endif %}
+          <p>Drop several product images here. The first image becomes Primary automatically only when this product does not already have one.</p>
         </div>
-        {% if product_filter %}<span class="media-count-pill">{{ media_rows|length }} / 24 images</span>{% endif %}
+        <span class="media-count-pill">{{ media_rows|length }} / 24 images</span>
       </div>
-
-      {% if product_filter %}
       <form onsubmit="return false;">{% csrf_token %}
         <label class="media-dropzone" data-media-dropzone>
           <input type="file" accept="image/jpeg,image/png,image/webp" multiple data-media-file-input>
@@ -51,16 +56,14 @@
           <button class="btn btn-primary" type="button" data-media-upload-button disabled>Upload Selected Images</button>
         </div>
       </form>
-      {% else %}
-      <div class="media-no-product">Choose one product above to unlock multi-image upload, drag-to-reorder and product-specific media controls.</div>
-      {% endif %}
     </section>
+    {% endif %}
 
     <section class="card media-gallery-card">
       <div class="media-gallery-head">
         <div>
           <h3>{% if product_filter %}Product Gallery{% else %}All Product Images{% endif %}</h3>
-          <p>{% if product_filter %}Drag cards to change storefront order. Use Primary and Detail only when you need to change the current roles.{% else %}Browse every product image here, or filter by a product to enable drag ordering and quicker uploads.{% endif %}</p>
+          <p>{% if product_filter %}Drag cards to change storefront order. Use Primary and Detail only when you need to change the current roles.{% else %}Browse all product images, or select a product above for upload and drag ordering.{% endif %}</p>
         </div>
         <div class="media-gallery-actions">
           {% if media_rows %}<span class="media-count-pill">{{ media_rows|length }} image{{ media_rows|length|pluralize }}</span><label class="media-selected-count"><input type="checkbox" data-media-select-all> Select all</label><span class="media-selected-count"><b data-media-selected-count>0</b> selected</span>{% endif %}
@@ -81,13 +84,13 @@
           </div>
           <div class="media-card-body">
             <strong class="media-card-title">{{ image.product.name }}</strong>
-            <div class="media-card-meta">
-              <span><b>Variant</b>{% if image.attribute_value %}{{ image.attribute_value.attribute.name }}: {{ image.attribute_value.value }}{% else %}General image{% endif %}</span>
-              <span><b>Order</b>{{ image.sort_order }}</span>
-              {% if image.alt_text %}<span><b>Alt</b>{{ image.alt_text }}</span>{% endif %}
+            <div class="media-card-facts">
+              <span class="media-fact"><b>Variant</b><em>{% if image.attribute_value %}{{ image.attribute_value.value }}{% else %}General{% endif %}</em></span>
+              <span class="media-fact media-order-fact"><b>Order</b><em>{{ image.sort_order }}</em></span>
             </div>
+            {% if image.alt_text and image.alt_text != image.product.name %}<div class="media-alt-line" title="{{ image.alt_text }}"><b>Alt</b><span>{{ image.alt_text }}</span></div>{% endif %}
             <div class="media-card-actions">
-              <a class="icon-btn" href="{% url 'backoffice:catalog_media_form' %}?id={{ image.id }}" title="Edit" aria-label="Edit">✎</a>
+              <a class="icon-btn media-edit-btn" href="{% url 'backoffice:catalog_media_form' %}?id={{ image.id }}" title="Edit" aria-label="Edit">✎</a>
               <form method="post">{% csrf_token %}<input type="hidden" name="image_id" value="{{ image.id }}">
                 {% if image.role != 'primary' %}<button class="btn small" type="submit" name="action" value="set_primary">Primary</button>{% endif %}
                 {% if image.role != 'detail' %}<button class="btn small" type="submit" name="action" value="set_detail">Detail</button>{% endif %}
