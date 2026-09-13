@@ -114,41 +114,78 @@ class Product(models.Model):
         return next((v for v in variants if v.is_default), variants[0] if variants else None)
 
 
-class ProductOption(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="options")
+class VariantAttribute(models.Model):
+    class DisplayType(models.TextChoices):
+        SWATCH = "swatch", "Color Swatch"
+        BUTTON = "button", "Button"
+        DROPDOWN = "dropdown", "Dropdown"
+
     name = models.CharField(max_length=80)
+    code = models.SlugField(max_length=80, unique=True)
+    display_type = models.CharField(max_length=16, choices=DisplayType.choices, default=DisplayType.BUTTON)
+    is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("product_id", "sort_order", "id")
-        constraints = [
-            models.UniqueConstraint(fields=("product", "name"), name="uniq_product_option_name")
-        ]
-        indexes = [models.Index(fields=("product", "sort_order"), name="cat_option_product_sort_idx")]
+        ordering = ("sort_order", "name", "id")
+        constraints = [models.UniqueConstraint(fields=("name",), name="uniq_variant_attribute_name")]
+        indexes = [models.Index(fields=("is_active", "sort_order"), name="cat_attr_active_sort_idx")]
 
     def __str__(self):
-        return f"{self.product.name} / {self.name}"
+        return self.name
 
 
-class ProductOptionValue(models.Model):
-    option = models.ForeignKey(ProductOption, on_delete=models.CASCADE, related_name="values")
+class VariantAttributeValue(models.Model):
+    attribute = models.ForeignKey(VariantAttribute, on_delete=models.CASCADE, related_name="values")
     value = models.CharField(max_length=120)
+    code = models.SlugField(max_length=80)
     symbol = models.CharField(max_length=32, blank=True)
+    color_hex = models.CharField(max_length=9, blank=True)
+    is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("option_id", "sort_order", "id")
+        ordering = ("attribute_id", "sort_order", "value", "id")
         constraints = [
-            models.UniqueConstraint(fields=("option", "value"), name="uniq_product_option_value")
+            models.UniqueConstraint(fields=("attribute", "value"), name="uniq_variant_attr_value"),
+            models.UniqueConstraint(fields=("attribute", "code"), name="uniq_variant_attr_code"),
         ]
-        indexes = [models.Index(fields=("option", "sort_order"), name="cat_optval_option_sort_idx")]
+        indexes = [models.Index(fields=("attribute", "is_active", "sort_order"), name="cat_attrval_active_idx")]
 
     def __str__(self):
-        return f"{self.option.name}: {self.value}"
+        return f"{self.attribute.name}: {self.value}"
+
+
+class VariantPreset(models.Model):
+    name = models.CharField(max_length=120, unique=True)
+    code = models.SlugField(max_length=120, unique=True)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("sort_order", "name", "id")
+
+    def __str__(self):
+        return self.name
+
+
+class VariantPresetAttribute(models.Model):
+    preset = models.ForeignKey(VariantPreset, on_delete=models.CASCADE, related_name="attribute_links")
+    attribute = models.ForeignKey(VariantAttribute, on_delete=models.PROTECT, related_name="preset_links")
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ("preset_id", "sort_order", "id")
+        constraints = [models.UniqueConstraint(fields=("preset", "attribute"), name="uniq_preset_attribute")]
+
+    def __str__(self):
+        return f"{self.preset.name} / {self.attribute.name}"
 
 
 class ProductVariant(models.Model):
@@ -177,8 +214,8 @@ class ProductVariant(models.Model):
 
     @property
     def option_summary(self):
-        rows = self.option_selections.select_related("option", "value").order_by(
-            "option__sort_order", "option_id", "id"
+        rows = self.variant_values.select_related("value", "value__attribute").order_by(
+            "value__attribute__sort_order", "value__attribute_id", "value__sort_order", "id"
         )
         return " / ".join(row.value.value for row in rows)
 
@@ -190,30 +227,33 @@ class ProductVariant(models.Model):
         return f"{self.product.name} - {self.display_name}"
 
 
-class ProductVariantOptionValue(models.Model):
-    variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE, related_name="option_selections")
-    option = models.ForeignKey(ProductOption, on_delete=models.PROTECT, related_name="variant_selections")
-    value = models.ForeignKey(ProductOptionValue, on_delete=models.PROTECT, related_name="variant_selections")
+class ProductVariantValue(models.Model):
+    variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE, related_name="variant_values")
+    value = models.ForeignKey(VariantAttributeValue, on_delete=models.PROTECT, related_name="variant_links")
 
     class Meta:
-        ordering = ("option__sort_order", "option_id", "id")
-        constraints = [
-            models.UniqueConstraint(fields=("variant", "option"), name="uniq_variant_option_selection")
-        ]
-        indexes = [models.Index(fields=("variant", "option"), name="cat_varopt_variant_option_idx")]
+        ordering = ("value__attribute__sort_order", "value__sort_order", "id")
+        constraints = [models.UniqueConstraint(fields=("variant", "value"), name="uniq_variant_global_value")]
+        indexes = [models.Index(fields=("variant", "value"), name="cat_varvalue_idx")]
 
     def clean(self):
-        if self.variant_id and self.option_id and self.variant.product_id != self.option.product_id:
-            raise ValidationError("Variant option must belong to the same product.")
-        if self.value_id and self.option_id and self.value.option_id != self.option_id:
-            raise ValidationError("Selected option value does not belong to the selected option.")
+        if not self.variant_id or not self.value_id:
+            return
+        conflict = ProductVariantValue.objects.filter(
+            variant_id=self.variant_id,
+            value__attribute_id=self.value.attribute_id,
+        )
+        if self.pk:
+            conflict = conflict.exclude(pk=self.pk)
+        if conflict.exists():
+            raise ValidationError(f"Choose only one value for {self.value.attribute.name}.")
 
     def save(self, *args, **kwargs):
         self.full_clean()
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.variant.sku} / {self.option.name}: {self.value.value}"
+        return f"{self.variant.sku} / {self.value.attribute.name}: {self.value.value}"
 
 
 class ProductImage(models.Model):
@@ -223,6 +263,14 @@ class ProductImage(models.Model):
         DETAIL = "detail", "Detail"
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
+    attribute_value = models.ForeignKey(
+        VariantAttributeValue,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="product_images",
+        help_text="Optional variant value this image represents, usually a color/finish.",
+    )
     image = models.ImageField(upload_to="catalog/products/%Y/%m/", blank=True)
     static_path = models.CharField(max_length=255, blank=True)
     alt_text = models.CharField(max_length=255, blank=True)
