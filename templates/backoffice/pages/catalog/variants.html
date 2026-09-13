@@ -1,4 +1,87 @@
 {% extends "backoffice/base.html" %}
 {% load demo %}
 {% block title %}Variants / SKUs | TechBari Admin{% endblock %}
-{% block content %}<section class="page"><div class="page-head"><div><h1>Variants / SKUs</h1><p>Manage SKU, barcode, variant-level pricing and stock.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:products' %}"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Products</a><a class="btn btn-primary" href="{% url 'backoffice:catalog_variant_form' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">＋ Add Variant</a></div></div>{% if catalog_notice %}<div class="soft-note" style="margin-bottom:14px">✓ {{ catalog_notice }}</div>{% endif %}{% if catalog_error %}<div class="soft-note" style="margin-bottom:14px">{{ catalog_error }}</div>{% endif %}<div class="filters-card"><form method="get" class="filter-row"><select class="control" name="product"><option value="">All Products</option>{% for product in catalog_products %}<option value="{{ product.id }}"{% if product_filter == product.id %} selected{% endif %}>{{ product.name }}</option>{% endfor %}</select><button class="btn" type="submit">Filter</button>{% if product_filter %}<a class="btn" href="{% url 'backoffice:catalog_variants' %}">Clear</a>{% endif %}</form></div><div class="card orders-table-card"><div class="table-scroll"><table class="data-table"><thead><tr><th>#</th><th>Product</th><th>Variant</th><th>SKU</th><th>Barcode</th><th>Regular Override</th><th>Selling Override</th><th>Stock</th><th>Low Alert</th><th>Default</th><th>Status</th><th>Actions</th></tr></thead><tbody>{% for variant in variants %}<tr><td>{{ forloop.counter }}</td><td><strong>{{ variant.product.name }}</strong><br><span class="muted">{{ variant.product.category.name }} · {{ variant.product.brand.name }}</span></td><td>{{ variant.symbol }} {{ variant.name }}</td><td>{{ variant.sku }}</td><td>{{ variant.barcode|default:"—" }}</td><td>{% if variant.regular_price_override != None %}{{ variant.regular_price_override|money }}{% else %}—{% endif %}</td><td>{% if variant.price_override != None %}{{ variant.price_override|money }}{% else %}—{% endif %}</td><td>{{ variant.stock_quantity }}</td><td>{{ variant.low_stock_alert }}</td><td>{% if variant.is_default %}<span class="status green">Default</span>{% else %}—{% endif %}</td><td><span class="status {% if variant.is_active %}green{% else %}gray{% endif %}">{% if variant.is_active %}Active{% else %}Inactive{% endif %}</span></td><td><div class="crud-actions"><a class="icon-btn" href="{% url 'backoffice:catalog_variant_form' %}?id={{ variant.id }}" title="Edit">✎</a><form method="post" style="display:inline" onsubmit="return confirm('Delete this variant?');">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="variant_id" value="{{ variant.id }}"><button class="icon-btn danger" type="submit" title="Delete">×</button></form></div></td></tr>{% empty %}<tr><td colspan="12"><div class="empty-state">No variants found.</div></td></tr>{% endfor %}</tbody></table></div></div></section>{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Variants / SKUs</h1>
+      <p>Manage stable SKUs with structured option combinations, pricing and stock.</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn" href="{% url 'backoffice:products' %}">
+        <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Products
+      </a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_options' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">Option Setup</a>
+      <a class="btn btn-primary" href="{% url 'backoffice:catalog_variant_form' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">＋ Add Variant</a>
+    </div>
+  </div>
+
+  {% if catalog_notice %}<div class="soft-note" style="margin-bottom:14px">✓ {{ catalog_notice }}</div>{% endif %}
+  {% if catalog_error %}<div class="soft-note" style="margin-bottom:14px">{{ catalog_error }}</div>{% endif %}
+
+  <div class="filters-card">
+    <form method="get" class="filter-row">
+      <select class="control" name="product">
+        <option value="">All Products</option>
+        {% for product in catalog_products %}
+          <option value="{{ product.id }}"{% if product_filter == product.id %} selected{% endif %}>{{ product.name }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn" type="submit">Filter</button>
+      {% if product_filter %}<a class="btn" href="{% url 'backoffice:catalog_variants' %}">Clear</a>{% endif %}
+    </form>
+  </div>
+
+  <div class="card orders-table-card">
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Product</th><th>Variant</th><th>Options</th><th>SKU</th><th>Barcode</th>
+            <th>Regular Override</th><th>Selling Override</th><th>Stock</th><th>Low Alert</th>
+            <th>Default</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for variant in variants %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td><strong>{{ variant.product.name }}</strong><br><span class="muted">{{ variant.product.category.name }} · {{ variant.product.brand.name }}</span></td>
+            <td>{{ variant.symbol }} {{ variant.display_name }}</td>
+            <td>
+              {% for selection in variant.option_selections.all %}
+                <span class="status blue" style="margin:2px 4px 2px 0">{{ selection.option.name }}: {{ selection.value.value }}</span>
+              {% empty %}
+                <span class="muted">Legacy / default</span>
+              {% endfor %}
+            </td>
+            <td>{{ variant.sku }}</td>
+            <td>{{ variant.barcode|default:"—" }}</td>
+            <td>{% if variant.regular_price_override != None %}{{ variant.regular_price_override|money }}{% else %}—{% endif %}</td>
+            <td>{% if variant.price_override != None %}{{ variant.price_override|money }}{% else %}—{% endif %}</td>
+            <td>{{ variant.stock_quantity }}</td>
+            <td>{{ variant.low_stock_alert }}</td>
+            <td>{% if variant.is_default %}<span class="status green">Default</span>{% else %}—{% endif %}</td>
+            <td><span class="status {% if variant.is_active %}green{% else %}gray{% endif %}">{% if variant.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+            <td>
+              <div class="crud-actions">
+                <a class="icon-btn" href="{% url 'backoffice:catalog_variant_form' %}?id={{ variant.id }}" title="Edit">
+                  <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </a>
+                <form method="post" style="display:inline" onsubmit="return confirm('Delete this variant? If it has business history, TechBari will safely deactivate it instead.');">
+                  {% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="variant_id" value="{{ variant.id }}">
+                  <button class="icon-btn danger" type="submit" title="Delete / deactivate">
+                    <svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}<tr><td colspan="13"><div class="empty-state">No variants found.</div></td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}
