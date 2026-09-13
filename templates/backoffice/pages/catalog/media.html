@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Product Media | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-media-v2.css' %}?v=2.2.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-media-v2.css' %}?v=2.3.0">{% endblock %}
 {% block content %}
 <section class="page product-media-v2" data-product-media-manager data-product-id="{{ product_filter|default:'' }}" data-product-name="{% for product in catalog_products %}{% if product.id == product_filter %}{{ product.name|escape }}{% endif %}{% endfor %}" data-media-url="{% url 'backoffice:catalog_media' %}{% if product_filter %}?product={{ product_filter }}{% endif %}" data-upload-url="{% url 'backoffice:catalog_media_form' %}{% if product_filter %}?product={{ product_filter }}{% endif %}" data-max-images="24" data-current-count="{{ media_rows|length }}">
   <div class="page-head media-head">
@@ -63,7 +63,7 @@
       <div class="media-gallery-head">
         <div>
           <h3>{% if product_filter %}Product Gallery{% else %}All Product Images{% endif %}</h3>
-          <p>{% if product_filter %}Drag cards to change storefront order. Use Primary and Detail only when you need to change the current roles.{% else %}Browse all product images, or select a product above for upload and drag ordering.{% endif %}</p>
+          <p>{% if product_filter %}Drag cards to change storefront order. Role and advanced actions are available from each card menu.{% else %}Browse all product images, or select a product above for upload and drag ordering.{% endif %}</p>
         </div>
         <div class="media-gallery-actions">
           {% if media_rows %}<span class="media-count-pill">{{ media_rows|length }} image{{ media_rows|length|pluralize }}</span><label class="media-selected-count"><input type="checkbox" data-media-select-all> Select all</label><span class="media-selected-count"><b data-media-selected-count>0</b> selected</span>{% endif %}
@@ -78,25 +78,30 @@
         <article class="media-card" data-media-card data-image-id="{{ image.id }}" data-product-id="{{ image.product_id }}" data-alt-text="{{ image.alt_text|escape }}" data-role="{{ image.role }}" data-attribute-value-id="{{ image.attribute_value_id|default:'' }}" data-edit-url="{% url 'backoffice:catalog_media_form' %}?id={{ image.id }}"{% if product_filter %} draggable="true"{% endif %}>
           <label class="media-card-select"><input type="checkbox" data-media-select aria-label="Select image {{ forloop.counter }}"></label>
           {% if product_filter %}<button class="media-drag-handle" type="button" tabindex="-1" aria-label="Drag to reorder" title="Drag to reorder">⋮⋮</button>{% endif %}
+          <details class="media-card-menu">
+            <summary aria-label="Image actions" title="Image actions">•••</summary>
+            <div class="media-card-menu-popover">
+              <a href="{% url 'backoffice:catalog_media_form' %}?id={{ image.id }}"><span>✎</span> Edit image</a>
+              <form method="post">{% csrf_token %}<input type="hidden" name="image_id" value="{{ image.id }}">
+                {% if image.role != 'primary' %}<button type="submit" name="action" value="set_primary"><span>★</span> Set as Primary</button>{% endif %}
+                {% if image.role != 'detail' %}<button type="submit" name="action" value="set_detail"><span>▣</span> Set as Detail</button>{% endif %}
+                <button class="danger" type="submit" name="action" value="delete" onclick="return confirm('Delete this product image?');"><span>×</span> Delete image</button>
+              </form>
+            </div>
+          </details>
           <div class="media-image-wrap">
             {% if row.preview %}<img src="{{ row.preview }}" alt="{{ image.alt_text }}">{% else %}<span class="muted">No preview</span>{% endif %}
             <span class="media-role-badge {{ image.role }}">{{ image.get_role_display }}</span>
           </div>
           <div class="media-card-body">
-            <strong class="media-card-title">{{ image.product.name }}</strong>
-            <div class="media-card-facts">
-              <span class="media-fact"><b>Variant</b><em>{% if image.attribute_value %}{{ image.attribute_value.value }}{% else %}General{% endif %}</em></span>
-              <span class="media-fact media-order-fact"><b>Order</b><em>{{ image.sort_order }}</em></span>
+            <div class="media-card-heading">
+              <strong class="media-card-title">{{ image.product.name }}</strong>
+              {% if product_filter %}<span class="media-order-chip">#{{ image.sort_order }}</span>{% endif %}
             </div>
-            {% if image.alt_text and image.alt_text != image.product.name %}<div class="media-alt-line" title="{{ image.alt_text }}"><b>Alt</b><span>{{ image.alt_text }}</span></div>{% endif %}
-            <div class="media-card-actions">
-              <a class="icon-btn media-edit-btn" href="{% url 'backoffice:catalog_media_form' %}?id={{ image.id }}" title="Edit" aria-label="Edit">✎</a>
-              <form method="post">{% csrf_token %}<input type="hidden" name="image_id" value="{{ image.id }}">
-                {% if image.role != 'primary' %}<button class="btn small" type="submit" name="action" value="set_primary">Primary</button>{% endif %}
-                {% if image.role != 'detail' %}<button class="btn small" type="submit" name="action" value="set_detail">Detail</button>{% endif %}
-                <button class="icon-btn danger" type="submit" name="action" value="delete" onclick="return confirm('Delete this product image?');" title="Delete" aria-label="Delete">×</button>
-              </form>
+            <div class="media-card-subline">
+              {% if image.attribute_value %}<span class="media-variant-dot"></span><span>{{ image.attribute_value.attribute.name }}: {{ image.attribute_value.value }}</span>{% else %}<span class="media-variant-dot neutral"></span><span>General product image</span>{% endif %}
             </div>
+            {% if image.alt_text and image.alt_text != image.product.name %}<div class="media-card-alt" title="{{ image.alt_text }}">Alt: {{ image.alt_text }}</div>{% endif %}
           </div>
         </article>
         {% endwith %}{% empty %}<div class="media-empty">No product images found. Select a product and upload the first images above.</div>{% endfor %}
@@ -105,4 +110,4 @@
   </div>
 </section>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'admin/js/product-media-v2.js' %}?v=2.0.0"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/product-media-v2.js' %}?v=2.1.0"></script>{% endblock %}
