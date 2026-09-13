@@ -116,7 +116,8 @@ class VariantPresetForm(forms.ModelForm):
     attributes = forms.ModelMultipleChoiceField(
         queryset=VariantAttribute.objects.none(),
         required=True,
-        help_text="Choose the reusable attributes included in this preset.",
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Select one or more reusable attributes. No Ctrl/Cmd key is needed.",
     )
 
     class Meta:
