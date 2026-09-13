@@ -1,0 +1,57 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Variant Presets | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/variant-library.css' %}?v=1.0.0">{% endblock %}
+{% block content %}
+<section class="page variant-library-page">
+  <div class="page-head">
+    <div><h1>Variant Presets</h1><p>Save reusable attribute sets such as Smartphone, Laptop, TWS or Smartwatch.</p></div>
+    <div class="variant-nav">
+      <a class="btn" href="{% url 'backoffice:products' %}">Products</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_builder' %}">Variant Builder</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_attributes' %}">Attributes</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variants' %}">Variants / SKUs</a>
+    </div>
+  </div>
+  {% if catalog_notice %}<div class="soft-note" style="margin-bottom:14px">✓ {{ catalog_notice }}</div>{% endif %}
+  {% if preset_form.errors %}<div class="generation-error">Please fix the preset fields below.</div>{% endif %}
+
+  <div class="variant-library-grid">
+    <div class="preset-list">
+      {% for preset in presets %}
+      <div class="card preset-card">
+        <div class="preset-card-head">
+          <div>
+            <div class="attribute-title"><strong>{{ preset.name }}</strong><span class="attribute-code">{{ preset.code }}</span><span class="status {% if preset.is_active %}green{% else %}gray{% endif %}">{% if preset.is_active %}Active{% else %}Inactive{% endif %}</span></div>
+            <div class="preset-attributes">
+              {% for link in preset.attribute_links.all %}<span class="preset-pill">{{ link.attribute.name }}</span>{% empty %}<span class="muted">No attributes.</span>{% endfor %}
+            </div>
+          </div>
+          <div class="attribute-actions">
+            <a class="mini-link" href="{% url 'backoffice:catalog_variant_presets' %}?id={{ preset.id }}">Edit</a>
+            <a class="mini-link" href="{% url 'backoffice:catalog_variant_builder' %}?preset={{ preset.id }}">Use preset</a>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle_preset"><input type="hidden" name="preset_id" value="{{ preset.id }}"><button class="mini-button{% if preset.is_active %} danger{% endif %}" type="submit">{% if preset.is_active %}Deactivate{% else %}Activate{% endif %}</button></form>
+          </div>
+        </div>
+      </div>
+      {% empty %}<div class="card builder-empty">No presets yet. Create your first reusable preset.</div>{% endfor %}
+    </div>
+
+    <form method="post" class="card library-form-card">
+      {% csrf_token %}<input type="hidden" name="action" value="save_preset">{% if edit_preset %}<input type="hidden" name="preset_id" value="{{ edit_preset.id }}">{% endif %}
+      <h3>{% if edit_preset %}Edit Preset{% else %}Add Preset{% endif %}</h3>
+      <p>A preset only groups attributes; product values and SKUs are still generated per product.</p>
+      <div class="library-form-grid">
+        <label>Name{{ preset_form.name }}{{ preset_form.name.errors }}</label>
+        <label>Internal Code{{ preset_form.code }}{{ preset_form.code.errors }}</label>
+        <label>Attributes{{ preset_form.attributes }}{{ preset_form.attributes.errors }}<small>{{ preset_form.attributes.help_text }}</small></label>
+        <div class="library-form-grid two">
+          <label>Sort Order{{ preset_form.sort_order }}{{ preset_form.sort_order.errors }}</label>
+          <label class="status-toggle-inline" style="align-self:end">{{ preset_form.is_active }} Active</label>
+        </div>
+      </div>
+      <div class="library-form-actions">{% if edit_preset %}<a class="btn" href="{% url 'backoffice:catalog_variant_presets' %}">Cancel</a>{% endif %}<button class="btn btn-primary" type="submit">Save Preset</button></div>
+    </form>
+  </div>
+</section>
+{% endblock %}
