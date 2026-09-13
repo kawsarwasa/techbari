@@ -7,10 +7,10 @@ from catalog.models import (
     Brand,
     Category,
     Product,
-    ProductOption,
-    ProductOptionValue,
     ProductVariant,
-    ProductVariantOptionValue,
+    ProductVariantValue,
+    VariantAttribute,
+    VariantAttributeValue,
 )
 from inventory.models import Warehouse
 from purchasing.models import PurchaseOrder, PurchaseOrderItem, Supplier
@@ -34,10 +34,10 @@ class PurchaseItemSnapshotTests(TestCase):
             brand=brand,
             regular_price=Decimal("1000.00"),
         )
-        color = ProductOption.objects.create(product=self.product, name="Color", sort_order=0)
-        storage = ProductOption.objects.create(product=self.product, name="Storage", sort_order=1)
-        self.black = ProductOptionValue.objects.create(option=color, value="Black")
-        self.gb256 = ProductOptionValue.objects.create(option=storage, value="256GB")
+        color = VariantAttribute.objects.create(name="Color", code="snapshot-color", sort_order=0)
+        storage = VariantAttribute.objects.create(name="Storage", code="snapshot-storage", sort_order=1)
+        self.black = VariantAttributeValue.objects.create(attribute=color, value="Black", code="black")
+        self.gb256 = VariantAttributeValue.objects.create(attribute=storage, value="256GB", code="256gb")
         self.variant = ProductVariant.objects.create(
             product=self.product,
             name="Black / 256GB",
@@ -46,8 +46,8 @@ class PurchaseItemSnapshotTests(TestCase):
             is_default=True,
             is_active=True,
         )
-        ProductVariantOptionValue.objects.create(variant=self.variant, option=color, value=self.black)
-        ProductVariantOptionValue.objects.create(variant=self.variant, option=storage, value=self.gb256)
+        ProductVariantValue.objects.create(variant=self.variant, value=self.black)
+        ProductVariantValue.objects.create(variant=self.variant, value=self.gb256)
         self.supplier = Supplier.objects.create(code="SUP-SNAPSHOT", name="Snapshot Supplier")
         self.purchase = PurchaseOrder.objects.create(
             po_number="PO-SNAPSHOT-001",
