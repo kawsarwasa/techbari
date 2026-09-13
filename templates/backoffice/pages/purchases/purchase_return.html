@@ -13,8 +13,8 @@
       {% for panel in item_panels %}
       <div class="purchase-history-item" style="margin-bottom:12px">
         <div class="purchase-meta">
-          <div><small>Product</small><strong>{{ panel.item.variant.product.name }}</strong></div>
-          <div><small>SKU</small><strong>{{ panel.item.variant.sku }}</strong></div>
+          <div><small>Product</small><strong>{{ panel.item.product_snapshot|default:panel.item.variant.product.name }}</strong></div>
+          <div><small>Variant / SKU</small><strong>{{ panel.item.variant_snapshot|default:panel.item.variant.display_name }} · {{ panel.item.sku_snapshot|default:panel.item.variant.sku }}</strong></div>
           <div><small>Received</small><strong>{{ panel.item.received_quantity }}</strong></div>
           <div><small>Returnable</small><strong>{{ panel.item.remaining_to_return }}</strong></div>
         </div>
