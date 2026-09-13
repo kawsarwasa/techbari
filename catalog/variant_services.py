@@ -100,13 +100,45 @@ def _safe_reusable_variant(existing_variants, target_signature, used_variant_ids
     return candidates[0][3]
 
 
+def _selected_signature_list(raw_signatures, allowed_value_ids):
+    if raw_signatures is None:
+        return None
+
+    selected = []
+    seen = set()
+    for raw in raw_signatures:
+        parts = [part.strip() for part in str(raw or "").split(",") if part.strip()]
+        try:
+            signature = tuple(sorted({int(part) for part in parts}))
+        except (TypeError, ValueError) as exc:
+            raise VariantGenerationError("One or more preview combinations are invalid. Refresh the builder and try again.") from exc
+        if not signature:
+            continue
+        if not set(signature).issubset(allowed_value_ids):
+            raise VariantGenerationError("A preview combination contains an unavailable attribute value. Refresh the builder and try again.")
+        if signature in seen:
+            continue
+        seen.add(signature)
+        selected.append(signature)
+
+    if not selected:
+        raise VariantGenerationError("Select at least one new combination from the preview before generating variants.")
+    if len(selected) > 250:
+        raise VariantGenerationError("You can generate a maximum of 250 variants at once. Select fewer preview rows.")
+    return selected
+
+
 @transaction.atomic
-def generate_variant_combinations(*, product, value_ids):
+def generate_variant_combinations(*, product, value_ids, selected_signatures=None):
     """Generate exact ProductVariant rows from reusable global attribute values.
 
     ProductVariant remains the single sellable/transactional entity. Exact existing
     combinations are skipped, safe placeholder/partial rows may be upgraded in place,
     and any SKU with inventory or business history is left untouched.
+
+    ``selected_signatures`` is optional for backwards compatibility. The polished
+    builder supplies explicit preview-row signatures so only user-approved combinations
+    are created instead of blindly generating the entire Cartesian product.
     """
     normalized_ids = []
     seen_ids = set()
@@ -139,9 +171,22 @@ def generate_variant_combinations(*, product, value_ids):
     if not value_groups or any(not group for group in value_groups):
         raise VariantGenerationError("Every selected attribute must have at least one value.")
 
-    combinations = [list(row) for row in cartesian_product(*value_groups)]
-    if len(combinations) > 250:
-        raise VariantGenerationError("This selection would create more than 250 variants. Reduce the selected values and generate in smaller groups.")
+    all_combinations = [list(row) for row in cartesian_product(*value_groups)]
+    combinations_by_signature = {
+        combination_signature(row): row
+        for row in all_combinations
+    }
+
+    selected = _selected_signature_list(selected_signatures, set(normalized_ids))
+    if selected is None:
+        combinations = all_combinations
+        if len(combinations) > 250:
+            raise VariantGenerationError("This selection would create more than 250 variants. Reduce the selected values and generate in smaller groups.")
+    else:
+        invalid = [signature for signature in selected if signature not in combinations_by_signature]
+        if invalid:
+            raise VariantGenerationError("A preview combination no longer matches the selected attributes. Refresh the preview and try again.")
+        combinations = [combinations_by_signature[signature] for signature in selected]
 
     existing_variants = list(
         product.variants.prefetch_related("variant_values__value__attribute").order_by("-is_default", "id")
