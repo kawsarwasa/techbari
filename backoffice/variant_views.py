@@ -20,6 +20,7 @@ NOTICE_TEXT = {
 }
 ERROR_TEXT = {
     "last-variant": "A product must keep at least one variant/SKU. Create another variant before deleting this one.",
+    "last-active-variant": "A product must keep at least one active variant/SKU. Activate or create another variant first.",
     "option-used": "This option is already used by a variant combination and cannot be deleted.",
     "value-used": "This option value is already used by a variant combination and cannot be deleted.",
 }
@@ -82,6 +83,8 @@ def variants(request):
         product = variant.product
         if product.variants.count() <= 1:
             return redirect(reverse("backoffice:catalog_variants") + f"?product={product.pk}&error=last-variant")
+        if variant.is_active and not product.variants.filter(is_active=True).exclude(pk=variant.pk).exists():
+            return redirect(reverse("backoffice:catalog_variants") + f"?product={product.pk}&error=last-active-variant")
 
         usage = _variant_usage_reasons(variant)
         if usage:
