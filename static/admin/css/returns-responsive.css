@@ -4,16 +4,20 @@
 .return-main-column{min-width:0}
 .return-items-card{min-width:0;overflow:hidden;container-type:inline-size;container-name:returnItems}
 .return-items-table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.return-items-table{width:100%;min-width:1275px;table-layout:fixed}
+.return-items-table{width:100%;min-width:1320px;table-layout:fixed}
 .return-items-table th:nth-child(1),.return-items-table td:nth-child(1){width:58px}
-.return-items-table th:nth-child(2),.return-items-table td:nth-child(2){width:210px}
-.return-items-table th:nth-child(3),.return-items-table td:nth-child(3){width:100px}
-.return-items-table th:nth-child(4),.return-items-table td:nth-child(4){width:68px}
-.return-items-table th:nth-child(5),.return-items-table td:nth-child(5){width:118px}
+.return-items-table th:nth-child(2),.return-items-table td:nth-child(2){width:205px}
+.return-items-table th:nth-child(3),.return-items-table td:nth-child(3){width:138px}
+.return-items-table th:nth-child(4),.return-items-table td:nth-child(4){width:82px}
+.return-items-table th:nth-child(5),.return-items-table td:nth-child(5){width:120px}
 .return-items-table th:nth-child(6),.return-items-table td:nth-child(6){width:180px}
 .return-items-table th:nth-child(7),.return-items-table td:nth-child(7){width:230px}
-.return-items-table th:nth-child(8),.return-items-table td:nth-child(8){width:130px}
-.return-items-table th:nth-child(9),.return-items-table td:nth-child(9){width:181px}
+.return-items-table th:nth-child(8),.return-items-table td:nth-child(8){width:120px}
+.return-items-table th:nth-child(9),.return-items-table td:nth-child(9){width:187px}
+.return-items-table th:nth-child(3){white-space:nowrap;padding-right:18px}
+.return-items-table th:nth-child(4){white-space:nowrap;padding-left:18px}
+.return-items-table td:nth-child(3){padding-right:18px}
+.return-items-table td:nth-child(4){padding-left:18px}
 .return-items-table td{vertical-align:top}
 .return-items-table .control{width:100%;min-width:0}
 .return-items-table select.control{font-size:12px}
@@ -30,8 +34,8 @@
 .return-safety-flow{color:#173456;font-size:12px;line-height:1.45}
 .return-submit-btn{min-width:210px;min-height:44px;white-space:nowrap}
 
-/* Keep the one-row table only while every important select can remain readable. */
-@container returnItems (max-width:1274px){
+/* Keep the one-row table only while every important field can remain readable. */
+@container returnItems (max-width:1319px){
   .return-items-card{overflow:visible}
   .return-items-note{margin:0 14px 14px!important}
   .return-items-table-wrap{overflow:visible;padding:0 14px 14px}
@@ -83,7 +87,7 @@
 
 /* Fallback for browsers without container-query support. */
 @supports not (container-type:inline-size){
-  @media(max-width:1450px){
+  @media(max-width:1490px){
     .return-items-card{overflow:visible}
     .return-items-note{margin:0 14px 14px!important}
     .return-items-table-wrap{overflow:visible;padding:0 14px 14px}
