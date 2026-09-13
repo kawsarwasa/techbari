@@ -62,8 +62,7 @@ def _compact_code(value, fallback="VAR", max_length=12):
 def unique_variant_sku(product, values, *, exclude_variant_id=None):
     base = _compact_code(product.public_id or product.slug or product.name, "PROD", 18)
     pieces = [_compact_code(value.code or value.value, "VAL", 10) for value in ordered_values(values)]
-    candidate = "-".join([base, *pieces])[:64]
-    candidate = candidate.rstrip("-") or base
+    candidate = "-".join([base, *pieces])[:64].rstrip("-") or base
     qs = ProductVariant.objects.all()
     if exclude_variant_id:
         qs = qs.exclude(pk=exclude_variant_id)
@@ -78,21 +77,36 @@ def unique_variant_sku(product, values, *, exclude_variant_id=None):
         suffix += 1
 
 
-def _legacy_reusable_variant(product):
-    candidates = product.variants.filter(variant_values__isnull=True).distinct().order_by("-is_default", "id")
-    for variant in candidates:
-        if not variant_usage_reasons(variant):
-            return variant
-    return None
+def _safe_reusable_variant(existing_variants, target_signature, used_variant_ids):
+    """Reuse a transaction-free placeholder/partial SKU when it is a subset of a target.
+
+    This matters after the forward migration: an old `Black` SKU can safely become
+    `Black / 1m` if it has no stock or business history. A used SKU is never remapped.
+    """
+    target = set(target_signature)
+    candidates = []
+    for variant in existing_variants:
+        if variant.pk in used_variant_ids:
+            continue
+        signature = set(variant_signature(variant))
+        if signature and not signature.issubset(target):
+            continue
+        if variant_usage_reasons(variant):
+            continue
+        candidates.append((len(signature), int(variant.is_default), -variant.pk, variant))
+    if not candidates:
+        return None
+    candidates.sort(reverse=True, key=lambda row: row[:3])
+    return candidates[0][3]
 
 
 @transaction.atomic
 def generate_variant_combinations(*, product, value_ids):
-    """Generate the cartesian product of selected reusable global values.
+    """Generate exact ProductVariant rows from reusable global attribute values.
 
-    Existing ProductVariant rows are never recreated. A transaction-free legacy/default
-    row may be converted into the first generated combination so a new product does not
-    keep an unnecessary placeholder SKU.
+    ProductVariant remains the single sellable/transactional entity. Exact existing
+    combinations are skipped, safe placeholder/partial rows may be upgraded in place,
+    and any SKU with inventory or business history is left untouched.
     """
     normalized_ids = []
     seen_ids = set()
@@ -116,10 +130,9 @@ def generate_variant_combinations(*, product, value_ids):
         raise VariantGenerationError("One or more selected attribute values are inactive or unavailable.")
 
     grouped = defaultdict(list)
-    for value in values:
-        grouped[value.attribute_id].append(value)
     attribute_order = []
     for value in values:
+        grouped[value.attribute_id].append(value)
         if value.attribute_id not in attribute_order:
             attribute_order.append(value.attribute_id)
     value_groups = [grouped[attribute_id] for attribute_id in attribute_order]
@@ -139,11 +152,8 @@ def generate_variant_combinations(*, product, value_ids):
         if variant.variant_values.exists()
     }
     existing_names = {variant.name.casefold(): variant.pk for variant in existing_variants}
-
-    reusable = _legacy_reusable_variant(product)
-    created = 0
-    reused = 0
-    skipped = 0
+    reused_variant_ids = set()
+    created = reused = skipped = 0
     first_generated = None
 
     for values_for_variant in combinations:
@@ -152,17 +162,18 @@ def generate_variant_combinations(*, product, value_ids):
             skipped += 1
             continue
 
+        reusable = _safe_reusable_variant(existing_variants, signature, reused_variant_ids)
         name = variant_name(values_for_variant)
         name_owner = existing_names.get(name.casefold())
         if name_owner and (reusable is None or name_owner != reusable.pk):
             raise VariantGenerationError(
-                f"Cannot generate {name}: another SKU already uses that variant name. Rename the conflicting legacy variant first."
+                f"Cannot generate {name}: another SKU already uses that variant name. Rename the conflicting unused legacy variant first."
             )
 
         symbol = next((value.symbol for value in ordered_values(values_for_variant) if value.symbol), "")
         if reusable is not None:
+            old_name = reusable.name.casefold()
             variant = reusable
-            reusable = None
             variant.name = name
             variant.sku = unique_variant_sku(product, values_for_variant, exclude_variant_id=variant.pk)
             if symbol and not variant.symbol:
@@ -170,6 +181,8 @@ def generate_variant_combinations(*, product, value_ids):
             variant.is_active = True
             variant.save(update_fields=["name", "sku", "symbol", "is_active", "updated_at"])
             ProductVariantValue.objects.filter(variant=variant).delete()
+            reused_variant_ids.add(variant.pk)
+            existing_names.pop(old_name, None)
             reused += 1
         else:
             has_default = product.variants.filter(is_default=True, is_active=True).exists()
@@ -183,6 +196,8 @@ def generate_variant_combinations(*, product, value_ids):
                 is_default=not has_default,
                 is_active=True,
             )
+            existing_variants.append(variant)
+            reused_variant_ids.add(variant.pk)
             created += 1
 
         ProductVariantValue.objects.bulk_create(
