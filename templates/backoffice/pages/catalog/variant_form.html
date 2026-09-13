@@ -1,3 +1,105 @@
 {% extends "backoffice/base.html" %}
+{% load static %}
 {% block title %}{% if is_edit %}Edit{% else %}Add{% endif %} Variant | TechBari Admin{% endblock %}
-{% block content %}<section class="page"><div class="page-head"><div><h1>{% if is_edit %}Edit Variant / SKU{% else %}Add Variant / SKU{% endif %}</h1><p>Each sellable variant can have its own SKU, barcode, pricing and stock.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:products' %}"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Products</a><a class="btn" href="{% url 'backoffice:catalog_variants' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">Cancel</a><button class="btn btn-primary" type="submit" form="variantForm">Save Variant</button></div></div>{% if form.errors %}<div class="soft-note" style="margin-bottom:14px"><strong>Please fix the form errors below.</strong> {{ form.non_field_errors }}</div>{% endif %}<form id="variantForm" class="form-layout" method="post">{% csrf_token %}<div class="card form-card"><div class="section-head"><h3>Variant Identity & Pricing</h3></div><div class="form-grid"><label class="field"><span>Product</span>{{ form.product }}{{ form.product.errors }}</label><label class="field"><span>Variant Name</span>{{ form.name }}{{ form.name.errors }}<small>Examples: Black, 256GB, Black / 256GB.</small></label><label class="field"><span>SKU</span>{{ form.sku }}{{ form.sku.errors }}</label><label class="field"><span>Barcode</span>{{ form.barcode }}{{ form.barcode.errors }}</label><label class="field"><span>Display Symbol</span>{{ form.symbol }}{{ form.symbol.errors }}</label><label class="field"><span>Regular Price Override</span>{{ form.regular_price_override }}{{ form.regular_price_override.errors }}<small>Leave blank to use product regular price.</small></label><label class="field"><span>Selling Price Override</span>{{ form.price_override }}{{ form.price_override.errors }}<small>Leave blank to use product sale/current price.</small></label><label class="field"><span>Stock Quantity</span>{{ form.stock_quantity }}{{ form.stock_quantity.errors }}</label><label class="field"><span>Low Stock Alert</span>{{ form.low_stock_alert }}{{ form.low_stock_alert.errors }}</label></div></div><aside class="card form-side"><div class="section-head"><h3>Status</h3></div><div class="info-body"><label class="field"><span>Default Variant</span>{{ form.is_default }}{{ form.is_default.errors }}</label><label class="field"><span>Active</span>{{ form.is_active }}{{ form.is_active.errors }}</label><div class="soft-note">Only one default variant is kept per product. Choosing this as default automatically demotes the previous default.</div></div></aside></form></section>{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/variant-form-v2.css' %}?v=2.1.0">{% endblock %}
+{% block content %}
+<section class="page variant-editor-page">
+  <div class="page-head">
+    <div>
+      <h1>{% if is_edit %}Edit Variant / SKU{% else %}Add Variant / SKU{% endif %}</h1>
+      <p>Edit one exact sellable SKU. For many combinations, use the bulk Variant Builder instead.</p>
+    </div>
+    <div class="head-actions">
+      <a class="variant-toolbar-link" href="{% url 'backoffice:products' %}"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Products</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_builder' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">Variant Builder</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_attributes' %}">Attribute Library</a>
+      <button class="btn btn-primary" type="submit" form="variantForm">Save Variant</button>
+    </div>
+  </div>
+
+  {% if form.errors %}<div class="form-error-banner"><strong>Please fix the highlighted fields.</strong> {{ form.non_field_errors }}</div>{% endif %}
+
+  <form id="variantForm" class="variant-editor-layout" method="post">
+    {% csrf_token %}
+    <div class="card variant-main-card">
+      <div class="variant-card-head">
+        <span class="variant-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8v8H8z"/></svg></span>
+        <div><h3>Single Variant Editor</h3><small class="muted">Build or adjust one exact Product + Attribute combination.</small></div>
+      </div>
+
+      <div class="variant-section">
+        <div class="variant-section-title">
+          <div><h4>1. Product & Attributes</h4><p>Choose one reusable global value from every attribute already used by this product.</p></div>
+          <a class="variant-help-link" href="{% url 'backoffice:catalog_variant_attributes' %}">Manage attributes →</a>
+        </div>
+        <div class="variant-grid">
+          <label class="field full"><span>Product</span>{{ form.product }}{{ form.product.errors }}<small>Changing the product reloads this page with that product's currently used global attributes.</small></label>
+          <div class="full">
+            <div class="option-groups" data-option-groups data-option-setup-url="{% url 'backoffice:catalog_variant_builder' %}{% if product_filter %}?product={{ product_filter }}{% endif %}"></div>
+            <div class="structured-option-source">{{ form.attribute_values }}</div>
+            {{ form.attribute_values.errors }}
+          </div>
+          <div class="variant-preview full">
+            <div><small>Generated Variant</small><strong data-variant-preview>{% if variant_obj %}{{ variant_obj.display_name }}{% else %}Select one value from each attribute{% endif %}</strong></div>
+            <span class="variant-preview-badge" data-variant-preview-status>Waiting for attributes</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="variant-section">
+        <div class="variant-section-title"><div><h4>2. SKU Identity</h4><p>Keep the SKU stable once this variant starts receiving business history.</p></div></div>
+        <div class="variant-grid">
+          <label class="field full" data-legacy-name-field><span>Variant Name</span>{{ form.name }}{{ form.name.errors }}<small>For structured variants this is generated automatically. Manual naming is only for simple/legacy SKUs without attributes.</small></label>
+          <label class="field">
+            <span>SKU</span>
+            <div class="sku-control">{{ form.sku }}<button type="button" class="sku-generate" data-generate-sku>Generate</button></div>
+            {{ form.sku.errors }}
+            <small>Use a unique code for this exact combination. You can edit the generated suggestion before the SKU has business history.</small>
+          </label>
+          <label class="field"><span>Barcode</span>{{ form.barcode }}{{ form.barcode.errors }}<small>Optional, but must be unique when supplied.</small></label>
+        </div>
+      </div>
+
+      <div class="variant-section">
+        <div class="variant-section-title"><div><h4>3. Pricing & Stock</h4><p>Each combination can have its own price and warehouse-backed stock.</p></div></div>
+        <div class="variant-grid">
+          <label class="field"><span>Regular Price</span>{{ form.regular_price_override }}{{ form.regular_price_override.errors }}<small>Leave blank to use the product regular price.</small></label>
+          <label class="field"><span>Selling Price</span>{{ form.price_override }}{{ form.price_override.errors }}<small>Leave blank to use the product current/sale price.</small></label>
+          <label class="field"><span>Stock Quantity</span>{{ form.stock_quantity }}{{ form.stock_quantity.errors }}<small>Reconciled with Inventory/default warehouse for compatibility.</small></label>
+          <label class="field"><span>Low Stock Alert</span>{{ form.low_stock_alert }}{{ form.low_stock_alert.errors }}<small>Warn when available stock reaches this quantity.</small></label>
+        </div>
+      </div>
+
+      <div class="variant-section">
+        <div class="variant-section-title"><div><h4>Advanced Display</h4><p>Optional storefront/display metadata.</p></div></div>
+        <div class="advanced-grid">
+          <label class="field"><span>Display Symbol</span>{{ form.symbol }}{{ form.symbol.errors }}<small>Optional. If blank, the first selected attribute symbol is used.</small></label>
+        </div>
+        <div class="stable-rule" style="margin-top:15px"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.4 3 8.4 7.5 9.5 4.5-1.1 7.5-5.1 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/></svg><div><strong>Stable variant rule.</strong> Once a SKU has purchase, sales, inventory or Serial/IMEI history, TechBari preserves that identity. Removing it safely deactivates the SKU instead of deleting business history.</div></div>
+      </div>
+    </div>
+
+    <aside class="card variant-status-card">
+      <div class="variant-card-head">
+        <span class="variant-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5"/></svg></span>
+        <div><h3>Status</h3><small class="muted">Availability and default selection.</small></div>
+      </div>
+      <div class="status-body">
+        <div class="status-switches">
+          <label class="status-row"><span><strong>Active</strong><small>Available for selling and selection.</small></span>{{ form.is_active }}</label>
+          {{ form.is_active.errors }}
+          <label class="status-row"><span><strong>Default Variant</strong><small>Used before a customer selects another combination.</small></span>{{ form.is_default }}</label>
+          {{ form.is_default.errors }}
+        </div>
+        <div class="status-note"><strong>One active default per product.</strong><br>Setting this SKU as default automatically demotes the previous default.</div>
+        {% if selected_product %}<div class="status-product"><strong>{{ selected_product.name }}</strong><br><small>Use Variant Builder to generate many Color, Storage, Region, RAM, Size or other combinations at once.</small></div>{% endif %}
+        <div class="status-actions">
+          <a class="btn" href="{% url 'backoffice:catalog_variants' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">Cancel</a>
+          <button class="btn btn-primary" type="submit">Save Variant</button>
+        </div>
+      </div>
+    </aside>
+  </form>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/variant-form-v2.js' %}?v=2.1.0"></script>{% endblock %}

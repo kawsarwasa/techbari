@@ -1,0 +1,138 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Variant Attributes | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/variant-library.css' %}?v=1.1.0">{% endblock %}
+{% block content %}
+<section class="page variant-library-page">
+  <div class="page-head variant-library-head">
+    <div>
+      <div class="page-kicker">CATALOG CONFIGURATION</div>
+      <h1>Variant Attributes</h1>
+      <p>Create reusable product attributes once, then use the same Color, Storage, Region, RAM, Size or custom values across the whole catalog.</p>
+    </div>
+    <div class="variant-nav">
+      <a class="btn" href="{% url 'backoffice:products' %}">Products</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_builder' %}">Variant Builder</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_presets' %}">Presets</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variants' %}">Variants / SKUs</a>
+    </div>
+  </div>
+
+  {% if catalog_notice %}<div class="generation-result">✓ {{ catalog_notice }}</div>{% endif %}
+  {% if attribute_form.errors or value_form.errors %}<div class="generation-error">Please fix the highlighted attribute/value fields.</div>{% endif %}
+
+  <div class="variant-library-grid">
+    <div class="card variant-library-card">
+      <div class="variant-library-card-head">
+        <div class="library-heading">
+          <span class="library-heading-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg>
+          </span>
+          <div>
+            <h3>Global Attribute Library</h3>
+            <p>Display labels are editable. Stable internal codes stay unchanged after creation.</p>
+          </div>
+        </div>
+        <span class="library-count">{{ attributes|length }} <span>attributes</span></span>
+      </div>
+
+      {% for attribute in attributes %}
+      <article class="attribute-row{% if not attribute.is_active %} is-inactive{% endif %}">
+        <div class="attribute-main">
+          <div class="attribute-content">
+            <div class="attribute-title">
+              <strong>{{ attribute.name }}</strong>
+              <span class="attribute-code">{{ attribute.code }}</span>
+              <span class="status {% if attribute.is_active %}green{% else %}gray{% endif %}">{% if attribute.is_active %}Active{% else %}Inactive{% endif %}</span>
+              <span class="status blue">{{ attribute.get_display_type_display }}</span>
+            </div>
+
+            <div class="attribute-values">
+              {% for value in attribute.values.all %}
+              <span class="attribute-value-chip{% if not value.is_active %} inactive{% endif %}">
+                <span class="value-chip-label">
+                  {% if value.color_hex %}<i class="attribute-swatch" style="background:{{ value.color_hex }}"></i>{% elif value.symbol %}<i class="attribute-swatch symbol">{{ value.symbol }}</i>{% endif %}
+                  <span>{{ value.value }}</span>
+                </span>
+                <span class="value-chip-actions">
+                  <a class="chip-action" href="{% url 'backoffice:catalog_variant_attributes' %}?value={{ value.id }}" title="Edit {{ value.value }}" aria-label="Edit {{ value.value }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                  </a>
+                  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle_value"><input type="hidden" name="value_id" value="{{ value.id }}"><button class="chip-action{% if value.is_active %} danger{% else %} success{% endif %}" type="submit" title="{% if value.is_active %}Disable{% else %}Enable{% endif %} {{ value.value }}" aria-label="{% if value.is_active %}Disable{% else %}Enable{% endif %} {{ value.value }}">
+                    {% if value.is_active %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><path d="M12 2v10"/></svg>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>{% endif %}
+                  </button></form>
+                </span>
+              </span>
+              {% empty %}<span class="attribute-empty-value">No values yet. Add the first value for {{ attribute.name }}.</span>{% endfor %}
+            </div>
+          </div>
+
+          <div class="attribute-actions">
+            <a class="attribute-action primary" href="{% url 'backoffice:catalog_variant_attributes' %}?for_attribute={{ attribute.id }}#value-form">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Add value
+            </a>
+            <a class="attribute-action icon-only" href="{% url 'backoffice:catalog_variant_attributes' %}?attribute={{ attribute.id }}" title="Edit attribute" aria-label="Edit {{ attribute.name }}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </a>
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle_attribute"><input type="hidden" name="attribute_id" value="{{ attribute.id }}"><button class="attribute-action icon-only{% if attribute.is_active %} danger{% else %} success{% endif %}" type="submit" title="{% if attribute.is_active %}Deactivate{% else %}Activate{% endif %} attribute" aria-label="{% if attribute.is_active %}Deactivate{% else %}Activate{% endif %} {{ attribute.name }}">
+              {% if attribute.is_active %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><path d="M12 2v10"/></svg>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>{% endif %}
+            </button></form>
+          </div>
+        </div>
+      </article>
+      {% empty %}<div class="builder-empty">No global attributes yet. Create the first one from the form.</div>{% endfor %}
+    </div>
+
+    <aside class="variant-library-stack">
+      <form method="post" class="card library-form-card">
+        {% csrf_token %}<input type="hidden" name="action" value="save_attribute">{% if edit_attribute %}<input type="hidden" name="attribute_id" value="{{ edit_attribute.id }}">{% endif %}
+        <div class="library-form-heading">
+          <span class="form-heading-icon blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg></span>
+          <div><h3>{% if edit_attribute %}Edit Attribute{% else %}Add Attribute{% endif %}</h3><p>Examples: Color, Storage, Region / Type, RAM, Size, Material.</p></div>
+        </div>
+        <div class="library-form-grid">
+          <label class="form-field"><span>Name</span>{{ attribute_form.name }}{{ attribute_form.name.errors }}</label>
+          <label class="form-field"><span>Display Type</span>{{ attribute_form.display_type }}{{ attribute_form.display_type.errors }}</label>
+          <label class="modern-check">{{ attribute_form.is_active }}<span><strong>Active</strong><small>Available when configuring products.</small></span></label>
+
+          <details class="advanced-fields"{% if edit_attribute or attribute_form.code.errors or attribute_form.sort_order.errors %} open{% endif %}>
+            <summary>Advanced settings <span>Internal code & sort order</span></summary>
+            <div class="advanced-fields-body">
+              <label class="form-field"><span>Internal Code</span>{{ attribute_form.code }}{{ attribute_form.code.errors }}{% if attribute_form.code.help_text %}<small>{{ attribute_form.code.help_text }}</small>{% else %}<small>Optional. Leave blank to generate from the name.</small>{% endif %}</label>
+              <label class="form-field"><span>Sort Order</span>{{ attribute_form.sort_order }}{{ attribute_form.sort_order.errors }}</label>
+            </div>
+          </details>
+        </div>
+        <div class="library-form-actions">{% if edit_attribute %}<a class="btn" href="{% url 'backoffice:catalog_variant_attributes' %}">Cancel</a>{% endif %}<button class="btn btn-primary" type="submit">{% if edit_attribute %}Update Attribute{% else %}Save Attribute{% endif %}</button></div>
+      </form>
+
+      <form method="post" class="card library-form-card" id="value-form">
+        {% csrf_token %}<input type="hidden" name="action" value="save_value">{% if edit_value %}<input type="hidden" name="value_id" value="{{ edit_value.id }}">{% endif %}
+        <div class="library-form-heading">
+          <span class="form-heading-icon purple" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12V8H4v8h16v-4Z"/><path d="M8 8V5M16 8V5"/></svg></span>
+          <div><h3>{% if edit_value %}Edit Attribute Value{% else %}Add Attribute Value{% endif %}</h3><p>Values are reusable across every product that uses this attribute.</p></div>
+        </div>
+        <div class="library-form-grid">
+          <label class="form-field"><span>Attribute</span>{{ value_form.attribute }}{{ value_form.attribute.errors }}</label>
+          <label class="form-field"><span>Display Value</span>{{ value_form.value }}{{ value_form.value.errors }}</label>
+          <label class="modern-check">{{ value_form.is_active }}<span><strong>Active</strong><small>Available to Variant Builder.</small></span></label>
+
+          <details class="advanced-fields"{% if edit_value or value_form.code.errors or value_form.symbol.errors or value_form.color_hex.errors or value_form.sort_order.errors %} open{% endif %}>
+            <summary>Advanced settings <span>Code, visual marker & sort order</span></summary>
+            <div class="advanced-fields-body">
+              <label class="form-field"><span>Internal Code</span>{{ value_form.code }}{{ value_form.code.errors }}{% if value_form.code.help_text %}<small>{{ value_form.code.help_text }}</small>{% else %}<small>Optional. Leave blank to generate from the value.</small>{% endif %}</label>
+              <div class="library-form-grid two">
+                <label class="form-field"><span>Symbol / Emoji</span>{{ value_form.symbol }}{{ value_form.symbol.errors }}</label>
+                <label class="form-field"><span>Color Hex</span>{{ value_form.color_hex }}{{ value_form.color_hex.errors }}</label>
+              </div>
+              <label class="form-field"><span>Sort Order</span>{{ value_form.sort_order }}{{ value_form.sort_order.errors }}</label>
+            </div>
+          </details>
+        </div>
+        <div class="library-form-actions">{% if edit_value %}<a class="btn" href="{% url 'backoffice:catalog_variant_attributes' %}">Cancel</a>{% endif %}<button class="btn btn-primary" type="submit">{% if edit_value %}Update Value{% else %}Save Value{% endif %}</button></div>
+      </form>
+    </aside>
+  </div>
+</section>
+{% endblock %}

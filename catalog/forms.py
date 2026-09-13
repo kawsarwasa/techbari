@@ -6,9 +6,10 @@ from django.utils.html import strip_tags
 from django.utils.text import slugify
 from PIL import Image, UnidentifiedImageError
 
-from .models import Brand, Category, Product, ProductImage, ProductSpecification, ProductVariant
+from .models import Brand, Category, Product, ProductImage, ProductSpecification, ProductVariant, VariantAttributeValue
 
 MAX_PRODUCT_IMAGE_BYTES = 2 * 1024 * 1024
+MAX_PRODUCT_IMAGES = 24
 ALLOWED_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 
@@ -55,8 +56,8 @@ def validate_catalog_image(upload):
 
 def validate_product_images(files):
     files = list(files)
-    if len(files) > 8:
-        raise ValidationError("You can upload a maximum of 8 product images.")
+    if len(files) > MAX_PRODUCT_IMAGES:
+        raise ValidationError(f"You can upload a maximum of {MAX_PRODUCT_IMAGES} product images.")
     for upload in files:
         validate_catalog_image(upload)
     return files
@@ -215,6 +216,12 @@ class ProductForm(forms.ModelForm):
         default = self._default_variant()
         if default:
             qs = qs.exclude(pk=default.pk)
+            if sku != default.sku:
+                from .variant_services import variant_usage_reasons
+                if variant_usage_reasons(default):
+                    raise ValidationError(
+                        "The default SKU already has inventory or business history and cannot be changed here. Create a new SKU from Variant Builder instead."
+                    )
         if qs.exists():
             raise ValidationError("A product variant with this SKU already exists.")
         return sku
@@ -339,23 +346,44 @@ class ProductVariantForm(forms.ModelForm):
 class ProductImageForm(forms.ModelForm):
     class Meta:
         model = ProductImage
-        fields = ("product", "image", "alt_text", "role", "sort_order")
+        fields = ("product", "image", "attribute_value", "alt_text", "role", "sort_order")
+        labels = {"attribute_value": "Variant image mapping"}
 
     def __init__(self, *args, **kwargs):
         product_id = kwargs.pop("product_id", None)
         super().__init__(*args, **kwargs)
         self.fields["product"].queryset = Product.objects.order_by("name")
         self.fields["image"].required = not bool(self.instance and self.instance.pk)
+        self.fields["attribute_value"].required = False
         if self.instance and self.instance.pk:
             self.fields["product"].disabled = True
+            product_id = self.instance.product_id
         elif product_id:
             self.fields["product"].initial = product_id
+        value_qs = VariantAttributeValue.objects.filter(is_active=True, attribute__is_active=True)
+        if product_id:
+            value_qs = value_qs.filter(variant_links__variant__product_id=product_id).distinct()
+        self.fields["attribute_value"].queryset = value_qs.select_related("attribute").order_by(
+            "attribute__sort_order", "attribute__name", "sort_order", "value"
+        )
+        self.fields["attribute_value"].help_text = "Optional. Map this image to a reusable value such as Deep Blue so the storefront can switch galleries when that value is selected."
 
     def clean_image(self):
         upload = self.cleaned_data.get("image")
         if upload and hasattr(upload, "size"):
             validate_catalog_image(upload)
         return upload
+
+    def clean(self):
+        cleaned = super().clean()
+        product = cleaned.get("product") or (self.instance.product if self.instance and self.instance.pk else None)
+        value = cleaned.get("attribute_value")
+        if product and value and not ProductVariant.objects.filter(
+            product=product,
+            variant_values__value=value,
+        ).exists():
+            self.add_error("attribute_value", "This value is not used by any SKU of the selected product.")
+        return cleaned
 
 
 class ProductSpecificationForm(forms.ModelForm):

@@ -1,0 +1,131 @@
+{% extends "backoffice/base.html" %}
+{% load static demo %}
+{% block title %}Variant Builder | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/variant-library.css' %}?v=1.0.0">{% endblock %}
+{% block content %}
+<section class="page variant-builder-page">
+  <div class="page-head">
+    <div>
+      <h1>Variant Builder</h1>
+      <p>Select reusable attributes once, generate every valid SKU combination, then edit price and stock in bulk.</p>
+    </div>
+    <div class="variant-nav">
+      <a class="btn" href="{% url 'backoffice:products' %}">Products</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_attributes' %}">Attributes</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_presets' %}">Presets</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variants' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">Variants / SKUs</a>
+    </div>
+  </div>
+
+  {% if catalog_notice %}<div class="generation-result">✓ {{ catalog_notice }}{% if generation_created or generation_reused or generation_skipped %} Created: {{ generation_created|default:"0" }} · Reused safe default: {{ generation_reused|default:"0" }} · Existing skipped: {{ generation_skipped|default:"0" }}{% endif %}</div>{% endif %}
+  {% if generator_error %}<div class="generation-error">{{ generator_error }}</div>{% endif %}
+
+  <div class="variant-builder-shell">
+    <div>
+      <div class="card builder-card">
+        <div class="variant-library-card-head" style="padding:0 0 14px;border-bottom:1px solid #e8edf5">
+          <div><h3>1. Choose Product & Preset</h3><p>Preset is optional; it only filters which global attributes you want to use.</p></div>
+        </div>
+        <div class="builder-top-grid">
+          <label>Product
+            <select class="control" data-builder-product>
+              <option value="">Select Product</option>
+              {% for product in catalog_products %}<option value="{{ product.id }}"{% if product_filter == product.id %} selected{% endif %}>{{ product.name }}</option>{% endfor %}
+            </select>
+          </label>
+          <label>Variant Preset
+            <select class="control" data-builder-preset>
+              <option value="">All Active Attributes</option>
+              {% for preset in presets %}<option value="{{ preset.id }}"{% if selected_preset and selected_preset.id == preset.id %} selected{% endif %}>{{ preset.name }}</option>{% endfor %}
+            </select>
+          </label>
+        </div>
+        {% if selected_product %}<div class="builder-side-note"><strong>{{ selected_product.name }}</strong><br>Existing sellable SKUs stay stable. If this is a new product, TechBari can safely reuse its transaction-free default SKU for the first generated combination instead of leaving an unnecessary placeholder.</div>{% endif %}
+      </div>
+
+      {% if selected_product %}
+      <form method="post" class="card builder-card" style="margin-top:18px" data-variant-generator>
+        {% csrf_token %}<input type="hidden" name="action" value="generate"><input type="hidden" name="product" value="{{ selected_product.id }}">{% if selected_preset %}<input type="hidden" name="preset" value="{{ selected_preset.id }}">{% endif %}
+        <div class="variant-library-card-head" style="padding:0 0 14px;border-bottom:1px solid #e8edf5">
+          <div><h3>2. Select Attribute Values</h3><p>Choose any values you sell. TechBari creates the Cartesian product automatically.</p></div>
+          <a class="mini-link" href="{% url 'backoffice:catalog_variant_attributes' %}">Manage library →</a>
+        </div>
+
+        {% for attribute in builder_attributes %}
+        <div class="builder-attribute" data-builder-attribute>
+          <div class="builder-attribute-head">
+            <strong>{{ attribute.name }}</strong>
+            <span class="status blue">{{ attribute.get_display_type_display }}</span>
+          </div>
+          <div class="builder-value-list">
+            {% for value in attribute.values.all %}{% if value.is_active %}
+            <label class="builder-value">
+              <input type="checkbox" name="value_ids" value="{{ value.id }}"{% if value.id in existing_value_ids %} checked{% endif %}>
+              <span>{% if value.color_hex %}<i class="builder-value-swatch" style="background:{{ value.color_hex }}"></i>{% elif value.symbol %}<i>{{ value.symbol }}</i>{% endif %}{{ value.value }}</span>
+            </label>
+            {% endif %}{% empty %}<span class="muted">No active values. Add values in the Attribute Library first.</span>{% endfor %}
+          </div>
+        </div>
+        {% empty %}<div class="builder-empty">No active attributes are available{% if selected_preset %} in this preset{% endif %}. Create attributes or update the preset first.</div>{% endfor %}
+
+        <div class="builder-summary" data-combination-summary>
+          <div><small class="muted">Combinations to generate</small><br><strong><span data-combination-count>0</span> variants</strong></div>
+          <small class="muted">Existing exact combinations are skipped; maximum 250 at once.</small>
+        </div>
+        <div class="builder-actions"><button class="btn btn-primary" type="submit" disabled><span data-generate-label>Select values to generate</span></button></div>
+      </form>
+      {% endif %}
+    </div>
+
+    <aside class="card builder-card">
+      <h3>How it works</h3>
+      <div class="builder-side-note">
+        <strong>Global, not per-product.</strong><br>
+        Color, Storage, Region, RAM, Size and every custom attribute live once in the library. A product only receives generated SKU combinations that reference those reusable values.
+      </div>
+      <div class="builder-side-note">
+        <strong>No duplicate business database.</strong><br>
+        Purchase, POS, Inventory, Serial/IMEI, Returns and Accounting continue to reference the same stable ProductVariant IDs. The builder changes only how those SKUs are configured.
+      </div>
+      <div class="builder-side-note">
+        <strong>Preset example.</strong><br>
+        Smartphone → Color + Storage + Region. Laptop → Color + RAM + Storage. Presets never create extra stock or pricing records.
+      </div>
+    </aside>
+  </div>
+
+  {% if selected_product %}
+  <div class="card builder-card builder-existing">
+    <div class="variant-library-card-head" style="padding:0 0 14px;border-bottom:1px solid #e8edf5">
+      <div><h3>3. Bulk Variant Editor</h3><p>Set exact pricing, stock, default and availability without opening every SKU separately.</p></div>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_form' %}?product={{ selected_product.id }}">+ Add Single SKU</a>
+    </div>
+    <form method="post">
+      {% csrf_token %}<input type="hidden" name="action" value="bulk_save"><input type="hidden" name="product" value="{{ selected_product.id }}">{% if selected_preset %}<input type="hidden" name="preset" value="{{ selected_preset.id }}">{% endif %}
+      <div class="table-scroll" style="margin-top:14px">
+        <table class="data-table variant-bulk-table">
+          <thead><tr><th>Default</th><th>Variant</th><th>SKU</th><th>Regular Price</th><th>Selling Price</th><th>Stock</th><th>Low Alert</th><th>Active</th><th>Edit</th></tr></thead>
+          <tbody>
+            {% for variant in builder_variants %}
+            <tr>
+              <td><input type="hidden" name="variant_ids" value="{{ variant.id }}"><input type="radio" name="default_variant_id" value="{{ variant.id }}"{% if variant.is_default %} checked{% endif %}></td>
+              <td class="combo-cell"><strong>{{ variant.display_name }}</strong><div style="margin-top:5px">{% for link in variant.variant_values.all %}<span class="status blue" style="margin:2px 4px 2px 0">{{ link.value.attribute.name }}: {{ link.value.value }}</span>{% empty %}<span class="muted">Simple / legacy SKU</span>{% endfor %}</div></td>
+              <td class="sku-cell"><strong>{{ variant.sku }}</strong>{% if variant.barcode %}<br><span class="muted">{{ variant.barcode }}</span>{% endif %}</td>
+              <td><input class="control" type="number" min="0" step="0.01" name="regular_{{ variant.id }}" value="{% if variant.regular_price_override != None %}{{ variant.regular_price_override }}{% endif %}" placeholder="Product"></td>
+              <td><input class="control" type="number" min="0" step="0.01" name="price_{{ variant.id }}" value="{% if variant.price_override != None %}{{ variant.price_override }}{% endif %}" placeholder="Product"></td>
+              <td><input class="control" type="number" min="0" name="stock_{{ variant.id }}" value="{{ variant.stock_quantity }}"></td>
+              <td><input class="control" type="number" min="0" name="low_{{ variant.id }}" value="{{ variant.low_stock_alert }}"></td>
+              <td><label class="status-toggle-inline"><input type="checkbox" name="active_{{ variant.id }}"{% if variant.is_active %} checked{% endif %}> Active</label></td>
+              <td><a class="mini-link" href="{% url 'backoffice:catalog_variant_form' %}?id={{ variant.id }}">Edit</a></td>
+            </tr>
+            {% empty %}<tr><td colspan="9"><div class="builder-empty">No SKUs yet. Select values above and generate the first combinations.</div></td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if builder_variants %}<div class="builder-actions"><button class="btn btn-primary" type="submit">Save Bulk Changes</button></div>{% endif %}
+    </form>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/variant-builder.js' %}?v=1.0.0"></script>{% endblock %}
