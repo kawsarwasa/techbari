@@ -2,7 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
 from staff_access import views as staff_views
-from . import accounting_views, catalog_views, customer_views, expense_views, inventory_views, payment_views, pos_views, purchase_views, report_views, return_views, sales_views, shipping_views, store_settings_views, views
+from . import accounting_views, catalog_views, customer_views, expense_views, inventory_views, payment_views, pos_views, purchase_views, report_views, return_views, sales_views, shipping_views, store_settings_views, variant_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
@@ -27,7 +27,9 @@ auth_patterns = [
 ]
 
 catalog_patterns = [
-    path("variants/", catalog_views.variants, name="catalog_variants"), path("variants/form/", catalog_views.variant_form, name="catalog_variant_form"),
+    path("variants/", variant_views.variants, name="catalog_variants"),
+    path("variants/form/", variant_views.variant_form, name="catalog_variant_form"),
+    path("variants/options/", variant_views.variant_options, name="catalog_variant_options"),
     path("product-media/", catalog_views.media, name="catalog_media"), path("product-media/form/", catalog_views.media_form, name="catalog_media_form"),
     path("specifications/", catalog_views.specifications, name="catalog_specifications"), path("specifications/form/", catalog_views.specification_form, name="catalog_specification_form"),
 ]
