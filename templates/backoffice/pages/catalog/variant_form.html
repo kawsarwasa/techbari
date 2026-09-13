@@ -1,17 +1,18 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{% if is_edit %}Edit{% else %}Add{% endif %} Variant | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/variant-form-v2.css' %}?v=2.0.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/variant-form-v2.css' %}?v=2.1.0">{% endblock %}
 {% block content %}
 <section class="page variant-editor-page">
   <div class="page-head">
     <div>
       <h1>{% if is_edit %}Edit Variant / SKU{% else %}Add Variant / SKU{% endif %}</h1>
-      <p>Choose the product options first, then set the exact SKU, price and stock for this sellable combination.</p>
+      <p>Edit one exact sellable SKU. For many combinations, use the bulk Variant Builder instead.</p>
     </div>
     <div class="head-actions">
       <a class="variant-toolbar-link" href="{% url 'backoffice:products' %}"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Products</a>
-      <a class="btn" href="{% url 'backoffice:catalog_variant_options' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">Option Setup</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_builder' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">Variant Builder</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_attributes' %}">Attribute Library</a>
       <button class="btn btn-primary" type="submit" form="variantForm">Save Variant</button>
     </div>
   </div>
@@ -23,24 +24,24 @@
     <div class="card variant-main-card">
       <div class="variant-card-head">
         <span class="variant-card-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8v8H8z"/></svg></span>
-        <div><h3>Variant Builder</h3><small class="muted">Build one exact, sellable Product + Option combination.</small></div>
+        <div><h3>Single Variant Editor</h3><small class="muted">Build or adjust one exact Product + Attribute combination.</small></div>
       </div>
 
       <div class="variant-section">
         <div class="variant-section-title">
-          <div><h4>1. Product & Options</h4><p>Select one value from every configured option.</p></div>
-          <a class="variant-help-link" href="{% url 'backoffice:catalog_variant_options' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">Manage options →</a>
+          <div><h4>1. Product & Attributes</h4><p>Choose one reusable global value from every attribute already used by this product.</p></div>
+          <a class="variant-help-link" href="{% url 'backoffice:catalog_variant_attributes' %}">Manage attributes →</a>
         </div>
         <div class="variant-grid">
-          <label class="field full"><span>Product</span>{{ form.product }}{{ form.product.errors }}<small>Changing the product reloads this page with that product's own option values.</small></label>
+          <label class="field full"><span>Product</span>{{ form.product }}{{ form.product.errors }}<small>Changing the product reloads this page with that product's currently used global attributes.</small></label>
           <div class="full">
-            <div class="option-groups" data-option-groups data-option-setup-url="{% url 'backoffice:catalog_variant_options' %}{% if product_filter %}?product={{ product_filter }}{% endif %}"></div>
-            <div class="structured-option-source">{{ form.option_values }}</div>
-            {{ form.option_values.errors }}
+            <div class="option-groups" data-option-groups data-option-setup-url="{% url 'backoffice:catalog_variant_builder' %}{% if product_filter %}?product={{ product_filter }}{% endif %}"></div>
+            <div class="structured-option-source">{{ form.attribute_values }}</div>
+            {{ form.attribute_values.errors }}
           </div>
           <div class="variant-preview full">
-            <div><small>Generated Variant</small><strong data-variant-preview>{% if variant_obj %}{{ variant_obj.display_name }}{% else %}Select one value from each option{% endif %}</strong></div>
-            <span class="variant-preview-badge" data-variant-preview-status>Waiting for options</span>
+            <div><small>Generated Variant</small><strong data-variant-preview>{% if variant_obj %}{{ variant_obj.display_name }}{% else %}Select one value from each attribute{% endif %}</strong></div>
+            <span class="variant-preview-badge" data-variant-preview-status>Waiting for attributes</span>
           </div>
         </div>
       </div>
@@ -48,12 +49,12 @@
       <div class="variant-section">
         <div class="variant-section-title"><div><h4>2. SKU Identity</h4><p>Keep the SKU stable once this variant starts receiving business history.</p></div></div>
         <div class="variant-grid">
-          <label class="field full" data-legacy-name-field><span>Variant Name</span>{{ form.name }}{{ form.name.errors }}<small>For structured variants this is generated automatically. Manual naming is only for legacy/default variants without options.</small></label>
+          <label class="field full" data-legacy-name-field><span>Variant Name</span>{{ form.name }}{{ form.name.errors }}<small>For structured variants this is generated automatically. Manual naming is only for simple/legacy SKUs without attributes.</small></label>
           <label class="field">
             <span>SKU</span>
             <div class="sku-control">{{ form.sku }}<button type="button" class="sku-generate" data-generate-sku>Generate</button></div>
             {{ form.sku.errors }}
-            <small>Use a unique code for this exact combination. You can edit the generated suggestion.</small>
+            <small>Use a unique code for this exact combination. You can edit the generated suggestion before the SKU has business history.</small>
           </label>
           <label class="field"><span>Barcode</span>{{ form.barcode }}{{ form.barcode.errors }}<small>Optional, but must be unique when supplied.</small></label>
         </div>
@@ -72,7 +73,7 @@
       <div class="variant-section">
         <div class="variant-section-title"><div><h4>Advanced Display</h4><p>Optional storefront/display metadata.</p></div></div>
         <div class="advanced-grid">
-          <label class="field"><span>Display Symbol</span>{{ form.symbol }}{{ form.symbol.errors }}<small>Optional. If blank, the first selected option symbol is used.</small></label>
+          <label class="field"><span>Display Symbol</span>{{ form.symbol }}{{ form.symbol.errors }}<small>Optional. If blank, the first selected attribute symbol is used.</small></label>
         </div>
         <div class="stable-rule" style="margin-top:15px"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.4 3 8.4 7.5 9.5 4.5-1.1 7.5-5.1 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/></svg><div><strong>Stable variant rule.</strong> Once a SKU has purchase, sales, inventory or Serial/IMEI history, TechBari preserves that identity. Removing it safely deactivates the SKU instead of deleting business history.</div></div>
       </div>
@@ -91,7 +92,7 @@
           {{ form.is_default.errors }}
         </div>
         <div class="status-note"><strong>One active default per product.</strong><br>Setting this SKU as default automatically demotes the previous default.</div>
-        {% if selected_product %}<div class="status-product"><strong>{{ selected_product.name }}</strong><br><small>Configure Color, Storage, Region/Type, Size or any other values from Option Setup.</small></div>{% endif %}
+        {% if selected_product %}<div class="status-product"><strong>{{ selected_product.name }}</strong><br><small>Use Variant Builder to generate many Color, Storage, Region, RAM, Size or other combinations at once.</small></div>{% endif %}
         <div class="status-actions">
           <a class="btn" href="{% url 'backoffice:catalog_variants' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">Cancel</a>
           <button class="btn btn-primary" type="submit">Save Variant</button>
@@ -101,4 +102,4 @@
   </form>
 </section>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'admin/js/variant-form-v2.js' %}?v=2.0.0"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/variant-form-v2.js' %}?v=2.1.0"></script>{% endblock %}
