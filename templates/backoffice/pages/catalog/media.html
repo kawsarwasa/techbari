@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Product Media | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-media-v2.css' %}?v=2.0.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-media-v2.css' %}?v=2.1.0">{% endblock %}
 {% block content %}
 <section class="page product-media-v2" data-product-media-manager data-product-id="{{ product_filter|default:'' }}" data-product-name="{% for product in catalog_products %}{% if product.id == product_filter %}{{ product.name|escape }}{% endif %}{% endfor %}" data-media-url="{% url 'backoffice:catalog_media' %}{% if product_filter %}?product={{ product_filter }}{% endif %}" data-upload-url="{% url 'backoffice:catalog_media_form' %}{% if product_filter %}?product={{ product_filter }}{% endif %}" data-max-images="24" data-current-count="{{ media_rows|length }}">
   <div class="page-head media-head">
@@ -60,15 +60,15 @@
       <div class="media-gallery-head">
         <div>
           <h3>{% if product_filter %}Product Gallery{% else %}All Product Images{% endif %}</h3>
-          <p>{% if product_filter %}Drag cards to change storefront order. Use Primary and Detail only when you need to change the current roles.{% else %}Filter by a product to enable drag ordering and the quicker upload workflow.{% endif %}</p>
+          <p>{% if product_filter %}Drag cards to change storefront order. Use Primary and Detail only when you need to change the current roles.{% else %}Browse every product image here, or filter by a product to enable drag ordering and quicker uploads.{% endif %}</p>
         </div>
         <div class="media-gallery-actions">
-          {% if media_rows %}<label class="media-selected-count"><input type="checkbox" data-media-select-all> Select all</label><span class="media-selected-count"><b data-media-selected-count>0</b> selected</span>{% endif %}
+          {% if media_rows %}<span class="media-count-pill">{{ media_rows|length }} image{{ media_rows|length|pluralize }}</span><label class="media-selected-count"><input type="checkbox" data-media-select-all> Select all</label><span class="media-selected-count"><b data-media-selected-count>0</b> selected</span>{% endif %}
           {% if product_filter and media_rows %}<button class="btn" type="button" data-media-save-order disabled>Save Order</button>{% endif %}
           {% if media_rows %}<button class="btn danger" type="button" data-media-bulk-delete disabled>Delete Selected</button>{% endif %}
         </div>
       </div>
-      {% if product_filter %}<div class="media-reorder-note" style="margin-top:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 6h8M8 12h8M8 18h8"/></svg><span data-media-order-feedback>Drag images into the order customers should see them, then click Save Order.</span></div>{% endif %}
+      {% if product_filter %}<div class="media-reorder-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 6h8M8 12h8M8 18h8"/></svg><span data-media-order-feedback>Drag images into the order customers should see them, then click Save Order.</span></div>{% endif %}
 
       <div class="media-grid" data-media-grid>
         {% for row in media_rows %}{% with image=row.obj %}
@@ -82,9 +82,9 @@
           <div class="media-card-body">
             <strong class="media-card-title">{{ image.product.name }}</strong>
             <div class="media-card-meta">
-              <span><b>Alt:</b> {{ image.alt_text|default:"—" }}</span>
-              <span><b>Variant:</b> {% if image.attribute_value %}{{ image.attribute_value.attribute.name }}: {{ image.attribute_value.value }}{% else %}General image{% endif %}</span>
-              <span><b>Order:</b> {{ image.sort_order }}</span>
+              <span><b>Variant</b>{% if image.attribute_value %}{{ image.attribute_value.attribute.name }}: {{ image.attribute_value.value }}{% else %}General image{% endif %}</span>
+              <span><b>Order</b>{{ image.sort_order }}</span>
+              {% if image.alt_text %}<span><b>Alt</b>{{ image.alt_text }}</span>{% endif %}
             </div>
             <div class="media-card-actions">
               <a class="icon-btn" href="{% url 'backoffice:catalog_media_form' %}?id={{ image.id }}" title="Edit" aria-label="Edit">✎</a>
