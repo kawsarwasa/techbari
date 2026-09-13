@@ -25,11 +25,16 @@
 .variant-presets-page .preset-form-card{padding:19px 20px}
 .variant-presets-page .preset-info-note{display:flex;align-items:flex-start;gap:9px;margin:-2px 0 15px;padding:10px 11px;border:1px solid #dce9f8;border-radius:10px;background:#f4f9ff;color:#58708f;font-size:10px;line-height:1.5}
 .variant-presets-page .preset-info-note svg{width:16px;height:16px;flex:0 0 16px;margin-top:1px;color:#1976f3;stroke-width:2}
-.variant-presets-page .preset-select-shell{border:1px solid #cfd9e6;border-radius:10px;background:#fff;padding:5px;transition:border-color .15s,box-shadow .15s}
-.variant-presets-page .preset-select-shell:focus-within{border-color:#7eafea;box-shadow:0 0 0 3px rgba(25,118,243,.09)}
-.variant-presets-page .preset-select-shell select{border:0!important;box-shadow:none!important;border-radius:7px!important;height:150px!important;padding:2px!important;background:#fff!important}
-.variant-presets-page .preset-select-shell select option{padding:8px 10px;margin:2px 0;border-radius:7px;color:#2f4867;font-weight:650}
-.variant-presets-page .preset-select-shell select option:checked{background:#eaf3ff linear-gradient(0deg,#eaf3ff,#eaf3ff);color:#1268ca}
+.variant-presets-page .preset-select-shell{border:1px solid #d8e2ee;border-radius:12px;background:#f9fbfe;padding:9px;transition:border-color .15s,box-shadow .15s,background .15s}
+.variant-presets-page .preset-select-shell:focus-within{border-color:#7eafea;box-shadow:0 0 0 3px rgba(25,118,243,.09);background:#fff}
+.variant-presets-page .preset-select-shell>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.variant-presets-page .preset-select-shell>div>div{min-width:0}
+.variant-presets-page .preset-select-shell label{position:relative;display:flex;align-items:center;gap:9px;min-height:42px;padding:9px 11px;border:1px solid #dbe4ef;border-radius:10px;background:#fff;color:#35506f;font-size:12px;font-weight:750;cursor:pointer;transition:border-color .15s,background .15s,color .15s,box-shadow .15s}
+.variant-presets-page .preset-select-shell label:hover{border-color:#9fc3ec;background:#f7fbff;color:#1767bd}
+.variant-presets-page .preset-select-shell input[type=checkbox]{width:17px!important;height:17px!important;margin:0!important;accent-color:#1976f3;flex:0 0 17px;cursor:pointer}
+.variant-presets-page .preset-select-shell label:has(input:checked){border-color:#8fbbea;background:#edf6ff;color:#0f65c7;box-shadow:0 0 0 2px rgba(25,118,243,.05)}
+.variant-presets-page .preset-select-shell label:has(input:checked)::after{content:'Selected';margin-left:auto;padding:3px 6px;border-radius:999px;background:#ddecff;color:#0d64c2;font-size:9px;font-weight:800;letter-spacing:.02em}
+.variant-presets-page .preset-attributes-field>small{margin-top:2px;color:#69809d!important}
 .variant-presets-page .preset-empty-state{padding:38px 22px;text-align:center;color:#6b7d98;border-style:dashed}
 .variant-presets-page .preset-empty-state strong{display:block;margin-top:10px;color:#284462;font-size:14px}
 .variant-presets-page .preset-empty-state p{margin:5px 0 0;font-size:11px}
@@ -37,5 +42,5 @@
 .variant-presets-page .preset-empty-icon svg{width:20px;height:20px;stroke-width:1.9}
 @media(max-width:1180px){.variant-presets-page .preset-library-grid{grid-template-columns:minmax(0,1.32fr) minmax(340px,.78fr)}.variant-presets-page .preset-card-actions{padding:12px}}
 @media(max-width:1100px){.variant-presets-page .preset-library-grid{grid-template-columns:1fr}.variant-presets-page .preset-form-stack{position:static}}
-@media(max-width:760px){.variant-presets-page .preset-library-summary{align-items:flex-start;flex-direction:column}.variant-presets-page .preset-card-head{flex-direction:column}.variant-presets-page .preset-card-actions{border-left:0;border-top:1px solid #edf1f6;justify-content:flex-end}.variant-presets-page .preset-use-action{margin-right:auto}.variant-presets-page .preset-card-content{padding:15px}.variant-presets-page .preset-select-shell select{height:170px!important}}
+@media(max-width:760px){.variant-presets-page .preset-library-summary{align-items:flex-start;flex-direction:column}.variant-presets-page .preset-card-head{flex-direction:column}.variant-presets-page .preset-card-actions{border-left:0;border-top:1px solid #edf1f6;justify-content:flex-end}.variant-presets-page .preset-use-action{margin-right:auto}.variant-presets-page .preset-card-content{padding:15px}.variant-presets-page .preset-select-shell>div{grid-template-columns:1fr}}
 @media(max-width:520px){.variant-presets-page .preset-card-actions{justify-content:flex-start;flex-wrap:wrap}.variant-presets-page .preset-use-action{width:100%;justify-content:center;margin:0 0 2px}.variant-presets-page .preset-title-row .status{order:3}.variant-presets-page .preset-library-summary{padding:15px}}
