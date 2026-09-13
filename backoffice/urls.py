@@ -29,7 +29,11 @@ auth_patterns = [
 catalog_patterns = [
     path("variants/", variant_views.variants, name="catalog_variants"),
     path("variants/form/", variant_views.variant_form, name="catalog_variant_form"),
-    path("variants/options/", variant_views.variant_options, name="catalog_variant_options"),
+    path("variants/builder/", variant_views.variant_builder, name="catalog_variant_builder"),
+    path("variants/attributes/", variant_views.variant_attributes, name="catalog_variant_attributes"),
+    path("variants/presets/", variant_views.variant_presets, name="catalog_variant_presets"),
+    # Backward-compatible route name/URL for bookmarks from the temporary per-product option UI.
+    path("variants/options/", variant_views.variant_attributes, name="catalog_variant_options"),
     path("product-media/", catalog_views.media, name="catalog_media"), path("product-media/form/", catalog_views.media_form, name="catalog_media_form"),
     path("specifications/", catalog_views.specifications, name="catalog_specifications"), path("specifications/form/", catalog_views.specification_form, name="catalog_specification_form"),
 ]
