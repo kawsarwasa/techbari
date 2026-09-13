@@ -169,6 +169,20 @@
   });
   syncSelection();
 
+  const menus = [...root.querySelectorAll('.media-card-menu')];
+  menus.forEach(menu => {
+    menu.addEventListener('toggle', () => {
+      if (!menu.open) return;
+      menus.forEach(other => {
+        if (other !== menu) other.open = false;
+      });
+    });
+  });
+  document.addEventListener('click', event => {
+    if (event.target.closest('.media-card-menu')) return;
+    menus.forEach(menu => { menu.open = false; });
+  });
+
   bulkDelete?.addEventListener('click', async () => {
     const selected = selectedCards();
     if (!selected.length || !window.confirm(`Delete ${selected.length} selected image${selected.length === 1 ? '' : 's'}? This cannot be undone.`)) return;
@@ -194,7 +208,10 @@
   let orderDirty = false;
   cards().forEach(card => {
     card.addEventListener('dragstart', event => {
-      if (!productId) { event.preventDefault(); return; }
+      if (!productId || event.target.closest('button,a,input,summary,details,label')) {
+        event.preventDefault();
+        return;
+      }
       dragged = card;
       card.classList.add('is-dragging');
       event.dataTransfer.effectAllowed = 'move';
