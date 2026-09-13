@@ -8,10 +8,24 @@
     return Array.from(element.attributes||[]).map(attribute=>`${attribute.name}=${attribute.value}`).join(' ').toLowerCase();
   }
 
-  function formDeletes(element){
+  function isDeleteActionValue(element){
+    const name=(element.getAttribute('name')||'').toLowerCase();
+    const value=(element.getAttribute('value')||'').toLowerCase();
+    return (name==='action'||name.endsWith('_action'))&&value==='delete';
+  }
+
+  function isSingleSubmitDeleteForm(element){
     const form=element.closest('form');
-    if(!form)return false;
-    return Array.from(form.querySelectorAll('input,button')).some(control=>{
+    if(!form||element.tagName!=='BUTTON')return false;
+
+    const type=(element.getAttribute('type')||'submit').toLowerCase();
+    if(type!=='submit')return false;
+
+    const submitters=Array.from(form.querySelectorAll('button,input[type="submit"],input[type="image"]'))
+      .filter(control=>(control.getAttribute('type')||'submit').toLowerCase()!=='button');
+    if(submitters.length!==1||submitters[0]!==element)return false;
+
+    return Array.from(form.querySelectorAll('input[type="hidden"]')).some(control=>{
       const name=(control.getAttribute('name')||'').toLowerCase();
       const value=(control.getAttribute('value')||'').toLowerCase();
       return (name==='action'||name.endsWith('_action'))&&value==='delete';
@@ -26,7 +40,7 @@
 
     const text=(element.textContent||'').trim().toLowerCase();
     const metadata=[attributeText(element),element.getAttribute('title')||'',element.getAttribute('aria-label')||'',text].join(' ').toLowerCase();
-    return /\bdelete\b/.test(metadata)||/(^|[-_:])delete($|[-_:])/.test(metadata)||formDeletes(element);
+    return isDeleteActionValue(element)||/\bdelete\b/.test(metadata)||/(^|[-_:])delete($|[-_:])/.test(metadata)||isSingleSubmitDeleteForm(element);
   }
 
   function decorate(element){
