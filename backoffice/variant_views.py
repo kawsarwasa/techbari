@@ -1,6 +1,8 @@
 from decimal import Decimal, InvalidOperation
+from urllib.parse import urlencode
 
 from django.db import transaction
+from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
@@ -29,6 +31,8 @@ NOTICE_TEXT = {
     "value-saved": "Attribute value saved successfully.",
     "attribute-toggled": "Variant attribute status updated.",
     "value-toggled": "Attribute value status updated.",
+    "attribute-deleted": "Variant attribute deleted successfully.",
+    "value-deleted": "Attribute value deleted successfully.",
     "preset-saved": "Variant preset saved successfully.",
     "preset-toggled": "Variant preset status updated.",
     "generated": "Variant combinations generated successfully.",
@@ -54,7 +58,10 @@ def _context(request, product_id=None):
     context["catalog_products"] = Product.objects.order_by("name")
     context["product_filter"] = product_id
     context["catalog_notice"] = NOTICE_TEXT.get(request.GET.get("notice", ""), "")
-    context["catalog_error"] = ERROR_TEXT.get(request.GET.get("error", ""), "")
+    context["catalog_error"] = (
+        (request.GET.get("error_message") or "").strip()
+        or ERROR_TEXT.get(request.GET.get("error", ""), "")
+    )
     return context
 
 
@@ -96,6 +103,68 @@ def _protect_used_variant_identity(form, instance):
             "sku",
             "This SKU already has stock or business history and cannot be changed. Create a new variant instead.",
         )
+
+
+def _count_label(count, singular, plural=None):
+    plural = plural or f"{singular}s"
+    return f"{count} {singular if count == 1 else plural}"
+
+
+def _value_delete_block_reason(value):
+    variant_count = value.variant_links.count()
+    image_count = value.product_images.count()
+    reasons = []
+    if variant_count:
+        reasons.append(_count_label(variant_count, "product variant"))
+    if image_count:
+        reasons.append(_count_label(image_count, "product image"))
+    if not reasons:
+        return ""
+    return (
+        f'"{value.attribute.name}: {value.value}" cannot be deleted because it is linked to '
+        + " and ".join(reasons)
+        + ". Remove those links first, or disable the value instead."
+    )
+
+
+def _attribute_delete_block_reason(attribute):
+    preset_count = attribute.preset_links.count()
+    variant_count = (
+        attribute.values.filter(variant_links__isnull=False)
+        .values("variant_links__variant_id")
+        .distinct()
+        .count()
+    )
+    image_count = (
+        attribute.values.filter(product_images__isnull=False)
+        .values("product_images__id")
+        .distinct()
+        .count()
+    )
+    reasons = []
+    if preset_count:
+        reasons.append(_count_label(preset_count, "preset"))
+    if variant_count:
+        reasons.append(_count_label(variant_count, "product variant"))
+    if image_count:
+        reasons.append(_count_label(image_count, "product image"))
+    if not reasons:
+        return ""
+    usage = ", ".join(reasons[:-1]) + (" and " if len(reasons) > 1 else "") + reasons[-1]
+    return (
+        f'"{attribute.name}" cannot be deleted because it is linked to {usage}. '
+        "Remove those links first, or deactivate the attribute instead."
+    )
+
+
+def _attribute_library_redirect(*, notice="", error_message=""):
+    params = {}
+    if notice:
+        params["notice"] = notice
+    if error_message:
+        params["error_message"] = error_message
+    url = reverse("backoffice:catalog_variant_attributes")
+    return redirect(url + (f"?{urlencode(params)}" if params else ""))
 
 
 def variants(request):
@@ -195,23 +264,50 @@ def variant_attributes(request):
             attribute_form = VariantAttributeForm(request.POST, instance=instance)
             if attribute_form.is_valid():
                 attribute_form.save()
-                return redirect(reverse("backoffice:catalog_variant_attributes") + "?notice=attribute-saved")
+                return _attribute_library_redirect(notice="attribute-saved")
         elif action == "save_value":
             instance = VariantAttributeValue.objects.filter(pk=request.POST.get("value_id")).first()
             value_form = VariantAttributeValueForm(request.POST, instance=instance)
             if value_form.is_valid():
                 value_form.save()
-                return redirect(reverse("backoffice:catalog_variant_attributes") + "?notice=value-saved")
+                return _attribute_library_redirect(notice="value-saved")
         elif action == "toggle_attribute":
             attribute = get_object_or_404(VariantAttribute, pk=request.POST.get("attribute_id"))
             attribute.is_active = not attribute.is_active
             attribute.save(update_fields=["is_active", "updated_at"])
-            return redirect(reverse("backoffice:catalog_variant_attributes") + "?notice=attribute-toggled")
+            return _attribute_library_redirect(notice="attribute-toggled")
         elif action == "toggle_value":
             value = get_object_or_404(VariantAttributeValue, pk=request.POST.get("value_id"))
             value.is_active = not value.is_active
             value.save(update_fields=["is_active", "updated_at"])
-            return redirect(reverse("backoffice:catalog_variant_attributes") + "?notice=value-toggled")
+            return _attribute_library_redirect(notice="value-toggled")
+        elif action == "delete_value":
+            value = get_object_or_404(
+                VariantAttributeValue.objects.select_related("attribute"),
+                pk=request.POST.get("value_id"),
+            )
+            reason = _value_delete_block_reason(value)
+            if reason:
+                return _attribute_library_redirect(error_message=reason)
+            try:
+                value.delete()
+            except ProtectedError:
+                return _attribute_library_redirect(
+                    error_message="This attribute value is linked to protected data and cannot be deleted. Disable it instead."
+                )
+            return _attribute_library_redirect(notice="value-deleted")
+        elif action == "delete_attribute":
+            attribute = get_object_or_404(VariantAttribute, pk=request.POST.get("attribute_id"))
+            reason = _attribute_delete_block_reason(attribute)
+            if reason:
+                return _attribute_library_redirect(error_message=reason)
+            try:
+                attribute.delete()
+            except ProtectedError:
+                return _attribute_library_redirect(
+                    error_message="This attribute is linked to protected data and cannot be deleted. Deactivate it instead."
+                )
+            return _attribute_library_redirect(notice="attribute-deleted")
 
     context = _context(request)
     context.update(
