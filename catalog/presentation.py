@@ -10,9 +10,13 @@ from .richtext import sanitize_rich_html
 
 
 def catalog_queryset(include_inactive=False):
+    variant_qs = ProductVariant.objects.prefetch_related(
+        "variant_values__value__attribute"
+    ).order_by("-is_default", "id")
+    image_qs = ProductImage.objects.select_related("attribute_value", "attribute_value__attribute").order_by("sort_order", "id")
     qs = Product.objects.select_related("category", "brand").prefetch_related(
-        Prefetch("variants", queryset=ProductVariant.objects.order_by("-is_default", "id")),
-        Prefetch("images", queryset=ProductImage.objects.order_by("sort_order", "id")),
+        Prefetch("variants", queryset=variant_qs),
+        Prefetch("images", queryset=image_qs),
         Prefetch("specifications", queryset=ProductSpecification.objects.order_by("sort_order", "id")),
     )
     if not include_inactive:
@@ -78,6 +82,64 @@ def _description_data(product):
     return plain, short, paragraphs, rich_html
 
 
+def _variant_values(variant):
+    rows = list(variant.variant_values.all())
+    rows.sort(
+        key=lambda link: (
+            link.value.attribute.sort_order,
+            link.value.attribute_id,
+            link.value.sort_order,
+            link.value_id,
+        )
+    )
+    return [
+        {
+            "attribute_id": link.value.attribute_id,
+            "attribute": link.value.attribute.name,
+            "attribute_code": link.value.attribute.code,
+            "display_type": link.value.attribute.display_type,
+            "value_id": link.value_id,
+            "value": link.value.value,
+            "value_code": link.value.code,
+            "symbol": link.value.symbol,
+            "color_hex": link.value.color_hex,
+        }
+        for link in rows
+    ]
+
+
+def _product_options(serialized_variants):
+    options = {}
+    for variant in serialized_variants:
+        for row in variant.get("values", []):
+            attribute_id = row["attribute_id"]
+            option = options.setdefault(
+                attribute_id,
+                {
+                    "id": attribute_id,
+                    "name": row["attribute"],
+                    "code": row["attribute_code"],
+                    "display_type": row["display_type"],
+                    "values": {},
+                },
+            )
+            option["values"].setdefault(
+                row["value_id"],
+                {
+                    "id": row["value_id"],
+                    "value": row["value"],
+                    "code": row["value_code"],
+                    "symbol": row["symbol"],
+                    "color_hex": row["color_hex"],
+                },
+            )
+    result = []
+    for option in options.values():
+        option["values"] = list(option["values"].values())
+        result.append(option)
+    return result
+
+
 def serialize_product(product):
     variants = list(product.variants.all())
     active_variants = [variant for variant in variants if variant.is_active]
@@ -87,9 +149,14 @@ def serialize_product(product):
         (variant for variant in active_variants if variant.is_default),
         active_variants[0] if active_variants else None,
     )
-    primary_image = next((i for i in images if i.role == ProductImage.Role.PRIMARY), images[0] if images else None)
-    detail_image = next((i for i in images if i.role == ProductImage.Role.DETAIL), primary_image)
-    gallery_images = [i for i in images if i.role in {ProductImage.Role.GALLERY, ProductImage.Role.PRIMARY}]
+
+    generic_images = [image for image in images if not image.attribute_value_id]
+    primary_pool = generic_images or images
+    primary_image = next((i for i in primary_pool if i.role == ProductImage.Role.PRIMARY), primary_pool[0] if primary_pool else None)
+    detail_image = next((i for i in primary_pool if i.role == ProductImage.Role.DETAIL), primary_image)
+    gallery_images = [i for i in generic_images if i.role in {ProductImage.Role.GALLERY, ProductImage.Role.PRIMARY}]
+    if not gallery_images:
+        gallery_images = [i for i in images if i.role in {ProductImage.Role.GALLERY, ProductImage.Role.PRIMARY}]
     if not gallery_images and primary_image:
         gallery_images = [primary_image]
 
@@ -124,7 +191,7 @@ def serialize_product(product):
         serialized_variants.append(
             {
                 "id": variant.pk,
-                "name": variant.name,
+                "name": variant.display_name,
                 "symbol": variant.symbol,
                 "sku": variant.sku,
                 "barcode": variant.barcode or "",
@@ -133,8 +200,19 @@ def serialize_product(product):
                 "stock": variant.stock_quantity,
                 "is_default": variant.is_default,
                 "available": variant.stock_quantity > 0,
+                "values": _variant_values(variant),
             }
         )
+
+    image_groups = {}
+    for image in images:
+        if not image.attribute_value_id:
+            continue
+        url = _image_url(image)
+        if url:
+            image_groups.setdefault(str(image.attribute_value_id), []).append(url)
+
+    options = _product_options(serialized_variants)
 
     return {
         "pk": product.pk,
@@ -146,7 +224,7 @@ def serialize_product(product):
         "price": _number(price),
         "regular_price": _number(regular_price),
         "stock": stock,
-        "variant": default_variant.name if default_variant else "Default",
+        "variant": default_variant.display_name if default_variant else "Default",
         "default_variant_id": default_variant.pk if default_variant else None,
         "sku": default_variant.sku if default_variant else "",
         "barcode": default_variant.barcode if default_variant and default_variant.barcode else "",
@@ -157,6 +235,8 @@ def serialize_product(product):
         "images": gallery_urls,
         "detail_image": detail_image_url,
         "detail_image_url": detail_image_url,
+        "image_groups": image_groups,
+        "options": options,
         "short_name": product.short_name or product.name,
         "subtitle": product.subtitle,
         "description": description,
