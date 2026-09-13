@@ -1,3 +1,5 @@
+from urllib.parse import parse_qs, urlparse
+
 from django.test import RequestFactory, TestCase
 
 from backoffice import variant_views
@@ -9,6 +11,8 @@ from catalog.models import (
     ProductVariantValue,
     VariantAttribute,
     VariantAttributeValue,
+    VariantPreset,
+    VariantPresetAttribute,
 )
 from catalog.variant_forms import StructuredProductVariantForm
 from catalog.variant_services import generate_variant_combinations
@@ -259,3 +263,66 @@ class VariantDeletionSafetyTests(TestCase):
         self.assertIn("error=last-active-variant", response.url)
         self.used_variant.refresh_from_db()
         self.assertTrue(self.used_variant.is_active)
+
+    def test_unused_attribute_value_can_be_deleted(self):
+        attribute = VariantAttribute.objects.create(name="Material", code="material")
+        value = VariantAttributeValue.objects.create(attribute=attribute, value="Aluminum", code="aluminum")
+
+        request = self.factory.post(
+            "/dashboard/variants/attributes/",
+            {"action": "delete_value", "value_id": str(value.pk)},
+        )
+        response = variant_views.variant_attributes(request)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("notice=value-deleted", response.url)
+        self.assertFalse(VariantAttributeValue.objects.filter(pk=value.pk).exists())
+
+    def test_variant_linked_attribute_value_cannot_be_deleted(self):
+        attribute = VariantAttribute.objects.create(name="Safety Color", code="safety-color")
+        value = VariantAttributeValue.objects.create(attribute=attribute, value="Black", code="black")
+        ProductVariantValue.objects.create(variant=self.used_variant, value=value)
+
+        request = self.factory.post(
+            "/dashboard/variants/attributes/",
+            {"action": "delete_value", "value_id": str(value.pk)},
+        )
+        response = variant_views.variant_attributes(request)
+
+        self.assertEqual(response.status_code, 302)
+        query = parse_qs(urlparse(response.url).query)
+        self.assertIn("error_message", query)
+        self.assertIn("1 product variant", query["error_message"][0])
+        self.assertTrue(VariantAttributeValue.objects.filter(pk=value.pk).exists())
+
+    def test_unused_attribute_deletes_its_unused_values(self):
+        attribute = VariantAttribute.objects.create(name="Finish", code="finish")
+        value = VariantAttributeValue.objects.create(attribute=attribute, value="Matte", code="matte")
+
+        request = self.factory.post(
+            "/dashboard/variants/attributes/",
+            {"action": "delete_attribute", "attribute_id": str(attribute.pk)},
+        )
+        response = variant_views.variant_attributes(request)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("notice=attribute-deleted", response.url)
+        self.assertFalse(VariantAttribute.objects.filter(pk=attribute.pk).exists())
+        self.assertFalse(VariantAttributeValue.objects.filter(pk=value.pk).exists())
+
+    def test_preset_linked_attribute_cannot_be_deleted(self):
+        attribute = VariantAttribute.objects.create(name="Edition", code="edition")
+        preset = VariantPreset.objects.create(name="Console", code="console")
+        VariantPresetAttribute.objects.create(preset=preset, attribute=attribute)
+
+        request = self.factory.post(
+            "/dashboard/variants/attributes/",
+            {"action": "delete_attribute", "attribute_id": str(attribute.pk)},
+        )
+        response = variant_views.variant_attributes(request)
+
+        self.assertEqual(response.status_code, 302)
+        query = parse_qs(urlparse(response.url).query)
+        self.assertIn("error_message", query)
+        self.assertIn("1 preset", query["error_message"][0])
+        self.assertTrue(VariantAttribute.objects.filter(pk=attribute.pk).exists())
