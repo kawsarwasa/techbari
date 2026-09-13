@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -113,6 +114,43 @@ class Product(models.Model):
         return next((v for v in variants if v.is_default), variants[0] if variants else None)
 
 
+class ProductOption(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="options")
+    name = models.CharField(max_length=80)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("product_id", "sort_order", "id")
+        constraints = [
+            models.UniqueConstraint(fields=("product", "name"), name="uniq_product_option_name")
+        ]
+        indexes = [models.Index(fields=("product", "sort_order"), name="cat_option_product_sort_idx")]
+
+    def __str__(self):
+        return f"{self.product.name} / {self.name}"
+
+
+class ProductOptionValue(models.Model):
+    option = models.ForeignKey(ProductOption, on_delete=models.CASCADE, related_name="values")
+    value = models.CharField(max_length=120)
+    symbol = models.CharField(max_length=32, blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("option_id", "sort_order", "id")
+        constraints = [
+            models.UniqueConstraint(fields=("option", "value"), name="uniq_product_option_value")
+        ]
+        indexes = [models.Index(fields=("option", "sort_order"), name="cat_optval_option_sort_idx")]
+
+    def __str__(self):
+        return f"{self.option.name}: {self.value}"
+
+
 class ProductVariant(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="variants")
     name = models.CharField(max_length=120, default="Default")
@@ -137,8 +175,45 @@ class ProductVariant(models.Model):
             models.Index(fields=("product", "is_active"), name="cat_var_prod_active_idx"),
         ]
 
+    @property
+    def option_summary(self):
+        rows = self.option_selections.select_related("option", "value").order_by(
+            "option__sort_order", "option_id", "id"
+        )
+        return " / ".join(row.value.value for row in rows)
+
+    @property
+    def display_name(self):
+        return self.option_summary or self.name
+
     def __str__(self):
-        return f"{self.product.name} - {self.name}"
+        return f"{self.product.name} - {self.display_name}"
+
+
+class ProductVariantOptionValue(models.Model):
+    variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE, related_name="option_selections")
+    option = models.ForeignKey(ProductOption, on_delete=models.PROTECT, related_name="variant_selections")
+    value = models.ForeignKey(ProductOptionValue, on_delete=models.PROTECT, related_name="variant_selections")
+
+    class Meta:
+        ordering = ("option__sort_order", "option_id", "id")
+        constraints = [
+            models.UniqueConstraint(fields=("variant", "option"), name="uniq_variant_option_selection")
+        ]
+        indexes = [models.Index(fields=("variant", "option"), name="cat_varopt_variant_option_idx")]
+
+    def clean(self):
+        if self.variant_id and self.option_id and self.variant.product_id != self.option.product_id:
+            raise ValidationError("Variant option must belong to the same product.")
+        if self.value_id and self.option_id and self.value.option_id != self.option_id:
+            raise ValidationError("Selected option value does not belong to the selected option.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.variant.sku} / {self.option.name}: {self.value.value}"
 
 
 class ProductImage(models.Model):
