@@ -229,8 +229,9 @@
 
 /* Reference stock cell: quantity + compact green badge, Adjust below. */
 .variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(7){
-  width:150px;
-  min-width:150px;
+  width:170px;
+  min-width:170px;
+  padding-right:20px;
   white-space:normal;
 }
 .variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(7)>strong{
@@ -266,10 +267,10 @@
   display:flex;
   align-items:center;
   justify-content:center;
-  width:104px;
-  min-height:31px;
-  margin-top:6px;
-  padding:0 9px;
+  width:92px;
+  min-height:28px;
+  margin-top:5px;
+  padding:0 8px;
   border:1px solid #c9dbef;
   border-radius:7px;
   background:#fff;
@@ -280,9 +281,9 @@
 }
 .variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(7)>a.btn::before{
   content:"◇";
-  margin-right:6px;
+  margin-right:4px;
   color:#1c78e6;
-  font-size:13px;
+  font-size:11px;
   line-height:1;
 }
 .variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(7)>a.btn::after{
@@ -297,10 +298,15 @@
 
 .variant-builder-v2 .builder-existing .polished-bulk-table th:nth-child(8),
 .variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(8){
-  width:92px;
-  min-width:92px;
+  width:110px;
+  min-width:110px;
+  padding-left:18px;
 }
-.variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(8) .control{width:88px}
+.variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(8) .control{
+  width:92px;
+  max-width:92px;
+  height:38px;
+}
 
 .variant-builder-v2 .builder-existing .status-toggle-inline{
   display:flex;
