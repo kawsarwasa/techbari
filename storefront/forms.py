@@ -70,6 +70,15 @@ class CheckoutForm(forms.Form):
             include=legacy_upazila,
         )
 
+    def clean(self):
+        cleaned_data = super().clean()
+        district = str(cleaned_data.get("district") or "").strip()
+        if district:
+            # Delivery zone is authoritative from the validated district.
+            # Ignore an opposite valid radio value submitted by a modified browser.
+            cleaned_data["delivery_option"] = "inside" if district.casefold() == "dhaka" else "outside"
+        return cleaned_data
+
     def clean_full_name(self):
         value = " ".join((self.cleaned_data.get("full_name") or "").split())
         if len(value) < 2:
