@@ -128,26 +128,25 @@
     }) || null;
   };
 
-  let skuNode = document.getElementById('productVariantSku');
-  if (!skuNode && variantTitle?.nextElementSibling) {
-    const candidate = variantTitle.nextElementSibling;
-    if (/^SKU\s*:/i.test((candidate.textContent || '').trim())) skuNode = candidate;
-  }
+  document.querySelectorAll('#productVariantSku, .variant-sku').forEach((node) => {
+    if (!node.classList.contains('variant-meta-v110')) node.remove();
+  });
+
+  let skuNode = document.querySelector('.variant-meta-v110');
   if (!skuNode && variantTitle) {
     skuNode = document.createElement('div');
-    skuNode.id = 'productVariantSku';
-    skuNode.className = 'variant-sku';
+    skuNode.className = 'variant-meta-v110';
     variantTitle.insertAdjacentElement('afterend', skuNode);
-  } else if (skuNode) {
-    skuNode.id = 'productVariantSku';
-    skuNode.classList.add('variant-sku');
   }
 
   const syncVariantSku = () => {
     if (!skuNode) return;
     const selectedVariant = selectedVariantFromControls();
     const sku = selectedVariant?.sku || product?.sku || '';
-    skuNode.textContent = sku ? `SKU: ${sku}` : '';
+    const barcode = selectedVariant?.barcode || '';
+    skuNode.textContent = sku
+      ? `SKU: ${sku}${barcode ? ` · Barcode: ${barcode}` : ''}`
+      : '';
     skuNode.hidden = !sku;
   };
 
