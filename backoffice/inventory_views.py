@@ -4,6 +4,7 @@ from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
+from catalog.models import ProductVariant
 from inventory.forms import (
     LowStockThresholdForm,
     StockAdjustmentForm,
@@ -123,8 +124,39 @@ def warehouse_add(request):
     return render(request, "backoffice/pages/warehouses/warehouse_add.html", context)
 
 
+def _stock_adjustment_initial(request):
+    if request.method == "POST":
+        return {}, request.POST.get("return_product", "")
+
+    initial = {}
+    variant = None
+    warehouse = None
+    variant_id = request.GET.get("variant")
+    warehouse_id = request.GET.get("warehouse")
+
+    if str(variant_id or "").isdigit():
+        variant = ProductVariant.objects.filter(pk=int(variant_id), is_active=True).first()
+    if str(warehouse_id or "").isdigit():
+        warehouse = Warehouse.objects.filter(pk=int(warehouse_id), is_active=True).first()
+    if warehouse is None:
+        warehouse = Warehouse.objects.filter(is_default=True, is_active=True).order_by("id").first()
+    if warehouse is None:
+        warehouse = Warehouse.objects.filter(is_active=True).order_by("id").first()
+
+    if warehouse:
+        initial["warehouse"] = warehouse
+    if variant:
+        initial["variant"] = variant
+    if warehouse and variant:
+        balance = InventoryBalance.objects.filter(warehouse=warehouse, variant=variant).first()
+        initial["actual_quantity"] = balance.on_hand if balance else 0
+
+    return initial, request.GET.get("return_product", "")
+
+
 def stock_adjustment(request):
-    form = StockAdjustmentForm(request.POST or None)
+    initial, return_product = _stock_adjustment_initial(request)
+    form = StockAdjustmentForm(request.POST or None, initial=initial)
     inventory_error = ""
     if request.method == "POST" and form.is_valid():
         try:
@@ -139,9 +171,19 @@ def stock_adjustment(request):
         except InventoryError as exc:
             inventory_error = "; ".join(exc.messages)
         else:
+            adjusted_variant = form.cleaned_data["variant"]
+            if str(return_product or "").isdigit() and adjusted_variant.product_id == int(return_product):
+                return redirect(
+                    reverse("backoffice:catalog_variant_builder")
+                    + f"?product={adjusted_variant.product_id}&notice=stock-adjusted"
+                )
             return redirect(reverse("backoffice:inventory") + "?notice=adjusted")
     context = _context("stock_adjustment", request)
-    context.update(form=form, inventory_form_error=inventory_error)
+    context.update(
+        form=form,
+        inventory_form_error=inventory_error,
+        return_product=return_product,
+    )
     return render(request, "backoffice/pages/inventory/stock_adjustment.html", context)
 
 
