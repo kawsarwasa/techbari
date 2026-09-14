@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{% if is_edit %}Edit{% else %}Add{% endif %} Product Image | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-media-form-v305.css' %}?v=3.0.6">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-media-form-v305.css' %}?v=3.0.7">{% endblock %}
 {% block content %}
 <section class="page media-form-page">
   <div class="page-head">
@@ -18,7 +18,7 @@
 
   {% if form.errors %}<div class="soft-note media-form-actions-note" style="margin-bottom:14px"><strong>Please fix the form errors below.</strong> {{ form.non_field_errors }}</div>{% endif %}
 
-  <form id="mediaForm" class="media-form-layout" method="post" enctype="multipart/form-data">
+  <form id="mediaForm" class="media-form-layout" method="post" enctype="multipart/form-data"{% if is_edit %} data-delete-url="{% url 'backoffice:catalog_media' %}" data-image-id="{{ image_obj.id }}"{% endif %}>
     {% csrf_token %}
     <div class="card media-form-card">
       <div class="section-head"><h3>Image Details</h3></div>
@@ -36,12 +36,22 @@
         </div>
 
         <div class="media-form-stack">
-          <label class="field media-upload-field">
+          <div class="field media-upload-field">
             <span>{% if is_edit %}Replace Image{% else %}Image{% endif %}</span>
-            <span class="media-upload-control">{{ form.image }}</span>
+            <div class="media-upload-control" id="mediaReplaceControl">
+              {% if is_edit and image_preview %}<a class="media-current-image-link" href="{{ image_preview }}" target="_blank" rel="noopener">Current image</a>{% endif %}
+              <input type="file" name="image" accept="image/jpeg,image/png,image/webp" id="id_image"{% if not is_edit %} required{% endif %}>
+            </div>
+            {% if is_edit and image_preview %}
+              <label class="media-remove-choice" id="mediaRemoveChoice" for="removeCurrentImage">
+                <input type="checkbox" id="removeCurrentImage" name="remove_current_image" value="1">
+                <span>Remove current image</span>
+              </label>
+              <small class="media-remove-warning" id="mediaRemoveWarning" hidden>Current image will be removed when you save.</small>
+            {% endif %}
             {{ form.image.errors }}
             <small>JPG, PNG or WebP, maximum 2MB.</small>
-          </label>
+          </div>
 
           <label class="field"><span>Alt Text</span>{{ form.alt_text }}{{ form.alt_text.errors }}</label>
           <label class="field"><span>Sort Order</span>{{ form.sort_order }}{{ form.sort_order.errors }}</label>
@@ -62,4 +72,4 @@
   </form>
 </section>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'admin/js/product-media-form-v306.js' %}?v=3.0.6"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/product-media-form-v306.js' %}?v=3.0.7"></script>{% endblock %}
