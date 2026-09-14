@@ -1,0 +1,31 @@
+/* Product gallery sizing + reliable desktop hover zoom. */
+.product-zoom-stage #mainProductImage {
+  width: 90%;
+  height: 90%;
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  transform: scale(1);
+  transform-origin: 50% 50%;
+}
+
+/* Loaded after style.css so this also fixes hybrid touch + mouse devices
+   where the older coarse-pointer media rule disabled the transform. */
+.product-zoom-stage.is-zooming #mainProductImage {
+  transform: scale(2.05) !important;
+}
+
+@media (max-width: 720px) {
+  .product-zoom-stage #mainProductImage {
+    width: 94%;
+    height: 94%;
+    max-width: 94%;
+    max-height: 94%;
+  }
+}
+
+@media (hover: none) {
+  .zoom-hint {
+    display: none;
+  }
+}
