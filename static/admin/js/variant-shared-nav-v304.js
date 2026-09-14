@@ -19,7 +19,7 @@
   const withProduct = (url) => product ? `${url}?product=${encodeURIComponent(product)}` : url;
 
   const items = [
-    { key: 'products', label: 'Products', href: routes.dataset.productsUrl },
+    { key: 'products', label: '‹ Products', href: routes.dataset.productsUrl },
     { key: 'options', label: 'Variant Options', href: routes.dataset.optionsUrl },
     { key: 'builder', label: 'Build Variants', href: withProduct(routes.dataset.builderUrl) },
     { key: 'skus', label: 'SKU & Stock', href: withProduct(routes.dataset.skusUrl) },
