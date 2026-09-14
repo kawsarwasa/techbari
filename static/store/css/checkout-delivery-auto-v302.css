@@ -1,0 +1,22 @@
+/* Delivery zone is derived from the selected district, not manually chosen. */
+.option.delivery-auto-locked {
+  cursor: default;
+  user-select: none;
+}
+
+.option.delivery-auto-locked:hover {
+  transform: none;
+}
+
+.option.delivery-auto-locked input[type="radio"] {
+  pointer-events: none;
+}
+
+.option.delivery-auto-locked:not(.active) {
+  opacity: .58;
+  background: #fafbfc;
+}
+
+.option.delivery-auto-locked.active {
+  cursor: default;
+}
