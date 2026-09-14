@@ -2,13 +2,14 @@
 {% load static demo %}
 {% block title %}Shopping Cart - TechBari{% endblock %}
 {% block body_attributes %}{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'store/css/cart-v301.css' %}?v=3.0.2">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'store/css/cart-v301.css' %}?v=3.0.3">{% endblock %}
 {% block content %}
-<main class="page"><div class="container">
+<main class="page cart-page"><div class="container">
 {% include "storefront/includes/breadcrumbs/cart.html" %}
-<div style="display:flex;justify-content:space-between;align-items:end;gap:16px"><div><h1 class="page-title">Shopping Cart</h1><p class="page-subtitle"><span id="cartItemText">3 items</span> in your cart</p></div><a class="section-link" href="{% url 'storefront:products' %}">← Continue Shopping</a></div>
+<div class="cart-page-heading" style="display:flex;justify-content:space-between;align-items:end;gap:16px"><div><h1 class="page-title">Shopping Cart</h1><p class="page-subtitle"><span id="cartItemText">3 items</span> in your cart</p></div><a class="section-link" href="{% url 'storefront:products' %}">← Continue Shopping</a></div>
 <div class="cart-layout">
   <div class="cart-box">
+    <div class="cart-mobile-toolbar" id="cartMobileToolbar" hidden><strong id="mobileCartCountText">0 Items in Cart</strong><button type="button" id="mobileClearCart">Clear All</button></div>
     <table class="cart-table"><thead><tr><th>Product</th><th>Variant</th><th>Unit Price</th><th>Quantity</th><th>Subtotal</th><th>Action</th></tr></thead><tbody id="cartItemsBody"></tbody></table>
     {% include "storefront/components/empty_state.html" with cart=True %}
     <div class="cart-actions" id="cartActions"><a class="btn btn-soft" href="{% url 'storefront:products' %}">← Continue Shopping</a><button class="btn btn-outline clear-cart" id="clearCart"><i data-icon="trash"></i> Clear Cart</button></div>
@@ -27,4 +28,4 @@
 <section class="section"><div class="section-head"><div><h2 class="section-title">You Might Also Like</h2><span class="muted">Products related to your cart items</span></div><a href="{% url 'storefront:products' %}" class="section-link">View All Products →</a></div><div id="recommendedGrid" class="products-grid">{% for product in recommended_products %}{% include "storefront/components/product_card.html" %}{% endfor %}</div></section>
 </div></main>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'store/js/cart-v301.js' %}?v=3.0.2"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'store/js/cart-v301.js' %}?v=3.0.3"></script>{% endblock %}
