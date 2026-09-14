@@ -1,0 +1,22 @@
+/* Cart interaction/price presentation fixes. */
+.cart-table .variant-select {
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.cart-table td[data-label="Unit Price"] > strong,
+.cart-table td[data-label="Subtotal"] > strong {
+  display: inline-block;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 721px) {
+  .cart-table th:nth-child(3),
+  .cart-table td:nth-child(3),
+  .cart-table th:nth-child(5),
+  .cart-table td:nth-child(5) {
+    min-width: 96px;
+  }
+}
