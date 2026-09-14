@@ -1,0 +1,46 @@
+/* Keep checkout order item text compact and top-aligned. */
+.checkout-summary .order-item {
+  align-items: start !important;
+  padding: 8px 0 !important;
+}
+
+.checkout-summary .order-item > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-self: start;
+  gap: 2px;
+  padding-top: 1px;
+}
+
+.checkout-summary .order-item > div br {
+  display: none;
+}
+
+.checkout-summary .order-item strong {
+  display: block;
+  margin: 0 !important;
+  line-height: 1.25 !important;
+}
+
+.checkout-summary .order-item .muted {
+  display: block;
+  margin: 0 !important;
+  line-height: 1.2;
+}
+
+.checkout-summary .order-item .price {
+  align-self: center;
+}
+
+@media (max-width: 720px) {
+  .checkout-summary .order-item {
+    padding: 7px 0 !important;
+  }
+
+  .checkout-summary .order-item > div {
+    gap: 1px;
+    padding-top: 0;
+  }
+}
