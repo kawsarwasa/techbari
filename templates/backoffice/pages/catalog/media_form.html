@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{% if is_edit %}Edit{% else %}Add{% endif %} Product Image | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-media-form-v305.css' %}?v=3.0.5">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-media-form-v305.css' %}?v=3.0.6">{% endblock %}
 {% block content %}
 <section class="page media-form-page">
   <div class="page-head">
@@ -22,25 +22,30 @@
     {% csrf_token %}
     <div class="card media-form-card">
       <div class="section-head"><h3>Image Details</h3></div>
-      <div class="media-form-grid">
-        <label class="field"><span>Product</span>{{ form.product }}{{ form.product.errors }}</label>
+      <div class="media-form-columns">
+        <div class="media-form-stack">
+          <label class="field"><span>Product</span>{{ form.product }}{{ form.product.errors }}</label>
 
-        <label class="field media-upload-field">
-          <span>{% if is_edit %}Replace Image{% else %}Image{% endif %}</span>
-          <span class="media-upload-control">{{ form.image }}</span>
-          {{ form.image.errors }}
-          <small>JPG, PNG or WebP, maximum 2MB.</small>
-        </label>
+          <label class="field">
+            <span>Variant Image Mapping</span>
+            {{ form.attribute_value }}{{ form.attribute_value.errors }}
+            <small>{{ form.attribute_value.help_text }}</small>
+          </label>
 
-        <label class="field">
-          <span>Variant Image Mapping</span>
-          {{ form.attribute_value }}{{ form.attribute_value.errors }}
-          <small>{{ form.attribute_value.help_text }}</small>
-        </label>
+          <label class="field"><span>Role</span>{{ form.role }}{{ form.role.errors }}</label>
+        </div>
 
-        <label class="field"><span>Alt Text</span>{{ form.alt_text }}{{ form.alt_text.errors }}</label>
-        <label class="field"><span>Role</span>{{ form.role }}{{ form.role.errors }}</label>
-        <label class="field"><span>Sort Order</span>{{ form.sort_order }}{{ form.sort_order.errors }}</label>
+        <div class="media-form-stack">
+          <label class="field media-upload-field">
+            <span>{% if is_edit %}Replace Image{% else %}Image{% endif %}</span>
+            <span class="media-upload-control">{{ form.image }}</span>
+            {{ form.image.errors }}
+            <small>JPG, PNG or WebP, maximum 2MB.</small>
+          </label>
+
+          <label class="field"><span>Alt Text</span>{{ form.alt_text }}{{ form.alt_text.errors }}</label>
+          <label class="field"><span>Sort Order</span>{{ form.sort_order }}{{ form.sort_order.errors }}</label>
+        </div>
       </div>
     </div>
 
@@ -57,3 +62,4 @@
   </form>
 </section>
 {% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/product-media-form-v306.js' %}?v=3.0.6"></script>{% endblock %}
