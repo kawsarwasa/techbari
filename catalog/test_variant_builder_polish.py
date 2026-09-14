@@ -3,13 +3,13 @@ from django.test import RequestFactory, TestCase
 from backoffice import variant_builder_views
 from catalog.models import Brand, Category, Product, ProductVariant, VariantAttribute, VariantAttributeValue
 from catalog.variant_services import VariantGenerationError, generate_variant_combinations
-from inventory.models import Warehouse
+from inventory.models import InventoryBalance, StockMovement, Warehouse
 
 
 class VariantBuilderPreviewTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
-        Warehouse.objects.create(
+        self.warehouse = Warehouse.objects.create(
             name="Variant Builder Warehouse",
             code="VB-WH",
             is_default=True,
@@ -104,3 +104,41 @@ class VariantBuilderPreviewTests(TestCase):
 
         with self.assertRaisesRegex(ValueError, "effective regular price"):
             variant_builder_views._bulk_save_variants(request, self.product)
+
+    def test_bulk_save_cannot_mutate_inventory_stock(self):
+        variant = ProductVariant.objects.create(
+            product=self.product,
+            name="Black / 128GB",
+            sku="PREVIEW-STOCK",
+            stock_quantity=7,
+            low_stock_alert=5,
+            is_default=True,
+            is_active=True,
+        )
+        balance = InventoryBalance.objects.get(warehouse=self.warehouse, variant=variant)
+        self.assertEqual(balance.available_quantity, 7)
+        movements_before = StockMovement.objects.filter(variant=variant).count()
+
+        request = self.factory.post(
+            "/dashboard/variants/builder/",
+            {
+                "action": "bulk_save",
+                "product": str(self.product.pk),
+                "variant_ids": [str(variant.pk)],
+                f"regular_{variant.pk}": "1000.00",
+                f"price_{variant.pk}": "900.00",
+                f"stock_{variant.pk}": "99",
+                f"low_{variant.pk}": "4",
+                f"active_{variant.pk}": "on",
+                "default_variant_id": str(variant.pk),
+            },
+        )
+
+        variant_builder_views._bulk_save_variants(request, self.product)
+        variant.refresh_from_db()
+        balance.refresh_from_db()
+
+        self.assertEqual(variant.stock_quantity, 7)
+        self.assertEqual(balance.available_quantity, 7)
+        self.assertEqual(StockMovement.objects.filter(variant=variant).count(), movements_before)
+        self.assertEqual(variant.low_stock_alert, 4)
