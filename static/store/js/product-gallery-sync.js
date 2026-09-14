@@ -28,26 +28,58 @@
 
   const uniqueUrls = (values) => {
     const seen = new Set();
-    return values.filter((value) => {
+    const urls = [];
+    (values || []).forEach((value) => {
       const normalized = absoluteUrl(value);
-      if (!normalized || seen.has(normalized)) return false;
+      if (!normalized || seen.has(normalized)) return;
       seen.add(normalized);
-      return true;
+      urls.push(value);
     });
+    return urls;
   };
 
-  // General/common product media should remain available beside a selected
-  // Color gallery. detail_image_url is included because the presentation layer
-  // historically kept Detail-role media outside product.images.
-  const commonImageUrls = uniqueUrls([
-    product?.image_url,
-    ...(product?.images || []),
-    product?.detail_image_url,
-  ]);
+  const groups = product?.image_groups || {};
+  const hasMappedGroups = Object.values(groups).some((urls) => Array.isArray(urls) && urls.length);
+  const commonImageUrls = uniqueUrls(
+    product?.general_images?.length
+      ? product.general_images
+      : (!hasMappedGroups
+        ? [product?.image_url, ...(product?.images || []), product?.detail_image_url]
+        : []),
+  );
+
+  const selectedMappedUrls = () => {
+    const activeValues = [
+      ...document.querySelectorAll('.structured-variant-option.active[data-structured-value]'),
+    ].map((control) => control.dataset.structuredValue).filter(Boolean);
+
+    const selectedValues = [
+      ...document.querySelectorAll('select[data-structured-attribute]'),
+    ].map((select) => select.value).filter(Boolean);
+
+    for (const valueId of [...activeValues, ...selectedValues]) {
+      const urls = groups[String(valueId)] || [];
+      if (urls.length) return urls;
+    }
+    return [];
+  };
+
+  const desiredUrls = () => {
+    const mapped = selectedMappedUrls();
+    const combined = uniqueUrls([...mapped, ...commonImageUrls]);
+    if (combined.length) return combined;
+    return uniqueUrls([
+      ...(product?.images || []),
+      product?.image_url,
+      product?.detail_image_url,
+    ]);
+  };
 
   const resetZoom = () => {
     zoomStage?.classList.remove('is-zooming');
-    mainImage.style.transform = 'scale(1)';
+    // Never pin transform inline: the stylesheet must be free to apply
+    // .is-zooming { transform: scale(...) } on mouse hover.
+    mainImage.style.removeProperty('transform');
     mainImage.style.transformOrigin = '50% 50%';
     mainImage.style.objectFit = 'contain';
     mainImage.style.objectPosition = '50% 50%';
@@ -81,75 +113,73 @@
     return thumb;
   };
 
+  const sameUrlList = (left, right) => (
+    left.length === right.length
+    && left.every((value, index) => absoluteUrl(value) === absoluteUrl(right[index]))
+  );
+
   let normalizingThumbs = false;
-  const ensureCommonThumbnails = () => {
-    if (!thumbHost || normalizingThumbs || !commonImageUrls.length) return;
+  const normalizeGallery = ({ preferFirst = false } = {}) => {
+    const urls = desiredUrls();
+    if (!urls.length) {
+      syncGalleryState();
+      return;
+    }
 
-    const existing = new Set(
-      [...thumbHost.querySelectorAll('.thumb img')]
-        .map((image) => absoluteUrl(image.src))
-        .filter(Boolean),
-    );
-    const missing = commonImageUrls.filter((url) => !existing.has(absoluteUrl(url)));
-    if (!missing.length) return;
+    if (thumbHost) {
+      const currentUrls = [...thumbHost.querySelectorAll('.thumb img')].map((image) => image.src);
+      if (!sameUrlList(currentUrls, urls)) {
+        normalizingThumbs = true;
+        thumbHost.replaceChildren(...urls.map((url, index) => createThumb(url, index)));
+        normalizingThumbs = false;
+      }
+    }
 
-    normalizingThumbs = true;
-    const startIndex = thumbHost.querySelectorAll('.thumb').length;
-    missing.forEach((url, offset) => thumbHost.appendChild(createThumb(url, startIndex + offset)));
-    normalizingThumbs = false;
+    const allowed = new Set(urls.map(absoluteUrl));
+    if (preferFirst || !allowed.has(absoluteUrl(mainImage.src))) {
+      mainImage.src = urls[0];
+    }
+    syncGalleryState();
   };
 
-  const firstThumbImage = () => {
-    if (!thumbHost) return null;
-    const active = thumbHost.querySelector('.thumb.active img');
-    return active || thumbHost.querySelector('.thumb img');
-  };
+  // Initial product image should match the first gallery item and be fully visible.
+  normalizeGallery({ preferFirst: true });
 
-  ensureCommonThumbnails();
-
-  // Keep the initial hero image synchronized with the visible gallery instead of
-  // starting on a separate close-up asset. The image is always full-size/contain
-  // before any desktop hover zoom begins.
-  const initialThumb = firstThumbImage();
-  if (initialThumb?.src && absoluteUrl(initialThumb.src) !== absoluteUrl(mainImage.src)) {
-    mainImage.src = initialThumb.src;
-  }
-  syncGalleryState();
-
-  // Dynamic variant galleries replace thumbnails after Color/attribute changes.
-  // Re-append General/common images without leaking images mapped to other colors.
   if (thumbHost) {
     const thumbObserver = new MutationObserver((mutations) => {
       if (normalizingThumbs || !mutations.some((mutation) => mutation.type === 'childList')) return;
-      requestAnimationFrame(() => {
-        ensureCommonThumbnails();
-        syncActiveThumbnail(mainImage.src);
-      });
+      // Structured variant rendering rebuilds the thumbnail list. Normalize after it finishes.
+      requestAnimationFrame(() => normalizeGallery());
     });
     thumbObserver.observe(thumbHost, { childList: true });
-  }
 
-  // Any main-image src change must return to a full, unzoomed image first.
-  const imageObserver = new MutationObserver((mutations) => {
-    if (!mutations.some((mutation) => mutation.type === 'attributes' && mutation.attributeName === 'src')) return;
-    syncGalleryState();
-  });
-  imageObserver.observe(mainImage, { attributes: true, attributeFilter: ['src'] });
-  mainImage.addEventListener('load', syncGalleryState);
-
-  if (thumbHost) {
     thumbHost.addEventListener('click', (event) => {
       const thumb = event.target.closest('.thumb');
       if (!thumb || !thumbHost.contains(thumb)) return;
       const image = thumb.querySelector('img');
       if (!image?.src) return;
 
-      // Run after the existing/static or structured-variant gallery handler so
-      // this becomes the final synchronized UI state.
       requestAnimationFrame(() => {
         if (absoluteUrl(mainImage.src) !== absoluteUrl(image.src)) mainImage.src = image.src;
         syncGalleryState();
       });
     });
   }
+
+  // Color/attribute controls can change before the structured gallery finishes rebuilding.
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('[data-structured-value]')) return;
+    requestAnimationFrame(() => requestAnimationFrame(() => normalizeGallery()));
+  });
+  document.addEventListener('change', (event) => {
+    if (!event.target.matches('select[data-structured-attribute]')) return;
+    requestAnimationFrame(() => normalizeGallery());
+  });
+
+  const imageObserver = new MutationObserver((mutations) => {
+    if (!mutations.some((mutation) => mutation.type === 'attributes' && mutation.attributeName === 'src')) return;
+    syncGalleryState();
+  });
+  imageObserver.observe(mainImage, { attributes: true, attributeFilter: ['src'] });
+  mainImage.addEventListener('load', syncGalleryState);
 })();
