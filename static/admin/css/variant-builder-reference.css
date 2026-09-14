@@ -372,3 +372,112 @@
   .variant-builder-v2 .builder-existing .bulk-save-footer{align-items:flex-start;flex-direction:column}
   .variant-builder-v2 .builder-existing .bulk-save-footer .btn{width:100%}
 }
+
+/* Compact density pass: keep the approved visual language while fitting more SKUs on screen. */
+.variant-builder-v2 .builder-existing .polished-bulk-table thead th{
+  height:54px;
+  padding:9px 12px;
+  font-size:11px;
+}
+.variant-builder-v2 .builder-existing .polished-bulk-table thead th:nth-child(7)::after{
+  margin-top:2px;
+  font-size:8px;
+}
+.variant-builder-v2 .builder-existing .polished-bulk-table td{
+  height:82px;
+  padding:10px 12px;
+  font-size:11px;
+}
+.variant-builder-v2 .builder-existing .bulk-row-check{
+  width:40px;
+}
+.variant-builder-v2 .builder-existing .bulk-row-check input,
+.variant-builder-v2 .builder-existing .polished-bulk-table input[type="radio"]{
+  width:16px;
+  height:16px;
+}
+.variant-builder-v2 .builder-existing .combo-cell{
+  min-width:190px;
+}
+.variant-builder-v2 .builder-existing .combo-cell>strong{
+  font-size:13px;
+}
+.variant-builder-v2 .builder-existing .variant-attribute-pills{
+  gap:4px;
+  margin-top:5px;
+}
+.variant-builder-v2 .builder-existing .variant-attribute-pills span{
+  min-height:21px;
+  padding:3px 7px;
+  border-radius:6px;
+  font-size:8px;
+}
+.variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(4){
+  min-width:170px;
+}
+.variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(5),
+.variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(6){
+  min-width:132px;
+}
+.variant-builder-v2 .builder-existing .polished-bulk-table .control{
+  height:40px;
+  padding:0 11px;
+  border-radius:8px;
+  font-size:11px;
+}
+.variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(7){
+  min-width:176px;
+  white-space:nowrap;
+}
+.variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(7)>strong{
+  margin-right:6px;
+  font-size:18px;
+}
+.variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(7)>small{
+  padding:4px 7px;
+  font-size:8px;
+}
+.variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(7)>a.btn{
+  width:108px;
+  min-height:31px;
+  margin-top:6px;
+  padding:0 9px;
+  border-radius:7px;
+  font-size:9px;
+}
+.variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(7)>a.btn::before{
+  margin-right:5px;
+  font-size:13px;
+}
+.variant-builder-v2 .builder-existing .polished-bulk-table td:nth-child(8){
+  width:92px;
+  min-width:92px;
+}
+.variant-builder-v2 .builder-existing .status-toggle-inline{
+  gap:3px;
+  min-width:62px;
+}
+.variant-builder-v2 .builder-existing .status-toggle-inline input[type="checkbox"]{
+  width:46px;
+  height:25px;
+  background:
+    radial-gradient(circle at 12px 50%,#fff 0 8px,transparent 9px),
+    #cbd7e6;
+}
+.variant-builder-v2 .builder-existing .status-toggle-inline input[type="checkbox"]:checked{
+  background:
+    radial-gradient(circle at calc(100% - 12px) 50%,#fff 0 8px,transparent 9px),
+    #147cf6;
+}
+.variant-builder-v2 .builder-existing .status-toggle-inline span{
+  font-size:9px;
+}
+.variant-builder-v2 .builder-existing .edit-variant-link{
+  width:34px;
+  height:34px;
+  border-radius:8px;
+}
+.variant-builder-v2 .builder-existing .edit-variant-link svg{
+  width:14px;
+  height:14px;
+}
