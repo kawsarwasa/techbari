@@ -14,10 +14,6 @@
   const bindVariantSelect = (select) => {
     if (!select || select.dataset.cartVariantGuard === '1') return;
     select.dataset.cartVariantGuard = '1';
-
-    // The legacy cart handler also listens on the cart tbody and redraws rows
-    // on every click. Stop the select click at the control so the native menu
-    // can stay open while catalog-v110.js remains the authoritative cart engine.
     select.addEventListener('click', (event) => {
       event.stopPropagation();
     });
@@ -32,10 +28,27 @@
     button.setAttribute('title', 'Remove item');
   };
 
+  const mobileToolbar = document.getElementById('cartMobileToolbar');
+  const mobileCountText = document.getElementById('mobileCartCountText');
+  const summaryCount = document.getElementById('summaryItemCount');
+  const desktopClear = document.getElementById('clearCart');
+  const mobileClear = document.getElementById('mobileClearCart');
+
+  const syncMobileToolbar = () => {
+    const rowCount = tbody.querySelectorAll('tr[data-cart-id]').length;
+    const parsed = Number(summaryCount?.textContent || 0);
+    const count = Number.isFinite(parsed) ? parsed : rowCount;
+    if (mobileCountText) mobileCountText.textContent = `${count} ${count === 1 ? 'Item' : 'Items'} in Cart`;
+    if (mobileToolbar) mobileToolbar.hidden = rowCount === 0;
+  };
+
   const refreshCartControls = () => {
     tbody.querySelectorAll('.variant-select').forEach(bindVariantSelect);
     tbody.querySelectorAll('[data-v110-remove], [data-remove-cart]').forEach(decorateRemoveButton);
+    syncMobileToolbar();
   };
+
+  mobileClear?.addEventListener('click', () => desktopClear?.click());
 
   refreshCartControls();
 
@@ -43,4 +56,12 @@
     childList: true,
     subtree: true,
   });
+
+  if (summaryCount) {
+    new MutationObserver(syncMobileToolbar).observe(summaryCount, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }
 })();
