@@ -1,0 +1,279 @@
+/* Final compact phone cart layout: closely follows the supplied reference. */
+@media (max-width: 720px) {
+  .cart-table tbody tr {
+    position: relative !important;
+    display: block !important;
+    min-height: 96px;
+    margin: 0 !important;
+    padding: 8px 12px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+    background: #fff;
+  }
+
+  .cart-table tbody tr:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .cart-table td,
+  .cart-table td:nth-child(n) {
+    width: auto !important;
+    min-width: 0;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  .cart-table td[data-label]::before {
+    display: none !important;
+  }
+
+  /* Product image + name/meta stay at the top. */
+  .cart-table td:nth-child(1) {
+    position: static !important;
+    display: block !important;
+    padding-right: 30px !important;
+  }
+
+  .cart-table .cart-product {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    min-width: 0;
+  }
+
+  .cart-table .cart-product img {
+    width: 58px !important;
+    height: 58px !important;
+    flex: 0 0 58px !important;
+    padding: 3px;
+    border-radius: 9px;
+  }
+
+  .cart-table .cart-product > div {
+    min-width: 0;
+    padding-top: 1px;
+  }
+
+  .cart-table .cart-product strong {
+    display: block;
+    margin: 0 !important;
+    padding: 0 2px 0 0 !important;
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+
+  .cart-table .cart-product .muted {
+    display: block;
+    margin-top: 1px !important;
+    font-size: 12px;
+    line-height: 1.08;
+    color: #7c899b;
+  }
+
+  /* Variant, selling price and quantity share one tight row directly under product text. */
+  .cart-table td:nth-child(2),
+  .cart-table td:nth-child(3),
+  .cart-table td:nth-child(4) {
+    position: absolute !important;
+    top: 49px;
+    display: flex !important;
+    align-items: center;
+    height: 28px;
+    margin: 0 !important;
+  }
+
+  .cart-table td:nth-child(2) {
+    left: 79px;
+    width: 92px !important;
+  }
+
+  .cart-table td:nth-child(3) {
+    left: 178px;
+    width: 72px !important;
+  }
+
+  .cart-table td:nth-child(4) {
+    left: 252px;
+    width: 92px !important;
+  }
+
+  .cart-table .variant-select {
+    width: 88px !important;
+    min-width: 0 !important;
+    max-width: 88px !important;
+    height: 26px !important;
+    padding: 0 18px 0 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    outline: 0;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    color: #6f7f93;
+    font-size: 12px;
+    line-height: 26px;
+  }
+
+  .cart-table td[data-label="Unit Price"] > strong {
+    color: #13a760 !important;
+    font-size: 13px !important;
+    line-height: 1.1;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .cart-table .qty {
+    display: inline-grid !important;
+    grid-template-columns: 28px 32px 28px !important;
+    width: 88px;
+    max-width: 88px !important;
+    height: 27px !important;
+    border-radius: 15px !important;
+    overflow: hidden;
+  }
+
+  .cart-table .qty button,
+  .cart-table .qty span {
+    width: auto !important;
+    height: 25px !important;
+    min-height: 0;
+    font-size: 13px !important;
+  }
+
+  /* Subtotal and delete icon stay on the right, aligned with the control row. */
+  .cart-table td:nth-child(5) {
+    position: absolute !important;
+    right: 42px;
+    bottom: 9px;
+    display: block !important;
+    min-width: 0 !important;
+    text-align: right;
+    margin: 0 !important;
+  }
+
+  .cart-table td[data-label="Subtotal"] > strong {
+    font-size: 15px !important;
+    line-height: 1.1;
+    font-weight: 800;
+    color: var(--text) !important;
+    white-space: nowrap;
+  }
+
+  .cart-table td:nth-child(6) {
+    position: absolute !important;
+    right: 9px !important;
+    bottom: 3px !important;
+    top: auto !important;
+    display: block !important;
+    margin: 0 !important;
+  }
+
+  .cart-table .remove-item.cart-delete-icon {
+    width: 28px !important;
+    height: 28px !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+  }
+
+  .cart-table .remove-item.cart-delete-icon svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .cart-table tbody tr {
+    min-height: 94px;
+    padding: 7px 10px !important;
+  }
+
+  .cart-table .cart-product img {
+    width: 54px !important;
+    height: 54px !important;
+    flex-basis: 54px !important;
+  }
+
+  .cart-table td:nth-child(2),
+  .cart-table td:nth-child(3),
+  .cart-table td:nth-child(4) {
+    top: 47px;
+  }
+
+  .cart-table td:nth-child(2) {
+    left: 72px;
+    width: 80px !important;
+  }
+
+  .cart-table td:nth-child(3) {
+    left: 154px;
+    width: 68px !important;
+  }
+
+  .cart-table td:nth-child(4) {
+    left: 224px;
+    width: 86px !important;
+  }
+
+  .cart-table .variant-select {
+    width: 78px !important;
+    max-width: 78px !important;
+    font-size: 11px;
+  }
+
+  .cart-table .qty {
+    grid-template-columns: 27px 30px 27px !important;
+    width: 84px;
+    max-width: 84px !important;
+  }
+
+  .cart-table td:nth-child(5) {
+    right: 38px;
+    bottom: 7px;
+  }
+
+  .cart-table td:nth-child(6) {
+    right: 6px !important;
+    bottom: 1px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .cart-table tbody tr {
+    min-height: 100px;
+  }
+
+  .cart-table td:nth-child(2),
+  .cart-table td:nth-child(3),
+  .cart-table td:nth-child(4) {
+    top: 51px;
+  }
+
+  .cart-table td:nth-child(2) {
+    left: 68px;
+    width: 72px !important;
+  }
+
+  .cart-table td:nth-child(3) {
+    left: 142px;
+    width: 64px !important;
+  }
+
+  .cart-table td:nth-child(4) {
+    left: 208px;
+    width: 82px !important;
+  }
+
+  .cart-table .variant-select {
+    width: 70px !important;
+    max-width: 70px !important;
+  }
+
+  .cart-table .qty {
+    grid-template-columns: 26px 28px 26px !important;
+    width: 80px;
+    max-width: 80px !important;
+  }
+}

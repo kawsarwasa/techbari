@@ -152,13 +152,14 @@ def serialize_product(product):
 
     generic_images = [image for image in images if not image.attribute_value_id]
     primary_pool = generic_images or images
-    primary_image = next((i for i in primary_pool if i.role == ProductImage.Role.PRIMARY), primary_pool[0] if primary_pool else None)
-    detail_image = next((i for i in primary_pool if i.role == ProductImage.Role.DETAIL), primary_image)
-    gallery_images = [i for i in generic_images if i.role in {ProductImage.Role.GALLERY, ProductImage.Role.PRIMARY}]
-    if not gallery_images:
-        gallery_images = [i for i in images if i.role in {ProductImage.Role.GALLERY, ProductImage.Role.PRIMARY}]
-    if not gallery_images and primary_image:
-        gallery_images = [primary_image]
+    primary_image = next(
+        (i for i in primary_pool if i.role == ProductImage.Role.PRIMARY),
+        primary_pool[0] if primary_pool else None,
+    )
+    detail_image = next(
+        (i for i in primary_pool if i.role == ProductImage.Role.DETAIL),
+        primary_image,
+    )
 
     regular_price = (
         default_variant.regular_price_override
@@ -173,7 +174,18 @@ def serialize_product(product):
     stock = sum(variant.stock_quantity for variant in active_variants)
     image_url = _image_url(primary_image) or static("store/images/baseus-e16.webp")
     detail_image_url = _image_url(detail_image) or image_url
-    gallery_urls = [_image_url(i) for i in gallery_images if _image_url(i)] or [image_url]
+
+    gallery_urls = []
+    seen_gallery_urls = set()
+    for image in images:
+        url = _image_url(image)
+        if not url or url in seen_gallery_urls:
+            continue
+        seen_gallery_urls.add(url)
+        gallery_urls.append(url)
+    if not gallery_urls:
+        gallery_urls = [image_url]
+
     description, short_description, description_paragraphs, description_html = _description_data(product)
 
     serialized_variants = []
@@ -204,13 +216,35 @@ def serialize_product(product):
             }
         )
 
-    image_groups = {}
+    role_priority = {
+        ProductImage.Role.PRIMARY: 0,
+        ProductImage.Role.GALLERY: 1,
+        ProductImage.Role.DETAIL: 2,
+    }
+    grouped_images = {}
     for image in images:
-        if not image.attribute_value_id:
-            continue
-        url = _image_url(image)
-        if url:
-            image_groups.setdefault(str(image.attribute_value_id), []).append(url)
+        if image.attribute_value_id:
+            grouped_images.setdefault(str(image.attribute_value_id), []).append(image)
+
+    image_groups = {}
+    for value_id, group in grouped_images.items():
+        urls = []
+        seen_urls = set()
+        for image in sorted(
+            group,
+            key=lambda item: (
+                role_priority.get(item.role, 9),
+                item.sort_order,
+                item.id,
+            ),
+        ):
+            url = _image_url(image)
+            if not url or url in seen_urls:
+                continue
+            seen_urls.add(url)
+            urls.append(url)
+        if urls:
+            image_groups[value_id] = urls
 
     options = _product_options(serialized_variants)
 
