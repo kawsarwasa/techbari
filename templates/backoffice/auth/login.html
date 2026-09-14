@@ -1,2 +1,96 @@
 {% load static %}
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Staff Login | TechBari</title><link rel="stylesheet" href="{% static 'admin/css/admin.css' %}"></head><body><main class="auth-shell"><section class="card form-card auth-card"><div class="page-head"><div><h1>TechBari Staff Login</h1><p>Sign in with your username or staff email.</p></div></div>{% if request.GET.expired %}<div class="inline-info">Your staff session expired due to inactivity. Please sign in again.</div>{% endif %}{% if error_message %}<div class="inline-info error">{{ error_message }}</div>{% endif %}<form method="post">{% csrf_token %}<input type="hidden" name="next" value="{{ next }}"><label class="field"><span>Username / Email</span><input class="control" name="username" autocomplete="username" required autofocus></label><label class="field"><span>Password</span><input class="control" type="password" name="password" autocomplete="current-password" required></label><button class="btn btn-primary" type="submit">Sign In</button><a class="btn" href="{% url 'backoffice:password_reset' %}">Forgot password?</a></form></section></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Staff Login | TechBari</title>
+  <link rel="stylesheet" href="{% static 'admin/css/admin.css' %}">
+  <link rel="stylesheet" href="{% static 'admin/css/staff-login-v301.css' %}?v=3.0.1">
+</head>
+<body class="staff-login-page">
+  <main class="staff-login-wrap">
+    <section class="staff-login-shell" aria-label="TechBari staff sign in">
+      <div class="staff-login-form-panel">
+        <div class="staff-login-brand">
+          <div class="staff-login-brandmark">TB</div>
+          <div class="staff-login-brandcopy">
+            <strong>TechBari</strong>
+            <span>Staff Portal</span>
+          </div>
+        </div>
+
+        <div class="staff-login-heading">
+          <span class="staff-login-kicker">Secure staff access</span>
+          <h1>Welcome back</h1>
+          <p>Sign in with your staff username or email to continue to the TechBari dashboard.</p>
+        </div>
+
+        {% if request.GET.expired %}
+          <div class="staff-login-alert warning" role="status">
+            <span class="staff-login-alert-icon">!</span>
+            <span>Your staff session expired due to inactivity. Please sign in again.</span>
+          </div>
+        {% endif %}
+
+        {% if error_message %}
+          <div class="staff-login-alert error" role="alert">
+            <span class="staff-login-alert-icon">!</span>
+            <span>{{ error_message }}</span>
+          </div>
+        {% endif %}
+
+        <form method="post" class="staff-login-form">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+
+          <label class="staff-login-field">
+            <span>Username / Email</span>
+            <input class="staff-login-control" name="username" autocomplete="username" required autofocus placeholder="Enter username or staff email">
+          </label>
+
+          <label class="staff-login-field">
+            <span>Password</span>
+            <div class="staff-login-password">
+              <input id="staffPassword" class="staff-login-control" type="password" name="password" autocomplete="current-password" required placeholder="Enter your password">
+              <button class="staff-login-toggle" type="button" data-staff-password-toggle aria-pressed="false">Show</button>
+            </div>
+          </label>
+
+          <div class="staff-login-actions">
+            <span></span>
+            <a class="staff-login-forgot" href="{% url 'backoffice:password_reset' %}">Forgot password?</a>
+          </div>
+
+          <button class="staff-login-submit" type="submit">Sign In <span aria-hidden="true">→</span></button>
+        </form>
+
+        <div class="staff-login-foot">
+          This portal is for authorized TechBari staff only. Your session and access permissions are protected by the staff security policy.
+        </div>
+      </div>
+
+      <aside class="staff-login-side" aria-label="TechBari staff portal information">
+        <div class="staff-login-side-content">
+          <span class="staff-login-side-kicker">TechBari Dashboard</span>
+          <h2>Run your store<br>from one place.</h2>
+          <p>Access day-to-day operations, inventory and business controls through the secure staff workspace.</p>
+
+          <ul class="staff-login-features">
+            <li><span class="staff-login-feature-icon">✓</span><span><strong>Orders &amp; POS</strong><small>Process online and counter sales from one workflow.</small></span></li>
+            <li><span class="staff-login-feature-icon">#</span><span><strong>Inventory Control</strong><small>Manage products, variants, stock and serial-based items.</small></span></li>
+            <li><span class="staff-login-feature-icon">↗</span><span><strong>Reports &amp; Accounts</strong><small>Review sales, expenses and operational performance.</small></span></li>
+            <li><span class="staff-login-feature-icon">◉</span><span><strong>Role-based Access</strong><small>Staff see only the dashboard areas permitted for their role.</small></span></li>
+          </ul>
+        </div>
+
+        <div class="staff-login-side-footer">
+          <strong>Secure staff workspace</strong><br>
+          Sign in to continue to your permitted TechBari dashboard modules.
+        </div>
+      </aside>
+    </section>
+  </main>
+  <script src="{% static 'admin/js/staff-login-v301.js' %}?v=3.0.1"></script>
+</body>
+</html>

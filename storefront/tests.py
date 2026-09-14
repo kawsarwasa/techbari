@@ -99,6 +99,17 @@ class CheckoutBackendTests(TestCase):
         self.assertEqual(balance.reserved_quantity, 2)
         self.assertEqual(order.items.get().reserved_quantity, 2)
 
+    def test_dhaka_district_forces_inside_shipping_when_radio_is_tampered(self):
+        response = self.client.post(
+            reverse("storefront:checkout"),
+            self.payload(delivery_option="outside"),
+        )
+        self.assertEqual(response.status_code, 302)
+        order = SalesOrder.objects.get()
+        self.assertEqual(order.shipping_district, "Dhaka")
+        self.assertEqual(order.shipping_charge, Decimal("60.00"))
+        self.assertEqual(order.grand_total, Decimal("260.00"))
+
     def test_checkout_rejects_district_outside_selected_division(self):
         response = self.client.post(
             reverse("storefront:checkout"),
@@ -141,11 +152,11 @@ class CheckoutBackendTests(TestCase):
         self.assertEqual(order.discount_amount, Decimal("20.00"))
         self.assertEqual(order.grand_total, Decimal("240.00"))
 
-    def test_outside_dhaka_shipping_is_verified_server_side(self):
+    def test_outside_dhaka_shipping_is_forced_server_side_from_district(self):
         response = self.client.post(
             reverse("storefront:checkout"),
             self.payload(
-                delivery_option="outside",
+                delivery_option="inside",
                 division="Chattogram",
                 district="Chattogram",
                 upazila="Panchlaish Thana",
