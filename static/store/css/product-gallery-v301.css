@@ -1,7 +1,7 @@
 /* Product gallery sizing + reliable desktop hover zoom. */
 .product-zoom-stage #mainProductImage {
-  width: 90%;
-  height: 90%;
+  width: auto;
+  height: auto;
   max-width: 90%;
   max-height: 90%;
   object-fit: contain;
@@ -17,8 +17,8 @@
 
 @media (max-width: 720px) {
   .product-zoom-stage #mainProductImage {
-    width: 94%;
-    height: 94%;
+    width: auto;
+    height: auto;
     max-width: 94%;
     max-height: 94%;
   }
