@@ -1,0 +1,6 @@
+<nav class="variant-nav variant-nav-shared" aria-label="Variant management navigation">
+  <a class="btn{% if active_variant_nav == 'products' %} btn-primary{% endif %}" href="{% url 'backoffice:products' %}">Products</a>
+  <a class="btn{% if active_variant_nav == 'options' %} btn-primary{% endif %}" href="{% url 'backoffice:catalog_variant_attributes' %}">Variant Options</a>
+  <a class="btn{% if active_variant_nav == 'builder' %} btn-primary{% endif %}" href="{% url 'backoffice:catalog_variant_builder' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">Build Variants</a>
+  <a class="btn{% if active_variant_nav == 'skus' %} btn-primary{% endif %}" href="{% url 'backoffice:catalog_variants' %}{% if product_filter %}?product={{ product_filter }}{% endif %}">SKU &amp; Stock</a>
+</nav>
