@@ -41,6 +41,28 @@
     applyFilters();
   }
 
+  const actionMenus = $$('.product-action-menu');
+  if (actionMenus.length) {
+    const closeActionMenus = (except = null) => {
+      actionMenus.forEach((menu) => {
+        if (menu !== except) menu.removeAttribute('open');
+      });
+    };
+    actionMenus.forEach((menu) => {
+      menu.addEventListener('toggle', () => {
+        if (menu.open) closeActionMenus(menu);
+      });
+    });
+    document.addEventListener('pointerdown', (event) => {
+      if (actionMenus.some((menu) => menu.contains(event.target))) return;
+      closeActionMenus();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeActionMenus();
+    });
+    $$('.product-action-dropdown a').forEach((link) => link.addEventListener('click', () => closeActionMenus()));
+  }
+
   const form = $('[data-catalog-product-form]');
   if (form) {
     $('[data-product-save-draft]')?.addEventListener('click',()=>{ const status=form.elements.status; if(status) status.value='draft'; form.requestSubmit(); });
