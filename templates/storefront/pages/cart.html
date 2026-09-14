@@ -2,6 +2,7 @@
 {% load static demo %}
 {% block title %}Shopping Cart - TechBari{% endblock %}
 {% block body_attributes %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'store/css/cart-v301.css' %}?v=3.0.1">{% endblock %}
 {% block content %}
 <main class="page"><div class="container">
 {% include "storefront/includes/breadcrumbs/cart.html" %}
@@ -26,3 +27,4 @@
 <section class="section"><div class="section-head"><div><h2 class="section-title">You Might Also Like</h2><span class="muted">Products related to your cart items</span></div><a href="{% url 'storefront:products' %}" class="section-link">View All Products →</a></div><div id="recommendedGrid" class="products-grid">{% for product in recommended_products %}{% include "storefront/components/product_card.html" %}{% endfor %}</div></section>
 </div></main>
 {% endblock %}
+{% block extra_js %}<script src="{% static 'store/js/cart-v301.js' %}?v=3.0.1"></script>{% endblock %}
