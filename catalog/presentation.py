@@ -37,6 +37,18 @@ def _image_url(image):
     return ""
 
 
+def _image_urls(images):
+    urls = []
+    seen = set()
+    for image in images:
+        url = _image_url(image)
+        if not url or url in seen:
+            continue
+        seen.add(url)
+        urls.append(url)
+    return urls
+
+
 def _category_image_url(category):
     if category.image:
         try:
@@ -173,7 +185,8 @@ def serialize_product(product):
     stock = sum(variant.stock_quantity for variant in active_variants)
     image_url = _image_url(primary_image) or static("store/images/baseus-e16.webp")
     detail_image_url = _image_url(detail_image) or image_url
-    gallery_urls = [_image_url(i) for i in gallery_images if _image_url(i)] or [image_url]
+    gallery_urls = _image_urls(gallery_images) or [image_url]
+    general_image_urls = _image_urls(generic_images)
     description, short_description, description_paragraphs, description_html = _description_data(product)
 
     serialized_variants = []
@@ -210,7 +223,9 @@ def serialize_product(product):
             continue
         url = _image_url(image)
         if url:
-            image_groups.setdefault(str(image.attribute_value_id), []).append(url)
+            group = image_groups.setdefault(str(image.attribute_value_id), [])
+            if url not in group:
+                group.append(url)
 
     options = _product_options(serialized_variants)
 
@@ -233,6 +248,7 @@ def serialize_product(product):
         "image_url": image_url,
         "image": image_url,
         "images": gallery_urls,
+        "general_images": general_image_urls,
         "detail_image": detail_image_url,
         "detail_image_url": detail_image_url,
         "image_groups": image_groups,
