@@ -4,6 +4,7 @@
   const lightboxImage = document.getElementById('productLightboxImage');
   const thumbHost = document.querySelector('.product-thumbs, .thumbs');
   const storeNode = document.getElementById('store-data');
+  const variantTitle = document.querySelector('.variant-title');
   if (!stage || !mainImage) return;
 
   let product = null;
@@ -103,6 +104,57 @@
     setActiveThumb();
   };
 
+  const selectedVariantFromControls = () => {
+    if (!product?.variants?.length) return null;
+    const selectedValues = new Map();
+
+    document.querySelectorAll('[data-structured-value].active').forEach((control) => {
+      const attributeId = control.dataset.attributeId;
+      const valueId = control.dataset.structuredValue;
+      if (attributeId && valueId) selectedValues.set(String(attributeId), String(valueId));
+    });
+
+    document.querySelectorAll('select[data-structured-attribute]').forEach((select) => {
+      if (select.value) selectedValues.set(String(select.dataset.structuredAttribute), String(select.value));
+    });
+
+    if (!selectedValues.size) return null;
+    return product.variants.find((variant) => {
+      const values = variant.values || [];
+      if (!values.length) return false;
+      return values.every(
+        (row) => selectedValues.get(String(row.attribute_id)) === String(row.value_id),
+      );
+    }) || null;
+  };
+
+  let skuNode = document.getElementById('productVariantSku');
+  if (!skuNode && variantTitle?.nextElementSibling) {
+    const candidate = variantTitle.nextElementSibling;
+    if (/^SKU\s*:/i.test((candidate.textContent || '').trim())) skuNode = candidate;
+  }
+  if (!skuNode && variantTitle) {
+    skuNode = document.createElement('div');
+    skuNode.id = 'productVariantSku';
+    skuNode.className = 'variant-sku';
+    variantTitle.insertAdjacentElement('afterend', skuNode);
+  } else if (skuNode) {
+    skuNode.id = 'productVariantSku';
+    skuNode.classList.add('variant-sku');
+  }
+
+  const syncVariantSku = () => {
+    if (!skuNode) return;
+    const selectedVariant = selectedVariantFromControls();
+    const sku = selectedVariant?.sku || product?.sku || '';
+    skuNode.textContent = sku ? `SKU: ${sku}` : '';
+    skuNode.hidden = !sku;
+  };
+
+  const scheduleVariantSkuSync = () => {
+    window.requestAnimationFrame(syncVariantSku);
+  };
+
   stage.addEventListener('pointerenter', (event) => {
     if (event.pointerType === 'mouse') stage.classList.add('is-zooming');
   });
@@ -124,6 +176,22 @@
     renderAllThumbs();
   });
 
+  document.addEventListener('click', (event) => {
+    if (event.target.closest('[data-structured-value]')) scheduleVariantSkuSync();
+  });
+  document.addEventListener('change', (event) => {
+    if (event.target.matches('select[data-structured-attribute]')) scheduleVariantSkuSync();
+  });
+
+  const variantSummary = document.querySelector('.structured-variant-summary');
+  if (variantSummary) {
+    new MutationObserver(scheduleVariantSkuSync).observe(variantSummary, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }
+
   if (thumbHost) {
     new MutationObserver(() => {
       resetZoom();
@@ -132,4 +200,5 @@
   }
 
   renderAllThumbs();
+  syncVariantSku();
 })();
