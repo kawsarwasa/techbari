@@ -39,6 +39,21 @@ def _customer_account_for_request(request):
     ).first()
 
 
+def _selected_category_label(context, request):
+    values = []
+    for raw_value in request.GET.getlist("category"):
+        values.extend(value.strip() for value in raw_value.split(",") if value.strip())
+    if len(values) != 1:
+        return ""
+
+    selected = values[0].casefold()
+    for category in context.get("categories", []):
+        name = str(category.get("name") or "")
+        if name.casefold() == selected:
+            return name
+    return ""
+
+
 def _apply_product_search(context, raw_query):
     query = " ".join(str(raw_query or "").split())
     context["search_query"] = query
@@ -72,6 +87,7 @@ def page(request, page_name="home"):
         raise Http404("Page not found")
     context = catalog_context()
     if page_name == "products":
+        context["selected_category_name"] = _selected_category_label(context, request)
         _apply_product_search(context, request.GET.get("q", ""))
     return render(request, f"storefront/pages/{PAGE_TEMPLATES[page_name]}.html", context)
 
