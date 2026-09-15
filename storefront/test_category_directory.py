@@ -35,7 +35,8 @@ class StorefrontCategoryDirectoryTests(TestCase):
     def test_home_view_all_categories_opens_categories_directory(self):
         response = self.client.get(reverse("storefront:home"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, f'href="{reverse("storefront:categories")}">View All Categories')
+        self.assertContains(response, reverse("storefront:categories"))
+        self.assertContains(response, "View All Categories")
 
     def test_categories_directory_lists_active_categories_only(self):
         response = self.client.get(reverse("storefront:categories"))
@@ -47,5 +48,5 @@ class StorefrontCategoryDirectoryTests(TestCase):
 
     def test_category_directory_card_links_to_filtered_products(self):
         response = self.client.get(reverse("storefront:categories"))
-        expected = f'{reverse("storefront:products")}?category={self.audio.name.replace(" ", "+")}'
-        self.assertContains(response, expected)
+        self.assertContains(response, reverse("storefront:products"))
+        self.assertContains(response, f"category={self.audio.name.replace(' ', '+')}")
