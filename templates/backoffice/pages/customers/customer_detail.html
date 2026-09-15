@@ -1,17 +1,151 @@
 {% extends "backoffice/base.html" %}
 {% load demo %}
+{% load static %}
 {% block title %}Customer Details | TechBari Admin{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/customer-detail-polish-v308.css' %}?v=3.0.8">
+{% endblock %}
 {% block content %}
-<section class="page">
-  <div class="page-head"><div><h1>{{ customer.name }}</h1><p>{{ customer.customer_no }}{% if customer.group %} • {{ customer.group.name }}{% endif %} • {{ customer.get_source_display }}</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:customers' %}">Customers</a><a class="btn btn-primary" href="{% url 'backoffice:customer_add' %}?id={{ customer.id }}">Edit Customer</a></div></div>
+<section class="page customer-detail-page">
+  <div class="page-head customer-detail-head">
+    <div class="customer-title-wrap">
+      <div class="customer-title-row">
+        <h1>{{ customer.name }}</h1>
+        <span class="customer-status-chip {% if customer.is_active %}is-active{% else %}is-inactive{% endif %}">
+          {% if customer.is_active %}Active{% else %}Inactive{% endif %}
+        </span>
+      </div>
+      <div class="customer-meta">
+        <span class="meta-chip">{{ customer.customer_no }}</span>
+        <span class="meta-chip">{{ customer.get_source_display }}</span>
+        {% if customer.group %}<span class="meta-chip">{{ customer.group.name }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="head-actions">
+      <a class="btn" href="{% url 'backoffice:customers' %}">Customers</a>
+      <a class="btn btn-primary" href="{% url 'backoffice:customer_add' %}?id={{ customer.id }}">Edit Customer</a>
+    </div>
+  </div>
+
   {% if crm_notice %}<div class="soft-note" style="margin-bottom:14px">{{ crm_notice }}</div>{% endif %}
   {% if crm_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ crm_error }}</div>{% endif %}
-  <div class="detail-cards">
-    <div class="card info-card"><div class="section-head"><h3>Profile</h3></div><div class="info-body"><div class="person"><div class="avatar">{{ customer.initials }}</div><div><strong>{{ customer.name }}</strong><div>{{ customer.phone }}</div><div>{{ customer.email|default:"No email" }}</div></div></div><div class="kv"><span>Status</span><strong>{% if customer.is_active %}Active{% else %}Inactive{% endif %}</strong></div><div class="kv"><span>Source</span><strong>{{ customer.get_source_display }}</strong></div><div class="kv"><span>Group</span><strong>{{ customer.group.name|default:"—" }}</strong></div></div></div>
-    <div class="card info-card"><div class="section-head"><h3>Customer Value</h3></div><div class="info-body"><div class="kv"><span>Total Orders</span><strong>{{ customer.order_count }}</strong></div><div class="kv"><span>Completed</span><strong>{{ customer.completed_order_count }}</strong></div><div class="kv"><span>Total Spent</span><strong>{{ customer.total_spent|money }}</strong></div><div class="kv"><span>Due Balance</span><strong>{{ customer.due_balance|money }}</strong></div><div class="kv"><span>Repeat Customer</span><strong>{% if customer.repeat_customer %}Yes{% else %}No{% endif %}</strong></div></div></div>
-    <div class="card info-card"><div class="section-head"><h3>Address & Credit</h3></div><div class="info-body"><p>{{ customer.display_address|default:"No address saved." }}</p><div class="kv"><span>Credit Limit</span><strong>{{ customer.credit_limit|money }}</strong></div><div class="kv"><span>Opening Due</span><strong>{{ customer.opening_due|money }}</strong></div><div class="kv"><span>First Purchase</span><strong>{{ customer.first_purchase_at|default:"—" }}</strong></div><div class="kv"><span>Last Purchase</span><strong>{{ customer.last_purchase_at|default:"—" }}</strong></div></div></div>
+
+  <div class="customer-detail-grid">
+    <article class="customer-card profile-card">
+      <div class="section-head">
+        <h3>Profile</h3>
+        <span class="section-kicker">Customer</span>
+      </div>
+      <div class="profile-body">
+        <div class="profile-identity">
+          <div class="profile-avatar">{{ customer.initials }}</div>
+          <div>
+            <div class="profile-name">{{ customer.name }}</div>
+            <div class="profile-contact">{{ customer.phone }}</div>
+            <div class="profile-contact">{{ customer.email|default:"No email added" }}</div>
+          </div>
+        </div>
+        <div class="detail-list">
+          <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">{% if customer.is_active %}Active{% else %}Inactive{% endif %}</span></div>
+          <div class="detail-row"><span class="detail-label">Source</span><span class="detail-value">{{ customer.get_source_display }}</span></div>
+          <div class="detail-row"><span class="detail-label">Group</span><span class="detail-value">{{ customer.group.name|default:"—" }}</span></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="customer-card value-card">
+      <div class="section-head">
+        <h3>Customer Value</h3>
+        <span class="section-kicker">Lifetime</span>
+      </div>
+      <div class="value-body">
+        <div class="value-highlight">
+          <div class="metric-box is-primary">
+            <span class="metric-label">Total Spent</span>
+            <strong class="metric-value">{{ customer.total_spent|money }}</strong>
+          </div>
+          <div class="metric-box is-due">
+            <span class="metric-label">Due Balance</span>
+            <strong class="metric-value">{{ customer.due_balance|money }}</strong>
+          </div>
+          <div class="metric-box">
+            <span class="metric-label">Total Orders</span>
+            <strong class="metric-value">{{ customer.order_count }}</strong>
+          </div>
+          <div class="metric-box">
+            <span class="metric-label">Completed</span>
+            <strong class="metric-value">{{ customer.completed_order_count }}</strong>
+          </div>
+        </div>
+        <div class="detail-list">
+          <div class="detail-row">
+            <span class="detail-label">Repeat Customer</span>
+            <span class="detail-value">{% if customer.repeat_customer %}Yes{% else %}No{% endif %}</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="customer-card address-card">
+      <div class="section-head">
+        <h3>Address & Credit</h3>
+        <span class="section-kicker">Account</span>
+      </div>
+      <div class="address-body">
+        <div class="address-panel">{{ customer.display_address|default:"No address saved." }}</div>
+        <div class="detail-list">
+          <div class="detail-row"><span class="detail-label">Credit Limit</span><span class="detail-value">{{ customer.credit_limit|money }}</span></div>
+          <div class="detail-row"><span class="detail-label">Opening Due</span><span class="detail-value">{{ customer.opening_due|money }}</span></div>
+          <div class="detail-row"><span class="detail-label">First Purchase</span><span class="detail-value">{% if customer.first_purchase_at %}{{ customer.first_purchase_at|date:"M d, Y" }}{% else %}—{% endif %}</span></div>
+          <div class="detail-row"><span class="detail-label">Last Purchase</span><span class="detail-value">{% if customer.last_purchase_at %}{{ customer.last_purchase_at|date:"M d, Y" }}{% else %}—{% endif %}</span></div>
+        </div>
+      </div>
+    </article>
   </div>
-  <div class="card orders-table-card"><div class="section-head"><h3>Purchase History</h3></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Order</th><th>Date</th><th>Items</th><th>Total</th><th>Paid</th><th>Due</th><th>Payment</th><th>Status</th></tr></thead><tbody>{% for order in customer_orders %}<tr><td><a href="{% url 'backoffice:order_detail_id' order.id %}"><strong>{{ order.order_number }}</strong></a></td><td>{{ order.order_date }}</td><td>{{ order.item_count }}</td><td>{{ order.grand_total|money }}</td><td>{{ order.amount_paid|money }}</td><td>{{ order.outstanding_amount|money }}</td><td>{{ order.get_payment_status_display }}</td><td>{{ order.get_status_display }}</td></tr>{% empty %}<tr><td colspan="8">No sales history yet.</td></tr>{% endfor %}</tbody></table></div></div>
-  {% if customer.notes %}<div class="card info-card" style="margin-top:16px"><div class="section-head"><h3>CRM Notes</h3></div><div class="info-body"><p>{{ customer.notes|linebreaksbr }}</p></div></div>{% endif %}
+
+  <section class="purchase-card">
+    <div class="section-head">
+      <div>
+        <h3>Purchase History</h3>
+        <div class="purchase-subtitle">Recent orders and payment activity for this customer.</div>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table purchase-table">
+        <thead>
+          <tr><th>Order</th><th>Date</th><th>Items</th><th>Total</th><th>Paid</th><th>Due</th><th>Payment</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for order in customer_orders %}
+          <tr>
+            <td data-label="Order"><a class="order-link" href="{% url 'backoffice:order_detail_id' order.id %}"><strong>{{ order.order_number }}</strong></a></td>
+            <td data-label="Date">{{ order.order_date }}</td>
+            <td data-label="Items">{{ order.item_count }}</td>
+            <td data-label="Total">{{ order.grand_total|money }}</td>
+            <td data-label="Paid">{{ order.amount_paid|money }}</td>
+            <td data-label="Due">{{ order.outstanding_amount|money }}</td>
+            <td data-label="Payment">{{ order.get_payment_status_display }}</td>
+            <td data-label="Status">{{ order.get_status_display }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td class="empty-purchase" colspan="8">
+              <div class="empty-icon">↗</div>
+              <div class="empty-title">No purchase history yet</div>
+              <div class="empty-copy">Orders linked to this customer will appear here.</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% if customer.notes %}
+  <article class="customer-card notes-card">
+    <div class="section-head"><h3>CRM Notes</h3><span class="section-kicker">Internal</span></div>
+    <div class="notes-body">{{ customer.notes|linebreaksbr }}</div>
+  </article>
+  {% endif %}
 </section>
 {% endblock %}
