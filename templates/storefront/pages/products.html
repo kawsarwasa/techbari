@@ -1,14 +1,21 @@
 {% extends "storefront/base.html" %}
 {% load static demo %}
-{% block title %}All Products - TechBari{% endblock %}
+{% block title %}{% if search_query %}Search: {{ search_query }} - TechBari{% else %}All Products - TechBari{% endif %}{% endblock %}
 {% block body_attributes %}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'store/css/storefront-search-v311.css' %}?v=3.1.1">{% endblock %}
 {% block content %}
 <main class="page"><div class="container">
 {% include "storefront/includes/breadcrumbs/products.html" %}
 <div class="listing-top">
-  <div><h1 class="page-title">All Products</h1><p class="page-subtitle">Discover authentic electronics and accessories at TechBari. Upgrade your everyday.</p></div>
-  <div><span id="catalogShowing" class="muted" style="font-size:13px;margin-right:12px">Showing {{ products|length }} products</span><select class="sort-select" id="catalogSort"><option value="featured">Sort by Featured</option><option value="newest">Newest</option><option value="price-asc">Price: Low to High</option><option value="price-desc">Price: High to Low</option></select></div>
+  <div><h1 class="page-title">{% if search_query %}Search Products{% else %}All Products{% endif %}</h1><p class="page-subtitle">Discover authentic electronics and accessories at TechBari. Upgrade your everyday.</p></div>
+  <div><span id="catalogShowing" class="muted" style="font-size:13px;margin-right:12px">Showing {{ products|length }} product{% if products|length != 1 %}s{% endif %}</span><select class="sort-select" id="catalogSort"><option value="featured">Sort by Featured</option><option value="newest">Newest</option><option value="price-asc">Price: Low to High</option><option value="price-desc">Price: High to Low</option></select></div>
 </div>
+{% if search_query %}
+<div class="storefront-search-summary">
+  <div><span class="storefront-search-label">Search results for</span> <strong>“{{ search_query }}”</strong> <span class="storefront-search-count">{{ search_result_count }} product{% if search_result_count != 1 %}s{% endif %}</span></div>
+  <a href="{% url 'storefront:products' %}">Clear search</a>
+</div>
+{% endif %}
 <div class="products-layout">
 <aside class="filter-panel catalog-filter-panel">
   <div class="filter-head"><span class="filter-title">Filters</span><button class="clear" type="button" data-catalog-clear>Clear All</button></div>
@@ -40,11 +47,14 @@
 </aside>
 
 <section>
-  <div class="search-wrap" style="margin-bottom:14px"><input id="productSearch" placeholder="Search products by name, brand, category or SKU..."><button class="search-btn" type="button"><i data-icon="search"></i></button></div>
-  <div id="allProductsGrid" class="products-grid listing">{% for product in products %}{% include "storefront/components/product_card.html" %}{% empty %}<div class="empty-state">No products match your search.</div>{% endfor %}</div>
+  <form class="search-wrap storefront-products-search" method="get" action="{% url 'storefront:products' %}" role="search">
+    <input id="catalogServerSearch" name="q" value="{{ search_query|default:'' }}" placeholder="Search by product, brand, category, SKU or feature..." autocomplete="off">
+    <button class="search-btn" type="submit" aria-label="Search products"><i data-icon="search"></i></button>
+  </form>
+  <div id="allProductsGrid" class="products-grid listing">{% for product in products %}{% include "storefront/components/product_card.html" %}{% empty %}<div class="empty-state storefront-search-empty"><h3>No products found{% if search_query %} for “{{ search_query }}”{% endif %}</h3><p>Try a product name, brand, category, SKU, model, specification or a simpler keyword.</p>{% if search_query %}<a class="btn btn-primary" href="{% url 'storefront:products' %}">View All Products</a>{% endif %}</div>{% endfor %}</div>
   {% include "storefront/components/pagination.html" %}
 </section>
 </div>
 </div></main>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'store/js/catalog-filter-state-v302.js' %}?v=3.0.2"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'store/js/catalog-filter-state-v302.js' %}?v=3.1.1"></script>{% endblock %}
