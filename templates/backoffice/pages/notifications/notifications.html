@@ -1,7 +1,10 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Notifications | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/notifications-polish-v309.css' %}?v=3.0.9">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/notifications-polish-v309.css' %}?v=3.0.9">
+<link rel="stylesheet" href="{% static 'admin/css/notification-safety-v310.css' %}?v=3.1.0">
+{% endblock %}
 {% block content %}
 <section class="page notifications-page">
   <div class="page-head">
@@ -49,7 +52,13 @@
         </div>
 
         <div class="notification-actions">
-          {% if notification.link %}<a class="btn notification-open" href="{{ notification.link }}">Open</a>{% endif %}
+          {% if notification.link %}
+            {% if notification.target_available %}
+              <a class="btn notification-open" href="{% url 'integration_admin:notifications' notification.id %}">Open</a>
+            {% else %}
+              <span class="notification-unavailable" title="The linked record was removed or is no longer available.">Unavailable</span>
+            {% endif %}
+          {% endif %}
           {% if not notification.is_read_for_user %}<form method="post" action="{% url 'integration_admin:notification_read' notification.id %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn notification-read" type="submit">Mark read</button></form>{% endif %}
         </div>
       </article>

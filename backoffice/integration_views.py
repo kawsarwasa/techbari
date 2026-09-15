@@ -4,13 +4,56 @@ from django.db.models import Exists, OuterRef
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from integrations.delivery import process_outbound
 from integrations.forms import IntegrationSettingsForm
 from integrations.models import Notification, NotificationRead, OutboundMessage
 from integrations.services import get_integration_settings, mark_all_notifications_read, mark_notification_read
-from shipping.models import CourierProvider
+from payments.models import PaymentTransaction
+from sales.models import SalesOrder
+from shipping.models import CourierProvider, Shipment
+
+
+_TRACKED_NOTIFICATION_TARGETS = {"sales_order", "payment", "shipment"}
+
+
+def _notification_target_exists(notification):
+    reference_type = str(notification.reference_type or "").strip()
+    reference_id = str(notification.reference_id or "").strip()
+    if reference_type not in _TRACKED_NOTIFICATION_TARGETS:
+        return True
+    if not reference_id:
+        return False
+    if reference_type == "sales_order":
+        return SalesOrder.objects.filter(order_number=reference_id).exists()
+    if reference_type == "payment":
+        return PaymentTransaction.objects.filter(transaction_no=reference_id).exists()
+    return Shipment.objects.filter(shipment_no=reference_id).exists()
+
+
+def _mark_notification_target_availability(notifications):
+    rows = list(notifications)
+    references = {target: set() for target in _TRACKED_NOTIFICATION_TARGETS}
+    for notification in rows:
+        reference_type = str(notification.reference_type or "").strip()
+        reference_id = str(notification.reference_id or "").strip()
+        if reference_type in references and reference_id:
+            references[reference_type].add(reference_id)
+
+    available = {
+        "sales_order": set(SalesOrder.objects.filter(order_number__in=references["sales_order"]).values_list("order_number", flat=True)),
+        "payment": set(PaymentTransaction.objects.filter(transaction_no__in=references["payment"]).values_list("transaction_no", flat=True)),
+        "shipment": set(Shipment.objects.filter(shipment_no__in=references["shipment"]).values_list("shipment_no", flat=True)),
+    }
+    for notification in rows:
+        reference_type = str(notification.reference_type or "").strip()
+        reference_id = str(notification.reference_id or "").strip()
+        notification.target_available = reference_type not in _TRACKED_NOTIFICATION_TARGETS or (
+            bool(reference_id) and reference_id in available[reference_type]
+        )
+    return rows
 
 
 def notifications(request):
@@ -24,7 +67,20 @@ def notifications(request):
     elif state == "read":
         qs = qs.filter(is_read_for_user=True)
     page_obj = Paginator(qs, 30).get_page(request.GET.get("page"))
-    return render(request, "backoffice/pages/notifications/notifications.html", {"notifications": page_obj.object_list, "page_obj": page_obj, "notification_kinds": Notification.Kind.choices, "selected_kind": kind, "selected_state": state})
+    notification_rows = _mark_notification_target_availability(page_obj.object_list)
+    return render(request, "backoffice/pages/notifications/notifications.html", {"notifications": notification_rows, "page_obj": page_obj, "notification_kinds": Notification.Kind.choices, "selected_kind": kind, "selected_state": state})
+
+
+def notification_open(request, notification_id):
+    notification = get_object_or_404(Notification, pk=notification_id)
+    link = str(notification.link or "").strip()
+    if not link or not _notification_target_exists(notification):
+        messages.warning(request, "This notification points to a record that is no longer available.")
+        return redirect("backoffice:notifications")
+    if not url_has_allowed_host_and_scheme(link, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        messages.warning(request, "This notification link is not available.")
+        return redirect("backoffice:notifications")
+    return redirect(link)
 
 
 @require_POST

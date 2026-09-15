@@ -1,0 +1,10 @@
+.od-page .od-customer-block .od-avatar{
+  display:grid;
+  place-items:center;
+  margin-top:0;
+  color:#1677ff;
+  font-size:18px;
+  font-weight:900;
+  line-height:1;
+  word-break:normal;
+}
