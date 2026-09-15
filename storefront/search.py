@@ -10,10 +10,15 @@ def _term_query(term):
         | Q(subtitle__icontains=term)
         | Q(short_description__icontains=term)
         | Q(description__icontains=term)
+        | Q(description_paragraphs__icontains=term)
+        | Q(features__icontains=term)
+        | Q(box_contents__icontains=term)
         | Q(meta_title__icontains=term)
         | Q(meta_description__icontains=term)
         | Q(category__name__icontains=term)
         | Q(category__description__icontains=term)
+        | Q(category__parent__name__icontains=term)
+        | Q(category__parent__description__icontains=term)
         | Q(brand__name__icontains=term)
         | Q(brand__description__icontains=term)
         | Q(variants__name__icontains=term)
@@ -57,6 +62,8 @@ def product_search_rank(product, query):
         [
             str(product.get("short_description") or ""),
             str(product.get("description") or ""),
+            " ".join(str(value) for value in (product.get("features") or [])),
+            " ".join(str(value) for value in (product.get("box_contents") or [])),
         ]
     ).casefold()
 
