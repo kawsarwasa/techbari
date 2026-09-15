@@ -14,6 +14,7 @@ from .bd_locations import BD_LOCATIONS
 from .checkout_services import CheckoutError, checkout_success_url, create_checkout_token, place_checkout_order, verify_success_token
 from .context import catalog_context
 from .forms import CheckoutForm
+from .search import matching_product_ids, product_search_rank
 
 PAGE_TEMPLATES = {"home": "home", "products": "products", "cart": "cart", "contact": "contact"}
 LEGACY_PAGES = {
@@ -38,14 +39,40 @@ def _customer_account_for_request(request):
     ).first()
 
 
+def _apply_product_search(context, raw_query):
+    query = " ".join(str(raw_query or "").split())
+    context["search_query"] = query
+    context["store_data"]["search_query"] = query
+    if not query:
+        context["search_result_count"] = len(context["products"])
+        return
+
+    matched_ids = set(matching_product_ids(query))
+    products = [product for product in context["catalog"] if product["pk"] in matched_ids]
+    products.sort(
+        key=lambda product: (
+            -product_search_rank(product, query),
+            -int(bool(product.get("is_featured"))),
+            str(product.get("name") or "").casefold(),
+        )
+    )
+    context["products"] = products
+    context["search_result_count"] = len(products)
+
+    browser_by_pk = {product["pk"]: product for product in context["store_data"]["products"]}
+    context["store_data"]["listing_products"] = [
+        browser_by_pk[product["pk"]]
+        for product in products
+        if product["pk"] in browser_by_pk
+    ]
+
+
 def page(request, page_name="home"):
     if page_name not in PAGE_TEMPLATES:
         raise Http404("Page not found")
     context = catalog_context()
     if page_name == "products":
-        query = request.GET.get("q", "").casefold().strip()
-        if query:
-            context["products"] = [p for p in context["products"] if query in f'{p["name"]} {p["brand"]} {p["category"]} {p["sku"]}'.casefold()]
+        _apply_product_search(context, request.GET.get("q", ""))
     return render(request, f"storefront/pages/{PAGE_TEMPLATES[page_name]}.html", context)
 
 
