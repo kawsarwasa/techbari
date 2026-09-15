@@ -37,7 +37,7 @@
       <td>{{ customer.due_balance|money }}</td>
       <td>{% if customer.repeat_customer %}<span class="status green">Repeat</span>{% else %}<span class="status">New</span>{% endif %}</td>
       <td>{% if customer.is_active %}<span class="status green">Active</span>{% else %}<span class="status red">Inactive</span>{% endif %}</td>
-      <td><div class="head-actions"><a class="btn btn-sm" href="{% url 'backoffice:customer_add' %}?id={{ customer.id }}">Edit</a><form method="post" action="{% url 'backoffice:customer_delete' customer.id %}" onsubmit="return confirm('Delete this customer?');">{% csrf_token %}<button class="btn btn-sm" type="submit">Delete</button></form></div></td>
+      <td><div class="head-actions"><a class="btn btn-sm" href="{% url 'backoffice:customer_detail_id' customer.id %}">View</a><a class="btn btn-sm" href="{% url 'backoffice:customer_add' %}?id={{ customer.id }}">Edit</a><form method="post" action="{% url 'backoffice:customer_delete' customer.id %}" onsubmit="return confirm('Delete this customer?');">{% csrf_token %}<button class="btn btn-sm" type="submit">Delete</button></form></div></td>
     </tr>{% empty %}<tr><td colspan="10">No customers found.</td></tr>{% endfor %}
     </tbody></table></div>
   </div>
