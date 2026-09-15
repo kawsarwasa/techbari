@@ -2,7 +2,7 @@
 {% load static demo %}
 {% block title %}{% if search_query %}Search: {{ search_query }} - TechBari{% elif selected_category_name %}{{ selected_category_name }} - TechBari{% elif selected_collection_label %}{{ selected_collection_label }} Products - TechBari{% else %}All Products - TechBari{% endif %}{% endblock %}
 {% block body_attributes %}{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'store/css/storefront-search-v311.css' %}?v=3.1.1">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'store/css/storefront-search-v311.css' %}?v=3.1.2">{% endblock %}
 {% block content %}
 <main class="page"><div class="container">
 {% include "storefront/includes/breadcrumbs/products.html" %}
