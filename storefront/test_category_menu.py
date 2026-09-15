@@ -19,11 +19,17 @@ class StorefrontCategoryMenuTests(TestCase):
             is_active=True,
             sort_order=1,
         )
+        self.leaf = Category.objects.create(
+            name="Power Banks Menu",
+            slug="power-banks-menu-test",
+            is_active=True,
+            sort_order=2,
+        )
         Category.objects.create(
             name="Hidden Menu Category",
             slug="hidden-menu-category-test",
             is_active=False,
-            sort_order=2,
+            sort_order=3,
         )
 
     def test_home_renders_dynamic_category_dropdown(self):
@@ -33,7 +39,17 @@ class StorefrontCategoryMenuTests(TestCase):
         self.assertContains(response, 'aria-expanded="false"')
         self.assertContains(response, "Audio Gear")
         self.assertContains(response, "TWS Earbuds Menu")
+        self.assertContains(response, "Power Banks Menu")
         self.assertNotContains(response, "Hidden Menu Category")
+
+    def test_category_menu_only_shows_submenu_control_for_parent_categories(self):
+        response = self.client.get(reverse("storefront:home"))
+        html = response.content.decode()
+        self.assertEqual(html.count("data-category-submenu-toggle"), 1)
+        self.assertIn("Show Audio Gear subcategories", html)
+        self.assertNotIn("Show Power Banks Menu subcategories", html)
+        self.assertNotIn("category-menu-caret", html)
+        self.assertNotIn("category-menu-footer", html)
 
     def test_category_menu_context_groups_children_under_parent(self):
         response = self.client.get(reverse("storefront:home"))
