@@ -7,6 +7,7 @@ app_name = "storefront"
 urlpatterns = [
     path("", views.page, name="home"),
     path("products/", views.page, {"page_name": "products"}, name="products"),
+    path("brands/", views.page, {"page_name": "brands"}, name="brands"),
     path("product/<slug:slug>/", views.product_detail, name="product_detail"),
     path("product/id/<slug:product_id>/", views.product_detail, name="product_by_id"),
     path("checkout/", views.checkout, name="checkout"),
