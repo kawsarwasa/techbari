@@ -29,6 +29,9 @@
       grid.appendChild(empty);
     }
 
+    if (typeof renderIcons === 'function') renderIcons(grid);
+    if (typeof syncWishlistButtons === 'function') syncWishlistButtons(grid);
+
     tabs.forEach((tab) => {
       const active = tab.dataset.homeFeaturedTab === key;
       tab.classList.toggle('active', active);
