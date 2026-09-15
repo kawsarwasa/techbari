@@ -140,6 +140,31 @@ class StorefrontSearchTests(TestCase):
         self.assertIn(self.charger.public_id, all_browser_ids)
         self.assertIn(self.earbud.public_id, all_browser_ids)
 
+    def test_category_filter_limits_visible_and_browser_listing_products(self):
+        response = self.client.get(reverse("storefront:products"), {"category": self.earbuds.name})
+        self.assertEqual(self.result_ids(response), [self.earbud.public_id])
+        self.assertEqual(response.context["selected_category_name"], self.earbuds.name)
+        listing_ids = [product["id"] for product in response.context["store_data"]["listing_products"]]
+        self.assertEqual(listing_ids, [self.earbud.public_id])
+
+    def test_category_slug_still_resolves_for_old_or_bookmarked_links(self):
+        response = self.client.get(reverse("storefront:products"), {"category": self.power_banks.slug})
+        self.assertEqual(self.result_ids(response), [self.power_bank.public_id])
+        self.assertEqual(response.context["selected_category_name"], self.power_banks.name)
+
+    def test_category_and_search_are_intersected(self):
+        response = self.client.get(
+            reverse("storefront:products"),
+            {"category": self.earbuds.name, "q": "Anker"},
+        )
+        self.assertEqual(self.result_ids(response), [])
+        self.assertEqual(response.context["search_result_count"], 0)
+
+    def test_home_category_cards_use_filter_compatible_category_names(self):
+        response = self.client.get(reverse("storefront:home"))
+        self.assertContains(response, "category=Search%20Earbuds")
+        self.assertNotContains(response, "category=search-earbuds")
+
     def test_draft_product_is_not_returned(self):
         response = self.search("prototype")
         self.assertNotIn(self.draft.public_id, self.result_ids(response))
