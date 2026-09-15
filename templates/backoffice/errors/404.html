@@ -1,0 +1,20 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Page not found | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/dashboard-error-v310.css' %}?v=3.1.0">{% endblock %}
+{% block content %}
+<section class="page dashboard-error-page">
+  <div class="dashboard-error-card">
+    <span class="dashboard-error-code">404</span>
+    <div class="dashboard-error-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M10.3 2.9 2.9 10.3a2.4 2.4 0 0 0 0 3.4l7.4 7.4a2.4 2.4 0 0 0 3.4 0l7.4-7.4a2.4 2.4 0 0 0 0-3.4l-7.4-7.4a2.4 2.4 0 0 0-3.4 0Z"/><path d="M12 8v4M12 16h.01"/></svg>
+    </div>
+    <h1>This page isn’t available</h1>
+    <p>The page or record may have been removed, moved, or is no longer available. You can safely return to the dashboard and continue working.</p>
+    <div class="dashboard-error-actions">
+      <a class="btn btn-primary" href="{% url 'backoffice:dashboard' %}">Back to Dashboard</a>
+      <a class="btn" href="{% url 'backoffice:notifications' %}">View Notifications</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
