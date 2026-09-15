@@ -5,35 +5,30 @@
       <button class="all category-menu-trigger" type="button" aria-expanded="false" aria-controls="storeCategoryMenu" data-category-menu-trigger>
         <i data-icon="menu"></i>
         <span>All Categories</span>
-        <span class="category-menu-caret" aria-hidden="true">⌄</span>
+        <span class="category-menu-caret" aria-hidden="true">⌃</span>
       </button>
       <div class="category-menu-panel" id="storeCategoryMenu" data-category-menu-panel hidden>
-        <div class="category-menu-head">
-          <div>
-            <strong>Browse Categories</strong>
-            <span>Find products by category</span>
-          </div>
-          <a href="{% url 'storefront:products' %}">View All Products</a>
-        </div>
-        <div class="category-menu-grid">
-          {% for category in category_menu %}
-            <div class="category-menu-group">
-              <a class="category-menu-parent" href="{% url 'storefront:products' %}?category={{ category.name|urlencode }}">
-                <span class="category-menu-initial">{{ category.name|slice:':1'|upper }}</span>
-                <span>{{ category.name }}</span>
-              </a>
-              {% if category.children %}
-                <div class="category-menu-children">
-                  {% for child in category.children %}
-                    <a href="{% url 'storefront:products' %}?category={{ child.name|urlencode }}">{{ child.name }}</a>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
+        <a class="category-menu-row category-menu-row-all" href="{% url 'storefront:products' %}">
+          <span class="category-menu-grid-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="category-menu-label">All Products</span>
+          <span class="category-menu-chevron" aria-hidden="true">›</span>
+        </a>
+        <div class="category-menu-list">
+          {% for category in categories %}
+            <a class="category-menu-row" href="{% url 'storefront:products' %}?category={{ category.name|urlencode }}">
+              <span class="category-menu-thumb" aria-hidden="true"><img src="{{ category.image_url }}" alt=""></span>
+              <span class="category-menu-label">{{ category.name }}</span>
+              <span class="category-menu-chevron" aria-hidden="true">›</span>
+            </a>
           {% empty %}
             <div class="category-menu-empty">No categories are available right now.</div>
           {% endfor %}
         </div>
+        <a class="category-menu-row category-menu-footer" href="{% url 'storefront:products' %}">
+          <span class="category-menu-bag" aria-hidden="true"></span>
+          <span class="category-menu-label">View All Products</span>
+          <span class="category-menu-chevron" aria-hidden="true">›</span>
+        </a>
       </div>
     </div>
 
