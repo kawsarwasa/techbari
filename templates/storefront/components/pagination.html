@@ -1,2 +1,21 @@
-{% load static %}
-<div class="pagination"><button class="page-btn">‹</button><button class="page-btn active">1</button><button class="page-btn">2</button><button class="page-btn">3</button><button class="page-btn">4</button><button class="page-btn">5</button><span>...</span><button class="page-btn">14</button><button class="page-btn">›</button></div>
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<nav class="pagination" aria-label="Product pages">
+  {% if page_obj.has_previous %}
+    <a class="page-btn" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Previous page">‹</a>
+  {% endif %}
+
+  {% for item in pagination_items %}
+    {% if item.ellipsis %}
+      <span class="pagination-ellipsis" aria-hidden="true">…</span>
+    {% elif item.number == page_obj.number %}
+      <span class="page-btn active" aria-current="page">{{ item.number }}</span>
+    {% else %}
+      <a class="page-btn" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ item.number }}">{{ item.number }}</a>
+    {% endif %}
+  {% endfor %}
+
+  {% if page_obj.has_next %}
+    <a class="page-btn" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.next_page_number }}" aria-label="Next page">›</a>
+  {% endif %}
+</nav>
+{% endif %}

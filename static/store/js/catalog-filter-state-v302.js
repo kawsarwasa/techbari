@@ -10,6 +10,12 @@
   const search = document.getElementById('productSearch');
   const sort = document.getElementById('catalogSort');
   const clearButton = document.querySelector('[data-catalog-clear]');
+  const initialParams = new URLSearchParams(window.location.search);
+  const activeSearchQuery = (initialParams.get('q') || '').trim();
+  const activeCollection = (initialParams.get('collection') || '').trim();
+  const initialPage = (initialParams.get('page') || '').trim();
+  const defaultSort = activeSearchQuery ? 'relevance' : (activeCollection ? 'collection' : 'featured');
+  let initializing = true;
 
   const availabilityByValue = new Map(availabilityChecks.map((box) => [box.value, box]));
   const inStock = availabilityByValue.get('in');
@@ -38,7 +44,10 @@
 
   const syncUrl = () => {
     const params = new URLSearchParams();
-    const q = (search?.value || '').trim();
+    if (activeCollection) params.set('collection', activeCollection);
+    if (initializing && initialPage && initialPage !== '1') params.set('page', initialPage);
+
+    const q = (search?.value || activeSearchQuery).trim();
     if (q) params.set('q', q);
 
     categoryChecks.filter((box) => box.checked).forEach((box) => params.append('category', box.value));
@@ -51,14 +60,14 @@
       if (!selectedAvailability.length) params.set('availability', 'none');
     }
 
-    if (sort?.value && sort.value !== 'featured') params.set('sort', sort.value);
+    if (sort?.value && sort.value !== defaultSort) params.set('sort', sort.value);
 
     const query = params.toString();
     const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash || ''}`;
     window.history.replaceState({}, '', nextUrl);
   };
 
-  const params = new URLSearchParams(window.location.search);
+  const params = initialParams;
   const categoriesFromUrl = selectedParams(params, 'category');
   const brandsFromUrl = selectedParams(params, 'brand');
 
@@ -136,4 +145,5 @@
   // Re-apply once after restoring URL/default state because catalog-v110.js initializes first.
   triggerApply([...categoryChecks, ...brandChecks, ...availabilityChecks]);
   syncUrl();
+  initializing = false;
 })();

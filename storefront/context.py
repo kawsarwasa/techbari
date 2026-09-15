@@ -2,7 +2,7 @@
 from django.urls import reverse
 from django.utils import timezone
 
-from catalog.models import Product
+from catalog.models import Category, Product
 from catalog.presentation import brand_filters, catalog_queryset, category_filters, serialize_product
 from integrations.services import public_tracking_config
 from inventory.models import InventoryBalance, Warehouse
@@ -25,6 +25,35 @@ def _apply_online_warehouse_stock(catalog):
             variant["available"] = available > 0
             total_available += available
         product["stock"] = total_available
+
+
+def _category_menu(image_urls=None):
+    image_urls = image_urls or {}
+    rows = list(
+        Category.objects.filter(is_active=True)
+        .select_related("parent")
+        .order_by("sort_order", "name", "id")
+    )
+    nodes = {
+        row.pk: {
+            "id": row.pk,
+            "name": row.name,
+            "slug": row.slug,
+            "parent_id": row.parent_id,
+            "image_url": image_urls.get(row.pk, ""),
+            "children": [],
+        }
+        for row in rows
+    }
+    roots = []
+    for row in rows:
+        node = nodes[row.pk]
+        parent = nodes.get(row.parent_id)
+        if parent is None:
+            roots.append(node)
+        else:
+            parent["children"].append(node)
+    return roots
 
 
 def _coupon_product_ids(coupon):
@@ -60,12 +89,15 @@ def catalog_context():
     featured = [product for product in catalog if product.get("is_featured")][:6] or catalog[:6]
     cms = storefront_cms_context()
     hero_slides = cms["hero_slides"]
+    categories = category_filters()
+    category_images = {row["id"]: row["image_url"] for row in categories}
     context = {
         "catalog": catalog,
         "products": catalog,
         "hero": hero_slides[0] if hero_slides else None,
         "cart_summary": {"count": 0, "subtotal": 0, "total": 0},
-        "categories": category_filters(),
+        "categories": categories,
+        "category_menu": _category_menu(category_images),
         "brands": brand_filters(),
         "tracking": mock_data.TRACKING_ORDER,
         "featured_products": featured,

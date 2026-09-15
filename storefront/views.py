@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -12,10 +13,13 @@ from store_settings.models import ContentPage
 
 from .bd_locations import BD_LOCATIONS
 from .checkout_services import CheckoutError, checkout_success_url, create_checkout_token, place_checkout_order, verify_success_token
+from .collections import COLLECTION_LABELS, collection_label, collection_products, normalize_collection
 from .context import catalog_context
 from .forms import CheckoutForm
+from .search import matching_product_ids, product_search_rank
 
 PAGE_TEMPLATES = {"home": "home", "products": "products", "cart": "cart", "contact": "contact"}
+PRODUCTS_PER_PAGE = 12
 LEGACY_PAGES = {
     "index": "home",
     "track-order": "track_order",
@@ -38,14 +42,130 @@ def _customer_account_for_request(request):
     ).first()
 
 
+def _selected_category_names(context, request):
+    values = []
+    for raw_value in request.GET.getlist("category"):
+        values.extend(value.strip() for value in raw_value.split(",") if value.strip())
+    if not values:
+        return []
+
+    by_name = {}
+    by_slug = {}
+    for category in context.get("categories", []):
+        name = str(category.get("name") or "").strip()
+        slug = str(category.get("slug") or "").strip()
+        if name:
+            by_name[name.casefold()] = name
+        if slug:
+            by_slug[slug.casefold()] = name
+
+    selected = []
+    for value in values:
+        key = value.casefold()
+        name = by_name.get(key) or by_slug.get(key)
+        if name and name not in selected:
+            selected.append(name)
+    return selected
+
+
+def _sync_listing_products(context):
+    browser_by_pk = {product["pk"]: product for product in context["store_data"]["products"]}
+    context["store_data"]["listing_products"] = [
+        browser_by_pk[product["pk"]]
+        for product in context["products"]
+        if product["pk"] in browser_by_pk
+    ]
+
+
+def _apply_collection_filter(context, raw_collection):
+    key = normalize_collection(raw_collection)
+    context["selected_collection"] = key
+    context["selected_collection_label"] = collection_label(key)
+    if not key:
+        return
+    context["products"] = collection_products(context["products"], key)
+    _sync_listing_products(context)
+
+
+def _apply_home_collections(context):
+    collections = {
+        key: collection_products(context["catalog"], key)[:6]
+        for key in COLLECTION_LABELS
+    }
+    context["home_featured_collections"] = collections
+    context["home_featured_collection_ids"] = {
+        key: [product["id"] for product in products]
+        for key, products in collections.items()
+    }
+    context["featured_products"] = collections["best-selling"]
+
+
+def _apply_category_filter(context, selected_names):
+    context["selected_category_name"] = selected_names[0] if len(selected_names) == 1 else ""
+    if not selected_names:
+        return
+
+    allowed = {name.casefold() for name in selected_names}
+    context["products"] = [
+        product
+        for product in context["products"]
+        if str(product.get("category") or "").casefold() in allowed
+    ]
+    _sync_listing_products(context)
+
+
+def _apply_product_search(context, raw_query):
+    query = " ".join(str(raw_query or "").split())
+    context["search_query"] = query
+    context["store_data"]["search_query"] = query
+    if not query:
+        context["search_result_count"] = len(context["products"])
+        return
+
+    matched_ids = set(matching_product_ids(query))
+    products = [product for product in context["products"] if product["pk"] in matched_ids]
+    products.sort(
+        key=lambda product: (
+            -product_search_rank(product, query),
+            -int(bool(product.get("is_featured"))),
+            str(product.get("name") or "").casefold(),
+        )
+    )
+    context["products"] = products
+    context["search_result_count"] = len(products)
+    _sync_listing_products(context)
+
+
+def _apply_product_pagination(context, request):
+    paginator = Paginator(context["products"], PRODUCTS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    context["products"] = list(page_obj.object_list)
+    context["page_obj"] = page_obj
+    context["paginator"] = paginator
+    context["pagination_total_count"] = paginator.count
+    context["pagination_items"] = [
+        {"number": value, "ellipsis": value == paginator.ELLIPSIS}
+        for value in paginator.get_elided_page_range(page_obj.number, on_each_side=2, on_ends=1)
+    ]
+
+    query = request.GET.copy()
+    query.pop("page", None)
+    context["pagination_query"] = query.urlencode()
+    _sync_listing_products(context)
+
+
 def page(request, page_name="home"):
     if page_name not in PAGE_TEMPLATES:
         raise Http404("Page not found")
     context = catalog_context()
-    if page_name == "products":
-        query = request.GET.get("q", "").casefold().strip()
-        if query:
-            context["products"] = [p for p in context["products"] if query in f'{p["name"]} {p["brand"]} {p["category"]} {p["sku"]}'.casefold()]
+    if page_name == "home":
+        _apply_home_collections(context)
+    elif page_name == "products":
+        _apply_collection_filter(context, request.GET.get("collection", ""))
+        selected_names = _selected_category_names(context, request)
+        _apply_category_filter(context, selected_names)
+        _apply_product_search(context, request.GET.get("q", ""))
+        _apply_product_pagination(context, request)
     return render(request, f"storefront/pages/{PAGE_TEMPLATES[page_name]}.html", context)
 
 
