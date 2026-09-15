@@ -12,6 +12,7 @@
   const clearButton = document.querySelector('[data-catalog-clear]');
   const initialParams = new URLSearchParams(window.location.search);
   const activeSearchQuery = (initialParams.get('q') || '').trim();
+  const activeCollection = (initialParams.get('collection') || '').trim();
   const defaultSort = activeSearchQuery ? 'relevance' : 'featured';
 
   const availabilityByValue = new Map(availabilityChecks.map((box) => [box.value, box]));
@@ -41,6 +42,8 @@
 
   const syncUrl = () => {
     const params = new URLSearchParams();
+    if (activeCollection) params.set('collection', activeCollection);
+
     const q = (search?.value || activeSearchQuery).trim();
     if (q) params.set('q', q);
 
