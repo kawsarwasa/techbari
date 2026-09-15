@@ -13,7 +13,9 @@
   const initialParams = new URLSearchParams(window.location.search);
   const activeSearchQuery = (initialParams.get('q') || '').trim();
   const activeCollection = (initialParams.get('collection') || '').trim();
+  const initialPage = (initialParams.get('page') || '').trim();
   const defaultSort = activeSearchQuery ? 'relevance' : (activeCollection ? 'collection' : 'featured');
+  let initializing = true;
 
   const availabilityByValue = new Map(availabilityChecks.map((box) => [box.value, box]));
   const inStock = availabilityByValue.get('in');
@@ -43,6 +45,7 @@
   const syncUrl = () => {
     const params = new URLSearchParams();
     if (activeCollection) params.set('collection', activeCollection);
+    if (initializing && initialPage && initialPage !== '1') params.set('page', initialPage);
 
     const q = (search?.value || activeSearchQuery).trim();
     if (q) params.set('q', q);
@@ -142,4 +145,5 @@
   // Re-apply once after restoring URL/default state because catalog-v110.js initializes first.
   triggerApply([...categoryChecks, ...brandChecks, ...availabilityChecks]);
   syncUrl();
+  initializing = false;
 })();
