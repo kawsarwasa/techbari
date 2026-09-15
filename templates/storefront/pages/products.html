@@ -8,7 +8,7 @@
 {% include "storefront/includes/breadcrumbs/products.html" %}
 <div class="listing-top">
   <div><h1 class="page-title">{% if search_query %}Search Products by “{{ search_query }}”{% elif selected_category_name %}{{ selected_category_name }}{% elif selected_collection_label %}{{ selected_collection_label }} Products{% else %}All Products{% endif %}</h1><p class="page-subtitle">{% if selected_category_name and not search_query %}Explore all {{ selected_category_name }} products available at TechBari.{% elif selected_collection_label and not search_query %}Explore {{ selected_collection_label|lower }} products available at TechBari.{% else %}Discover authentic electronics and accessories at TechBari. Upgrade your everyday.{% endif %}</p></div>
-  <div><span id="catalogShowing" class="muted" style="font-size:13px;margin-right:12px">Showing {{ products|length }} product{% if products|length != 1 %}s{% endif %}</span><select class="sort-select" id="catalogSort">{% if search_query %}<option value="relevance" selected>Sort by Relevance</option>{% elif selected_collection %}<option value="collection" selected>Sort by {{ selected_collection_label }}</option>{% endif %}<option value="featured">Sort by Featured</option><option value="newest">Newest</option><option value="price-asc">Price: Low to High</option><option value="price-desc">Price: High to Low</option></select></div>
+  <div><span id="catalogShowing" class="muted" style="font-size:13px;margin-right:12px">{% if page_obj and page_obj.paginator.count %}Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} products{% else %}Showing 0 products{% endif %}</span><select class="sort-select" id="catalogSort">{% if search_query %}<option value="relevance" selected>Sort by Relevance</option>{% elif selected_collection %}<option value="collection" selected>Sort by {{ selected_collection_label }}</option>{% endif %}<option value="featured">Sort by Featured</option><option value="newest">Newest</option><option value="price-asc">Price: Low to High</option><option value="price-desc">Price: High to Low</option></select></div>
 </div>
 {% if search_query %}
 <div class="storefront-search-summary">
@@ -58,4 +58,4 @@
 </div>
 </div></main>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'store/js/catalog-filter-state-v302.js' %}?v=3.1.2"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'store/js/catalog-filter-state-v302.js' %}?v=3.1.3"></script>{% endblock %}
