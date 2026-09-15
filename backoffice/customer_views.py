@@ -124,8 +124,8 @@ def customer_groups(request):
     instance = get_object_or_404(CustomerGroup, pk=group_id) if group_id else None
     form = CustomerGroupForm(request.POST or None, instance=instance)
     if request.method == "POST" and form.is_valid():
-        group = form.save()
-        return redirect(reverse("backoffice:customer_groups") + f"?id={group.pk}&notice=group-saved")
+        form.save()
+        return redirect(reverse("backoffice:customer_groups"))
     context = _base_context("customers", request)
     context.update(
         group_form=form,
