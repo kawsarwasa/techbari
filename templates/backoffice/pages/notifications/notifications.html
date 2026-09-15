@@ -1,7 +1,9 @@
 {% extends "backoffice/base.html" %}
+{% load static %}
 {% block title %}Notifications | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/notifications-polish-v309.css' %}?v=3.0.9">{% endblock %}
 {% block content %}
-<section class="page">
+<section class="page notifications-page">
   <div class="page-head">
     <div><h1>Notifications</h1><p>Real order, payment, stock, shipping and integration alerts.</p></div>
     <div class="head-actions">
@@ -10,7 +12,7 @@
     </div>
   </div>
 
-  <form method="get" class="filters" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+  <form method="get" class="notifications-toolbar">
     <select class="control" name="kind"><option value="">All types</option>{% for value,label in notification_kinds %}<option value="{{ value }}" {% if selected_kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
     <select class="control" name="state"><option value="">All states</option><option value="unread" {% if selected_state == 'unread' %}selected{% endif %}>Unread</option><option value="read" {% if selected_state == 'read' %}selected{% endif %}>Read</option></select>
     <button class="btn" type="submit">Filter</button>
@@ -18,23 +20,50 @@
 
   <div class="notification-list">
     {% for notification in notifications %}
-      <article class="card" style="padding:16px;margin-bottom:12px;opacity:{% if notification.is_read_for_user %}.68{% else %}1{% endif %}">
-        <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap">
-          <div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><strong>{{ notification.title }}</strong><span class="badge">{{ notification.get_kind_display }}</span><span class="badge">{{ notification.get_severity_display }}</span>{% if not notification.is_read_for_user %}<span class="badge">Unread</span>{% endif %}</div>
-            <p class="muted" style="margin:7px 0 0">{{ notification.message }}</p>
-            <small class="muted">{{ notification.created_at|date:"M d, Y H:i" }}</small>
+      <article class="notification-card severity-{{ notification.severity|default:'info' }} kind-{{ notification.kind|default:'general' }} {% if notification.is_read_for_user %}is-read{% else %}is-unread{% endif %}">
+        <div class="notification-icon" aria-hidden="true">
+          {% if notification.kind == 'stock' %}
+            <svg viewBox="0 0 24 24"><path d="M4 7h16v12H4z"/><path d="m7 7 1-3h8l1 3"/><path d="M8 12h8"/></svg>
+          {% elif notification.kind == 'order' %}
+            <svg viewBox="0 0 24 24"><path d="M6 3h12l2 5-8 4-8-4Z"/><path d="M4 8v10h16V8"/><path d="M9 13h6"/></svg>
+          {% elif notification.kind == 'payment' %}
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>
+          {% elif notification.kind == 'shipping' %}
+            <svg viewBox="0 0 24 24"><path d="M3 6h11v10H3z"/><path d="M14 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+          {% elif notification.kind == 'integration' %}
+            <svg viewBox="0 0 24 24"><path d="M8 12h8"/><path d="M12 8v8"/><circle cx="12" cy="12" r="9"/></svg>
+          {% else %}
+            <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+          {% endif %}
+        </div>
+
+        <div class="notification-main">
+          <div class="notification-title-row">
+            <strong class="notification-title">{{ notification.title }}</strong>
+            <span class="notification-badge kind-{{ notification.kind|default:'general' }}">{{ notification.get_kind_display }}</span>
+            <span class="notification-badge severity-{{ notification.severity|default:'info' }}">{{ notification.get_severity_display }}</span>
+            {% if not notification.is_read_for_user %}<span class="notification-unread">Unread</span>{% endif %}
           </div>
-          <div style="display:flex;gap:8px">
-            {% if notification.link %}<a class="btn" href="{{ notification.link }}">Open</a>{% endif %}
-            {% if not notification.is_read_for_user %}<form method="post" action="{% url 'integration_admin:notification_read' notification.id %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn" type="submit">Mark read</button></form>{% endif %}
-          </div>
+          <p class="notification-message" title="{{ notification.message }}">{{ notification.message }}</p>
+          <small class="notification-meta">{{ notification.created_at|date:"M d, Y H:i" }}</small>
+        </div>
+
+        <div class="notification-actions">
+          {% if notification.link %}<a class="btn notification-open" href="{{ notification.link }}">Open</a>{% endif %}
+          {% if not notification.is_read_for_user %}<form method="post" action="{% url 'integration_admin:notification_read' notification.id %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn notification-read" type="submit">Mark read</button></form>{% endif %}
         </div>
       </article>
     {% empty %}
       <div class="empty-state"><h3>No notifications</h3><p>Operational alerts will appear here automatically.</p></div>
     {% endfor %}
   </div>
-  {% if page_obj.has_other_pages %}<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">{% if page_obj.has_previous %}<a class="btn" href="?page={{ page_obj.previous_page_number }}&kind={{ selected_kind }}&state={{ selected_state }}">Previous</a>{% endif %}<span class="btn">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a class="btn" href="?page={{ page_obj.next_page_number }}&kind={{ selected_kind }}&state={{ selected_state }}">Next</a>{% endif %}</div>{% endif %}
+
+  {% if page_obj.has_other_pages %}
+    <div class="notifications-pagination">
+      {% if page_obj.has_previous %}<a class="btn" href="?page={{ page_obj.previous_page_number }}&kind={{ selected_kind }}&state={{ selected_state }}">Previous</a>{% endif %}
+      <span class="btn">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a class="btn" href="?page={{ page_obj.next_page_number }}&kind={{ selected_kind }}&state={{ selected_state }}">Next</a>{% endif %}
+    </div>
+  {% endif %}
 </section>
 {% endblock %}
