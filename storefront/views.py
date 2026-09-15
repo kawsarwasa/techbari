@@ -39,19 +39,53 @@ def _customer_account_for_request(request):
     ).first()
 
 
-def _selected_category_label(context, request):
+def _selected_category_names(context, request):
     values = []
     for raw_value in request.GET.getlist("category"):
         values.extend(value.strip() for value in raw_value.split(",") if value.strip())
-    if len(values) != 1:
-        return ""
+    if not values:
+        return []
 
-    selected = values[0].casefold()
+    by_name = {}
+    by_slug = {}
     for category in context.get("categories", []):
-        name = str(category.get("name") or "")
-        if name.casefold() == selected:
-            return name
-    return ""
+        name = str(category.get("name") or "").strip()
+        slug = str(category.get("slug") or "").strip()
+        if name:
+            by_name[name.casefold()] = name
+        if slug:
+            by_slug[slug.casefold()] = name
+
+    selected = []
+    for value in values:
+        key = value.casefold()
+        name = by_name.get(key) or by_slug.get(key)
+        if name and name not in selected:
+            selected.append(name)
+    return selected
+
+
+def _sync_listing_products(context):
+    browser_by_pk = {product["pk"]: product for product in context["store_data"]["products"]}
+    context["store_data"]["listing_products"] = [
+        browser_by_pk[product["pk"]]
+        for product in context["products"]
+        if product["pk"] in browser_by_pk
+    ]
+
+
+def _apply_category_filter(context, selected_names):
+    context["selected_category_name"] = selected_names[0] if len(selected_names) == 1 else ""
+    if not selected_names:
+        return
+
+    allowed = {name.casefold() for name in selected_names}
+    context["products"] = [
+        product
+        for product in context["products"]
+        if str(product.get("category") or "").casefold() in allowed
+    ]
+    _sync_listing_products(context)
 
 
 def _apply_product_search(context, raw_query):
@@ -63,7 +97,7 @@ def _apply_product_search(context, raw_query):
         return
 
     matched_ids = set(matching_product_ids(query))
-    products = [product for product in context["catalog"] if product["pk"] in matched_ids]
+    products = [product for product in context["products"] if product["pk"] in matched_ids]
     products.sort(
         key=lambda product: (
             -product_search_rank(product, query),
@@ -73,13 +107,7 @@ def _apply_product_search(context, raw_query):
     )
     context["products"] = products
     context["search_result_count"] = len(products)
-
-    browser_by_pk = {product["pk"]: product for product in context["store_data"]["products"]}
-    context["store_data"]["listing_products"] = [
-        browser_by_pk[product["pk"]]
-        for product in products
-        if product["pk"] in browser_by_pk
-    ]
+    _sync_listing_products(context)
 
 
 def page(request, page_name="home"):
@@ -87,7 +115,8 @@ def page(request, page_name="home"):
         raise Http404("Page not found")
     context = catalog_context()
     if page_name == "products":
-        context["selected_category_name"] = _selected_category_label(context, request)
+        selected_names = _selected_category_names(context, request)
+        _apply_category_filter(context, selected_names)
         _apply_product_search(context, request.GET.get("q", ""))
     return render(request, f"storefront/pages/{PAGE_TEMPLATES[page_name]}.html", context)
 
