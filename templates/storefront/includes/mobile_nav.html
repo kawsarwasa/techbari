@@ -37,9 +37,11 @@
       </div>
     </div>
 
-    {% for category in category_menu|slice:':7' %}
-      <a class="category-quick-link" href="{% url 'storefront:products' %}?category={{ category.name|urlencode }}">{{ category.name }}</a>
-    {% endfor %}
-    <a class="deal" href="{% url 'storefront:products' %}">% Deals</a>
+    <div class="category-quick-scroll" aria-label="Popular categories">
+      {% for category in category_menu|slice:':7' %}
+        <a class="category-quick-link" href="{% url 'storefront:products' %}?category={{ category.name|urlencode }}">{{ category.name }}</a>
+      {% endfor %}
+      <a class="deal" href="{% url 'storefront:products' %}">% Deals</a>
+    </div>
   </div>
 </nav>
