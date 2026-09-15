@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Customer Groups | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/customer-groups-responsive-v307.css' %}?v=3.0.7">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/customer-groups-responsive-v307.css' %}?v=3.0.8">{% endblock %}
 {% block content %}
 <section class="page customer-groups-page">
   <div class="page-head">
@@ -25,7 +25,15 @@
           <label class="field"><span>Name</span>{{ group_form.name }}{{ group_form.name.errors }}</label>
           <label class="field"><span>Code</span>{{ group_form.code }}{{ group_form.code.errors }}</label>
           <label class="field"><span>Discount %</span>{{ group_form.discount_percent }}{{ group_form.discount_percent.errors }}</label>
-          <label class="field"><span>Active</span>{{ group_form.is_active }}</label>
+          <div class="field group-active-field">
+            <span>Active</span>
+            <label class="group-toggle-control" for="{{ group_form.is_active.id_for_label }}">
+              {{ group_form.is_active }}
+              <span class="group-toggle-track" aria-hidden="true"><span class="group-toggle-thumb"></span></span>
+              <span class="group-toggle-label">Enable this group</span>
+            </label>
+            {{ group_form.is_active.errors }}
+          </div>
           <label class="field" style="grid-column:1/-1"><span>Notes</span>{{ group_form.notes }}</label>
         </div>
         <div class="head-actions" style="margin-top:14px">
