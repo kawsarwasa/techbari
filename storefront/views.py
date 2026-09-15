@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -18,6 +19,7 @@ from .forms import CheckoutForm
 from .search import matching_product_ids, product_search_rank
 
 PAGE_TEMPLATES = {"home": "home", "products": "products", "cart": "cart", "contact": "contact"}
+PRODUCTS_PER_PAGE = 12
 LEGACY_PAGES = {
     "index": "home",
     "track-order": "track_order",
@@ -134,6 +136,24 @@ def _apply_product_search(context, raw_query):
     _sync_listing_products(context)
 
 
+def _apply_product_pagination(context, request):
+    paginator = Paginator(context["products"], PRODUCTS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    context["products"] = list(page_obj.object_list)
+    context["page_obj"] = page_obj
+    context["paginator"] = paginator
+    context["pagination_total_count"] = paginator.count
+    context["pagination_items"] = [
+        {"number": value, "ellipsis": value == paginator.ELLIPSIS}
+        for value in paginator.get_elided_page_range(page_obj.number, on_each_side=2, on_ends=1)
+    ]
+
+    query = request.GET.copy()
+    query.pop("page", None)
+    context["pagination_query"] = query.urlencode()
+    _sync_listing_products(context)
+
+
 def page(request, page_name="home"):
     if page_name not in PAGE_TEMPLATES:
         raise Http404("Page not found")
@@ -145,6 +165,7 @@ def page(request, page_name="home"):
         selected_names = _selected_category_names(context, request)
         _apply_category_filter(context, selected_names)
         _apply_product_search(context, request.GET.get("q", ""))
+        _apply_product_pagination(context, request)
     return render(request, f"storefront/pages/{PAGE_TEMPLATES[page_name]}.html", context)
 
 
