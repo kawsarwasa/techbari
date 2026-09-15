@@ -1,19 +1,19 @@
 {% extends "storefront/base.html" %}
 {% load static demo %}
-{% block title %}{% if search_query %}Search: {{ search_query }} - TechBari{% elif selected_category_name %}{{ selected_category_name }} - TechBari{% elif selected_collection_label %}{{ selected_collection_label }} Products - TechBari{% else %}All Products - TechBari{% endif %}{% endblock %}
+{% block title %}{% if search_query %}Search: {{ search_query }} - TechBari{% elif selected_brand_name %}{{ selected_brand_name }} Products - TechBari{% elif selected_category_name %}{{ selected_category_name }} - TechBari{% elif selected_collection_label %}{{ selected_collection_label }} Products - TechBari{% else %}All Products - TechBari{% endif %}{% endblock %}
 {% block body_attributes %}{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'store/css/storefront-search-v311.css' %}?v=3.1.2">{% endblock %}
 {% block content %}
 <main class="page"><div class="container">
 {% include "storefront/includes/breadcrumbs/products.html" %}
 <div class="listing-top">
-  <div><h1 class="page-title">{% if search_query %}Search Products by “{{ search_query }}”{% elif selected_category_name %}{{ selected_category_name }}{% elif selected_collection_label %}{{ selected_collection_label }} Products{% else %}All Products{% endif %}</h1><p class="page-subtitle">{% if selected_category_name and not search_query %}Explore all {{ selected_category_name }} products available at TechBari.{% elif selected_collection_label and not search_query %}Explore {{ selected_collection_label|lower }} products available at TechBari.{% else %}Discover authentic electronics and accessories at TechBari. Upgrade your everyday.{% endif %}</p></div>
+  <div><h1 class="page-title">{% if search_query %}Search Products by “{{ search_query }}”{% elif selected_brand_name %}{{ selected_brand_name }} Products{% elif selected_category_name %}{{ selected_category_name }}{% elif selected_collection_label %}{{ selected_collection_label }} Products{% else %}All Products{% endif %}</h1><p class="page-subtitle">{% if selected_brand_name and not search_query %}Explore all {{ selected_brand_name }} products available at TechBari.{% elif selected_category_name and not search_query %}Explore all {{ selected_category_name }} products available at TechBari.{% elif selected_collection_label and not search_query %}Explore {{ selected_collection_label|lower }} products available at TechBari.{% else %}Discover authentic electronics and accessories at TechBari. Upgrade your everyday.{% endif %}</p></div>
   <div><span id="catalogShowing" class="muted" style="font-size:13px;margin-right:12px">{% if page_obj and page_obj.paginator.count %}Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} products{% else %}Showing 0 products{% endif %}</span><select class="sort-select" id="catalogSort">{% if search_query %}<option value="relevance" selected>Sort by Relevance</option>{% elif selected_collection %}<option value="collection" selected>Sort by {{ selected_collection_label }}</option>{% endif %}<option value="featured">Sort by Featured</option><option value="newest">Newest</option><option value="price-asc">Price: Low to High</option><option value="price-desc">Price: High to Low</option></select></div>
 </div>
 {% if search_query %}
 <div class="storefront-search-summary">
   <div><span class="storefront-search-label">Search results for</span> <strong>“{{ search_query }}”</strong> <span class="storefront-search-count">{{ search_result_count }} product{% if search_result_count != 1 %}s{% endif %}</span></div>
-  <a href="{% url 'storefront:products' %}{% if selected_collection %}?collection={{ selected_collection|urlencode }}{% endif %}">Clear search</a>
+  <a href="{% url 'storefront:products' %}{% if selected_brand_name %}?brand={{ selected_brand_name|urlencode }}{% elif selected_collection %}?collection={{ selected_collection|urlencode }}{% endif %}">Clear search</a>
 </div>
 {% endif %}
 <div class="products-layout">
@@ -49,10 +49,11 @@
 <section>
   <form class="search-wrap storefront-products-search" method="get" action="{% url 'storefront:products' %}" role="search">
     {% if selected_collection %}<input type="hidden" name="collection" value="{{ selected_collection }}">{% endif %}
+    {% if selected_brand_name %}<input type="hidden" name="brand" value="{{ selected_brand_name }}">{% endif %}
     <input id="catalogServerSearch" name="q" value="{{ search_query|default:'' }}" placeholder="Search by product, brand, category, SKU or feature..." autocomplete="off">
     <button class="search-btn" type="submit" aria-label="Search products"><i data-icon="search"></i></button>
   </form>
-  <div id="allProductsGrid" class="products-grid listing">{% for product in products %}{% include "storefront/components/product_card.html" %}{% empty %}<div class="empty-state storefront-search-empty"><h3>No products found{% if search_query %} for “{{ search_query }}”{% elif selected_collection_label %} in {{ selected_collection_label }}{% endif %}</h3><p>Try a product name, brand, category, SKU, model, specification or a simpler keyword.</p>{% if search_query or selected_collection %}<a class="btn btn-primary" href="{% url 'storefront:products' %}">View All Products</a>{% endif %}</div>{% endfor %}</div>
+  <div id="allProductsGrid" class="products-grid listing">{% for product in products %}{% include "storefront/components/product_card.html" %}{% empty %}<div class="empty-state storefront-search-empty"><h3>No products found{% if search_query %} for “{{ search_query }}”{% elif selected_brand_name %} for {{ selected_brand_name }}{% elif selected_collection_label %} in {{ selected_collection_label }}{% endif %}</h3><p>Try a product name, brand, category, SKU, model, specification or a simpler keyword.</p>{% if search_query or selected_collection or selected_brand_name %}<a class="btn btn-primary" href="{% url 'storefront:products' %}">View All Products</a>{% endif %}</div>{% endfor %}</div>
   {% include "storefront/components/pagination.html" %}
 </section>
 </div>
