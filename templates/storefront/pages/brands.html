@@ -1,0 +1,25 @@
+{% extends "storefront/base.html" %}
+{% load static %}
+{% block title %}All Brands - TechBari{% endblock %}
+{% block content %}
+<main class="page brand-directory-page">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="{% url 'storefront:home' %}">Home</a><span>›</span><span>Brands</span></nav>
+    <div class="brand-directory-head">
+      <div><h1 class="page-title">Shop by Brand</h1><p class="page-subtitle">Browse active brands and explore their available products.</p></div>
+      <a class="section-link" href="{% url 'storefront:products' %}">View All Products →</a>
+    </div>
+    <div class="brand-directory-grid">
+      {% for brand in brands %}
+      <a class="brand-directory-card" href="{% url 'storefront:products' %}?brand={{ brand.name|urlencode }}">
+        <div class="brand-directory-logo-wrap">{% if brand.image_url %}<img src="{{ brand.image_url }}" alt="{{ brand.name }}">{% else %}<span>{{ brand.name|slice:":1" }}</span>{% endif %}</div>
+        <div class="brand-directory-copy"><strong>{{ brand.name }}</strong><span>{{ brand.count }} product{% if brand.count != 1 %}s{% endif %}</span></div>
+        <span class="brand-directory-arrow" aria-hidden="true">›</span>
+      </a>
+      {% empty %}
+      <div class="empty-state">No active brands are available yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+</main>
+{% endblock %}

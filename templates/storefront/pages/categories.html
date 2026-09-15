@@ -1,0 +1,25 @@
+{% extends "storefront/base.html" %}
+{% load static %}
+{% block title %}All Categories - TechBari{% endblock %}
+{% block content %}
+<main class="page category-directory-page">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="{% url 'storefront:home' %}">Home</a><span>›</span><span>Categories</span></nav>
+    <div class="category-directory-head">
+      <div><h1 class="page-title">Shop by Category</h1><p class="page-subtitle">Browse active categories and find products by type.</p></div>
+      <a class="section-link" href="{% url 'storefront:products' %}">View All Products →</a>
+    </div>
+    <div class="category-directory-grid">
+      {% for category in categories %}
+      <a class="category-directory-card" href="{% url 'storefront:products' %}?category={{ category.name|urlencode }}">
+        <div class="category-directory-image-wrap"><img src="{{ category.image_url }}" alt="{{ category.name }}"></div>
+        <div class="category-directory-copy"><strong>{{ category.name }}</strong><span>{{ category.count }} product{% if category.count != 1 %}s{% endif %}</span></div>
+        <span class="category-directory-arrow" aria-hidden="true">›</span>
+      </a>
+      {% empty %}
+      <div class="empty-state">No active categories are available yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+</main>
+{% endblock %}
