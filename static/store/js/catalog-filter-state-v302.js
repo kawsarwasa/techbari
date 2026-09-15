@@ -10,6 +10,8 @@
   const search = document.getElementById('productSearch');
   const sort = document.getElementById('catalogSort');
   const clearButton = document.querySelector('[data-catalog-clear]');
+  const initialParams = new URLSearchParams(window.location.search);
+  const activeSearchQuery = (initialParams.get('q') || '').trim();
 
   const availabilityByValue = new Map(availabilityChecks.map((box) => [box.value, box]));
   const inStock = availabilityByValue.get('in');
@@ -38,7 +40,7 @@
 
   const syncUrl = () => {
     const params = new URLSearchParams();
-    const q = (search?.value || '').trim();
+    const q = (search?.value || activeSearchQuery).trim();
     if (q) params.set('q', q);
 
     categoryChecks.filter((box) => box.checked).forEach((box) => params.append('category', box.value));
@@ -58,7 +60,7 @@
     window.history.replaceState({}, '', nextUrl);
   };
 
-  const params = new URLSearchParams(window.location.search);
+  const params = initialParams;
   const categoriesFromUrl = selectedParams(params, 'category');
   const brandsFromUrl = selectedParams(params, 'brand');
 
