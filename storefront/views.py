@@ -12,6 +12,7 @@ from store_settings.models import ContentPage
 
 from .bd_locations import BD_LOCATIONS
 from .checkout_services import CheckoutError, checkout_success_url, create_checkout_token, place_checkout_order, verify_success_token
+from .collections import COLLECTION_LABELS, collection_label, collection_products, normalize_collection
 from .context import catalog_context
 from .forms import CheckoutForm
 from .search import matching_product_ids, product_search_rank
@@ -74,6 +75,29 @@ def _sync_listing_products(context):
     ]
 
 
+def _apply_collection_filter(context, raw_collection):
+    key = normalize_collection(raw_collection)
+    context["selected_collection"] = key
+    context["selected_collection_label"] = collection_label(key)
+    if not key:
+        return
+    context["products"] = collection_products(context["products"], key)
+    _sync_listing_products(context)
+
+
+def _apply_home_collections(context):
+    collections = {
+        key: collection_products(context["catalog"], key)[:6]
+        for key in COLLECTION_LABELS
+    }
+    context["home_featured_collections"] = collections
+    context["home_featured_collection_ids"] = {
+        key: [product["id"] for product in products]
+        for key, products in collections.items()
+    }
+    context["featured_products"] = collections["best-selling"]
+
+
 def _apply_category_filter(context, selected_names):
     context["selected_category_name"] = selected_names[0] if len(selected_names) == 1 else ""
     if not selected_names:
@@ -114,7 +138,10 @@ def page(request, page_name="home"):
     if page_name not in PAGE_TEMPLATES:
         raise Http404("Page not found")
     context = catalog_context()
-    if page_name == "products":
+    if page_name == "home":
+        _apply_home_collections(context)
+    elif page_name == "products":
+        _apply_collection_filter(context, request.GET.get("collection", ""))
         selected_names = _selected_category_names(context, request)
         _apply_category_filter(context, selected_names)
         _apply_product_search(context, request.GET.get("q", ""))
