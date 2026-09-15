@@ -56,3 +56,17 @@ class StorefrontCategoryMenuTests(TestCase):
         menu = response.context["category_menu"]
         parent = next(row for row in menu if row["id"] == self.parent.pk)
         self.assertEqual([row["id"] for row in parent["children"]], [self.child.pk])
+
+    def test_products_page_uses_selected_category_as_heading(self):
+        response = self.client.get(reverse("storefront:products"), {"category": self.leaf.name})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["selected_category_name"], self.leaf.name)
+        self.assertContains(response, f'<h1 class="page-title">{self.leaf.name}</h1>', html=True)
+        self.assertContains(response, f"Explore all {self.leaf.name} products available at TechBari.")
+        self.assertNotContains(response, '<h1 class="page-title">All Products</h1>', html=True)
+
+    def test_invalid_category_falls_back_to_all_products_heading(self):
+        response = self.client.get(reverse("storefront:products"), {"category": "Not A Real Category"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["selected_category_name"], "")
+        self.assertContains(response, '<h1 class="page-title">All Products</h1>', html=True)
