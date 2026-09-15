@@ -1,4 +1,5 @@
 from decimal import Decimal
+from urllib.parse import quote
 
 from django.test import TestCase
 from django.urls import reverse
@@ -60,4 +61,4 @@ class StorefrontBrandNavigationTests(TestCase):
         response = self.client.get(reverse("storefront:home"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, reverse("storefront:brands"))
-        self.assertContains(response, f"brand={self.anker.name.replace(' ', '+')}")
+        self.assertContains(response, f"brand={quote(self.anker.name)}")
