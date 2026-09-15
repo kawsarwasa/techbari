@@ -12,6 +12,7 @@
   const clearButton = document.querySelector('[data-catalog-clear]');
   const initialParams = new URLSearchParams(window.location.search);
   const activeSearchQuery = (initialParams.get('q') || '').trim();
+  const defaultSort = activeSearchQuery ? 'relevance' : 'featured';
 
   const availabilityByValue = new Map(availabilityChecks.map((box) => [box.value, box]));
   const inStock = availabilityByValue.get('in');
@@ -53,7 +54,7 @@
       if (!selectedAvailability.length) params.set('availability', 'none');
     }
 
-    if (sort?.value && sort.value !== 'featured') params.set('sort', sort.value);
+    if (sort?.value && sort.value !== defaultSort) params.set('sort', sort.value);
 
     const query = params.toString();
     const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash || ''}`;
