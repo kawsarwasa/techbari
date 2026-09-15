@@ -18,7 +18,7 @@ from .context import catalog_context
 from .forms import CheckoutForm
 from .search import matching_product_ids, product_search_rank
 
-PAGE_TEMPLATES = {"home": "home", "products": "products", "cart": "cart", "contact": "contact"}
+PAGE_TEMPLATES = {"home": "home", "products": "products", "brands": "brands", "cart": "cart", "contact": "contact"}
 PRODUCTS_PER_PAGE = 12
 LEGACY_PAGES = {
     "index": "home",
@@ -42,18 +42,18 @@ def _customer_account_for_request(request):
     ).first()
 
 
-def _selected_category_names(context, request):
+def _selected_filter_names(rows, request, key):
     values = []
-    for raw_value in request.GET.getlist("category"):
+    for raw_value in request.GET.getlist(key):
         values.extend(value.strip() for value in raw_value.split(",") if value.strip())
     if not values:
         return []
 
     by_name = {}
     by_slug = {}
-    for category in context.get("categories", []):
-        name = str(category.get("name") or "").strip()
-        slug = str(category.get("slug") or "").strip()
+    for row in rows:
+        name = str(row.get("name") or "").strip()
+        slug = str(row.get("slug") or "").strip()
         if name:
             by_name[name.casefold()] = name
         if slug:
@@ -61,11 +61,19 @@ def _selected_category_names(context, request):
 
     selected = []
     for value in values:
-        key = value.casefold()
-        name = by_name.get(key) or by_slug.get(key)
+        normalized = value.casefold()
+        name = by_name.get(normalized) or by_slug.get(normalized)
         if name and name not in selected:
             selected.append(name)
     return selected
+
+
+def _selected_category_names(context, request):
+    return _selected_filter_names(context.get("categories", []), request, "category")
+
+
+def _selected_brand_names(context, request):
+    return _selected_filter_names(context.get("brands", []), request, "brand")
 
 
 def _sync_listing_products(context):
@@ -110,6 +118,20 @@ def _apply_category_filter(context, selected_names):
         product
         for product in context["products"]
         if str(product.get("category") or "").casefold() in allowed
+    ]
+    _sync_listing_products(context)
+
+
+def _apply_brand_filter(context, selected_names):
+    context["selected_brand_name"] = selected_names[0] if len(selected_names) == 1 else ""
+    if not selected_names:
+        return
+
+    allowed = {name.casefold() for name in selected_names}
+    context["products"] = [
+        product
+        for product in context["products"]
+        if str(product.get("brand") or "").casefold() in allowed
     ]
     _sync_listing_products(context)
 
@@ -162,8 +184,8 @@ def page(request, page_name="home"):
         _apply_home_collections(context)
     elif page_name == "products":
         _apply_collection_filter(context, request.GET.get("collection", ""))
-        selected_names = _selected_category_names(context, request)
-        _apply_category_filter(context, selected_names)
+        _apply_category_filter(context, _selected_category_names(context, request))
+        _apply_brand_filter(context, _selected_brand_names(context, request))
         _apply_product_search(context, request.GET.get("q", ""))
         _apply_product_pagination(context, request)
     return render(request, f"storefront/pages/{PAGE_TEMPLATES[page_name]}.html", context)
@@ -204,8 +226,6 @@ def checkout(request):
             initial.update(full_name=customer.name, phone=customer.phone, email=customer.email)
             default_address = account.addresses.filter(is_default=True).first()
             if default_address:
-                # Saved addresses supply the destination. Customer identity remains the
-                # linked CRM name/phone so checkout cannot silently alter the profile.
                 initial.update(
                     division=default_address.division,
                     district=default_address.district,
