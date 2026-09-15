@@ -13,7 +13,7 @@
   const initialParams = new URLSearchParams(window.location.search);
   const activeSearchQuery = (initialParams.get('q') || '').trim();
   const activeCollection = (initialParams.get('collection') || '').trim();
-  const defaultSort = activeSearchQuery ? 'relevance' : 'featured';
+  const defaultSort = activeSearchQuery ? 'relevance' : (activeCollection ? 'collection' : 'featured');
 
   const availabilityByValue = new Map(availabilityChecks.map((box) => [box.value, box]));
   const inStock = availabilityByValue.get('in');
