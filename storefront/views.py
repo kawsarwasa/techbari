@@ -18,7 +18,7 @@ from .context import catalog_context
 from .forms import CheckoutForm
 from .search import matching_product_ids, product_search_rank
 
-PAGE_TEMPLATES = {"home": "home", "products": "products", "brands": "brands", "cart": "cart", "contact": "contact"}
+PAGE_TEMPLATES = {"home": "home", "products": "products", "categories": "categories", "brands": "brands", "cart": "cart", "contact": "contact"}
 PRODUCTS_PER_PAGE = 12
 LEGACY_PAGES = {
     "index": "home",
