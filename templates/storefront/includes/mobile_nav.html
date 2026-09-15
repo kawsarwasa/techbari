@@ -1,2 +1,45 @@
 {% load static %}
-<nav class="category-nav"><div class="container"><a class="all" href="{% url 'storefront:products' %}"><i class="" data-icon="menu"></i> All Categories</a><a href="{% url 'storefront:products' %}">TWS Earbuds</a><a href="{% url 'storefront:products' %}">Headphones</a><a href="{% url 'storefront:products' %}">Smartwatches</a><a href="{% url 'storefront:products' %}">Speakers</a><a href="{% url 'storefront:products' %}">Power Banks</a><a href="{% url 'storefront:products' %}">Chargers</a><a href="{% url 'storefront:products' %}">Cables</a><a href="{% url 'storefront:products' %}">Phone Accessories</a><a href="{% url 'storefront:products' %}">Brands</a><a class="deal" href="{% url 'storefront:products' %}">% Deals</a></div></nav>
+<nav class="category-nav">
+  <div class="container">
+    <div class="category-menu-shell" data-category-menu>
+      <button class="all category-menu-trigger" type="button" aria-expanded="false" aria-controls="storeCategoryMenu" data-category-menu-trigger>
+        <i data-icon="menu"></i>
+        <span>All Categories</span>
+        <span class="category-menu-caret" aria-hidden="true">⌄</span>
+      </button>
+      <div class="category-menu-panel" id="storeCategoryMenu" data-category-menu-panel hidden>
+        <div class="category-menu-head">
+          <div>
+            <strong>Browse Categories</strong>
+            <span>Find products by category</span>
+          </div>
+          <a href="{% url 'storefront:products' %}">View All Products</a>
+        </div>
+        <div class="category-menu-grid">
+          {% for category in category_menu %}
+            <div class="category-menu-group">
+              <a class="category-menu-parent" href="{% url 'storefront:products' %}?category={{ category.name|urlencode }}">
+                <span class="category-menu-initial">{{ category.name|slice:':1'|upper }}</span>
+                <span>{{ category.name }}</span>
+              </a>
+              {% if category.children %}
+                <div class="category-menu-children">
+                  {% for child in category.children %}
+                    <a href="{% url 'storefront:products' %}?category={{ child.name|urlencode }}">{{ child.name }}</a>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          {% empty %}
+            <div class="category-menu-empty">No categories are available right now.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {% for category in category_menu|slice:':7' %}
+      <a class="category-quick-link" href="{% url 'storefront:products' %}?category={{ category.name|urlencode }}">{{ category.name }}</a>
+    {% endfor %}
+    <a class="deal" href="{% url 'storefront:products' %}">% Deals</a>
+  </div>
+</nav>
