@@ -27,7 +27,8 @@ def _apply_online_warehouse_stock(catalog):
         product["stock"] = total_available
 
 
-def _category_menu():
+def _category_menu(image_urls=None):
+    image_urls = image_urls or {}
     rows = list(
         Category.objects.filter(is_active=True)
         .select_related("parent")
@@ -39,6 +40,7 @@ def _category_menu():
             "name": row.name,
             "slug": row.slug,
             "parent_id": row.parent_id,
+            "image_url": image_urls.get(row.pk, ""),
             "children": [],
         }
         for row in rows
@@ -87,13 +89,15 @@ def catalog_context():
     featured = [product for product in catalog if product.get("is_featured")][:6] or catalog[:6]
     cms = storefront_cms_context()
     hero_slides = cms["hero_slides"]
+    categories = category_filters()
+    category_images = {row["id"]: row["image_url"] for row in categories}
     context = {
         "catalog": catalog,
         "products": catalog,
         "hero": hero_slides[0] if hero_slides else None,
         "cart_summary": {"count": 0, "subtotal": 0, "total": 0},
-        "categories": category_filters(),
-        "category_menu": _category_menu(),
+        "categories": categories,
+        "category_menu": _category_menu(category_images),
         "brands": brand_filters(),
         "tracking": mock_data.TRACKING_ORDER,
         "featured_products": featured,
