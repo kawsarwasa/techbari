@@ -1,7 +1,7 @@
 import logging
 
 from django.db import transaction
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
 from inventory.models import InventoryBalance
@@ -9,6 +9,7 @@ from payments.models import PaymentTransaction
 from sales.models import SalesOrder
 from shipping.models import Shipment
 
+from .models import Notification
 from .services import enqueue_low_stock_event, enqueue_order_event, enqueue_payment_event, enqueue_shipping_event
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,12 @@ def _load_shipment(pk, event):
     enqueue_shipping_event(shipment, event)
 
 
+def _delete_notifications(reference_type, reference_id):
+    reference_id = str(reference_id or "").strip()
+    if reference_id:
+        Notification.objects.filter(reference_type=reference_type, reference_id=reference_id).delete()
+
+
 @receiver(pre_save, sender=SalesOrder, dispatch_uid="integrations.order_pre_save")
 def order_pre_save(sender, instance, **kwargs):
     instance._integration_old_status = _old_value(SalesOrder, instance, "status")
@@ -56,6 +63,11 @@ def order_post_save(sender, instance, created, **kwargs):
         _after_commit(_load_order, instance.pk, "created")
     elif old_status is not None and old_status != instance.status:
         _after_commit(_load_order, instance.pk, f"status_{instance.status}")
+
+
+@receiver(post_delete, sender=SalesOrder, dispatch_uid="integrations.order_post_delete")
+def order_post_delete(sender, instance, **kwargs):
+    _delete_notifications("sales_order", instance.order_number)
 
 
 @receiver(pre_save, sender=PaymentTransaction, dispatch_uid="integrations.payment_pre_save")
@@ -72,6 +84,11 @@ def payment_post_save(sender, instance, created, **kwargs):
         _after_commit(_load_payment, instance.pk, f"status_{instance.status}")
 
 
+@receiver(post_delete, sender=PaymentTransaction, dispatch_uid="integrations.payment_post_delete")
+def payment_post_delete(sender, instance, **kwargs):
+    _delete_notifications("payment", instance.transaction_no)
+
+
 @receiver(pre_save, sender=Shipment, dispatch_uid="integrations.shipment_pre_save")
 def shipment_pre_save(sender, instance, **kwargs):
     instance._integration_old_status = _old_value(Shipment, instance, "status")
@@ -84,6 +101,11 @@ def shipment_post_save(sender, instance, created, **kwargs):
         _after_commit(_load_shipment, instance.pk, "created")
     elif old_status is not None and old_status != instance.status:
         _after_commit(_load_shipment, instance.pk, f"status_{instance.status}")
+
+
+@receiver(post_delete, sender=Shipment, dispatch_uid="integrations.shipment_post_delete")
+def shipment_post_delete(sender, instance, **kwargs):
+    _delete_notifications("shipment", instance.shipment_no)
 
 
 @receiver(post_save, sender=InventoryBalance, dispatch_uid="integrations.inventory_low_stock")
