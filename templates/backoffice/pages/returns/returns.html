@@ -1,39 +1,40 @@
 {% extends "backoffice/base.html" %}
-{% load demo %}
+{% load demo static %}
 {% block title %}Returns & Refunds | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/returns-compact-v135.css' %}?v=1.0.0">{% endblock %}
 {% block content %}
-<section class="page">
+<section class="page returns-page">
   <div class="page-head">
     <div><h1>Returns & Refunds</h1><p>Process sold-item returns, inventory disposition, order credits and payment-ledger refunds.</p></div>
     <div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:return_add' %}">+ Add Return</a><a class="btn" href="{% url 'backoffice:warranty' %}">Warranty / RMA</a></div>
   </div>
-  {% if returns_notice %}<div class="soft-note" style="margin-bottom:14px">{{ returns_notice }}</div>{% endif %}
-  {% if returns_error %}<div class="soft-note" style="margin-bottom:14px;color:#c42b2b">{{ returns_error }}</div>{% endif %}
-  <div class="cards kpi-grid-4">
+  {% if returns_notice %}<div class="soft-note returns-notice">{{ returns_notice }}</div>{% endif %}
+  {% if returns_error %}<div class="soft-note returns-notice" style="color:#c42b2b">{{ returns_error }}</div>{% endif %}
+  <div class="cards kpi-grid-4 returns-kpi-grid">
     {% for stat in return_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}
   </div>
-  <form class="filters-card" method="get">
-    <div class="filter-row">
+  <form class="filters-card returns-filters-card" method="get">
+    <div class="filter-row returns-filter-row">
       <input class="control search" name="q" value="{{ return_query }}" placeholder="Return, order, customer, SKU...">
       <select class="control" name="status"><option value="">All Status</option>{% for value,label in return_status_choices %}<option value="{{ value }}"{% if return_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
       <select class="control" name="source"><option value="">All Sources</option>{% for value,label in return_source_choices %}<option value="{{ value }}"{% if return_source == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-      <button class="btn" type="submit">Filter</button><a class="btn" href="{% url 'backoffice:returns' %}">Reset</a>
+      <button class="btn" type="submit">Filter</button><a class="btn returns-reset" href="{% url 'backoffice:returns' %}">Reset</a>
     </div>
   </form>
-  <div class="card orders-table-card">
-    <div class="table-scroll"><table class="data-table"><thead><tr><th>Return</th><th>Order</th><th>Customer</th><th>Items</th><th>Credit</th><th>Cash Refund</th><th>Source</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
+  <div class="card orders-table-card returns-table-card">
+    <div class="table-scroll"><table class="data-table returns-table"><thead><tr><th>Return</th><th>Order</th><th>Customer</th><th>Items</th><th>Credit</th><th>Cash Refund</th><th>Source</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
       {% for row in return_rows %}<tr>
-        <td><strong>{{ row.return_no }}</strong></td>
-        <td><a href="{% url 'backoffice:order_detail_id' row.order_id %}">{{ row.order.order_number }}</a></td>
-        <td>{{ row.customer_name }}<br><small>{{ row.order.customer_phone }}</small></td>
-        <td>{{ row.item_count }}</td>
-        <td>{{ row.credit_total|money }}</td>
-        <td>{{ row.refunded_total|money }}</td>
-        <td>{{ row.get_source_display }}</td>
-        <td><span class="badge">{{ row.get_status_display }}</span></td>
-        <td>{{ row.requested_date }}</td>
-        <td><a class="btn" href="{% url 'backoffice:return_detail' row.id %}">Open</a></td>
-      </tr>{% empty %}<tr><td colspan="10">No returns found.</td></tr>{% endfor %}
+        <td data-label="Return"><strong>{{ row.return_no }}</strong></td>
+        <td data-label="Order"><a href="{% url 'backoffice:order_detail_id' row.order_id %}">{{ row.order.order_number }}</a></td>
+        <td data-label="Customer">{{ row.customer_name }}<br><small>{{ row.order.customer_phone }}</small></td>
+        <td data-label="Items">{{ row.item_count }}</td>
+        <td data-label="Credit">{{ row.credit_total|money }}</td>
+        <td data-label="Cash Refund">{{ row.refunded_total|money }}</td>
+        <td data-label="Source">{{ row.get_source_display }}</td>
+        <td data-label="Status"><span class="return-status status-{{ row.status }}">{{ row.get_status_display }}</span></td>
+        <td data-label="Date">{{ row.requested_date }}</td>
+        <td class="return-action-cell"><a class="btn btn-sm return-open" href="{% url 'backoffice:return_detail' row.id %}">Open</a></td>
+      </tr>{% empty %}<tr><td class="return-empty" colspan="10">No returns found.</td></tr>{% endfor %}
     </tbody></table></div>
   </div>
 </section>
