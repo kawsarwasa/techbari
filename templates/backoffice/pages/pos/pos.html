@@ -1,12 +1,12 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Point of Sale | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/pos-held-ux.css' %}?v=1.0.1">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/pos-held-ux.css' %}?v=1.0.8"><link rel="stylesheet" href="{% static 'admin/css/pos-held-orders-responsive-v109.css' %}?v=1.0.9">{% endblock %}
 {% block content %}
 <section class="page" data-pos-real="1">
   <div class="page-head pos-page-head">
-    <div><h1>Point of Sale (POS)</h1><p>Real counter sales using Catalog, CRM, Sales Orders and Inventory.</p></div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <div class="pos-page-heading"><h1>Point of Sale (POS)</h1><p>Real counter sales using Catalog, CRM, Sales Orders and Inventory.</p></div>
+    <div class="pos-page-head-actions">
       <label class="muted">Warehouse</label>
       <select class="control" data-real-pos-warehouse onchange="location.href='?warehouse='+this.value">
         {% for warehouse in warehouses_real %}<option value="{{ warehouse.id }}"{% if warehouse.id == selected_warehouse.id %} selected{% endif %}>{{ warehouse.name }}</option>{% endfor %}
@@ -27,8 +27,16 @@
       </div>
 
       <div class="pos-category-strip" data-real-pos-categories>
-        <button class="pos-category active" type="button" data-real-pos-category="All"><span>All</span></button>
-        {% for category in pos_data.categories %}<button class="pos-category" type="button" data-real-pos-category="{{ category }}"><span>{{ category }}</span></button>{% endfor %}
+        <button class="pos-category active" type="button" data-real-pos-category="All">
+          <span class="pos-category-media pos-category-fallback" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg></span>
+          <span class="pos-category-label">All</span>
+        </button>
+        {% for category in pos_categories %}
+        <button class="pos-category" type="button" data-real-pos-category="{{ category.name }}">
+          <span class="pos-category-media" aria-hidden="true">{% if category.image %}<img src="{{ category.image }}" alt="">{% else %}<svg class="pos-category-icon" viewBox="0 0 24 24"><path d="M4 7.5 12 4l8 3.5v9L12 20l-8-3.5z"/><path d="m4 7.5 8 3.5 8-3.5M12 11v9"/></svg>{% endif %}</span>
+          <span class="pos-category-label">{{ category.name }}</span>
+        </button>
+        {% endfor %}
       </div>
 
       <div class="pos-products-heading"><h2>Products / Variants</h2><div class="pos-products-tools"><select class="control pos-sort" data-real-pos-sort><option value="name">Name</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option><option value="stock">Stock</option></select></div></div>
@@ -49,7 +57,7 @@
         <div class="pos-discount-row"><select class="control" data-real-pos-discount-type><option value="fixed">Fixed Amount</option><option value="percent">Percentage</option></select><div class="pos-discount-input"><input class="control" type="number" min="0" step="0.01" value="0" data-real-pos-discount><span data-real-pos-discount-unit>৳</span></div></div>
       </div>
 
-      <div class="field" style="margin-top:12px"><label>Sale Note</label><input class="control" data-real-pos-note placeholder="Optional counter note"></div>
+      <div class="field pos-sale-note-field"><label>Sale Note</label><input class="control" data-real-pos-note placeholder="Optional counter note"></div>
 
       <div class="pos-summary">
         <div><span>Subtotal</span><strong data-real-pos-subtotal>৳ 0</strong></div>
