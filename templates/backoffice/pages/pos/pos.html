@@ -1,12 +1,12 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Point of Sale | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/pos-held-ux.css' %}?v=1.0.1">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/pos-held-ux.css' %}?v=1.0.2">{% endblock %}
 {% block content %}
 <section class="page" data-pos-real="1">
   <div class="page-head pos-page-head">
-    <div><h1>Point of Sale (POS)</h1><p>Real counter sales using Catalog, CRM, Sales Orders and Inventory.</p></div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <div class="pos-page-heading"><h1>Point of Sale (POS)</h1><p>Real counter sales using Catalog, CRM, Sales Orders and Inventory.</p></div>
+    <div class="pos-page-head-actions">
       <label class="muted">Warehouse</label>
       <select class="control" data-real-pos-warehouse onchange="location.href='?warehouse='+this.value">
         {% for warehouse in warehouses_real %}<option value="{{ warehouse.id }}"{% if warehouse.id == selected_warehouse.id %} selected{% endif %}>{{ warehouse.name }}</option>{% endfor %}
