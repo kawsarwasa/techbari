@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
+from django.templatetags.static import static
 from django.urls import reverse
 
 from catalog.models import ProductVariant
@@ -59,6 +60,37 @@ def _base_context(page_name, request):
     context["purchase_notice"] = NOTICE_TEXT.get(request.GET.get("notice", ""), "")
     context["purchase_error"] = request.GET.get("error", "")
     return context
+
+
+def _purchase_variants_with_thumbnails():
+    variants = list(
+        ProductVariant.objects.select_related("product")
+        .prefetch_related("product__images")
+        .filter(is_active=True)
+        .order_by("product__name", "sku")
+    )
+    thumbnail_by_product = {}
+    for variant in variants:
+        if variant.product_id not in thumbnail_by_product:
+            images = list(variant.product.images.all())
+            usable = [image for image in images if (image.image and image.image.name) or image.static_path]
+            chosen = next((image for image in usable if image.role == "primary"), None)
+            if chosen is None and usable:
+                chosen = usable[0]
+
+            thumbnail_url = ""
+            if chosen is not None:
+                if chosen.image and chosen.image.name:
+                    try:
+                        thumbnail_url = chosen.image.url
+                    except ValueError:
+                        thumbnail_url = ""
+                if not thumbnail_url and chosen.static_path:
+                    path = chosen.static_path.strip()
+                    thumbnail_url = path if path.startswith(("/", "http://", "https://")) else static(path)
+            thumbnail_by_product[variant.product_id] = thumbnail_url
+        variant.purchase_thumbnail_url = thumbnail_by_product[variant.product_id]
+    return variants
 
 
 def suppliers(request):
@@ -222,7 +254,7 @@ def purchase_add(request):
         purchase_obj=instance,
         is_edit=bool(instance),
         item_rows=item_rows,
-        purchase_variants=ProductVariant.objects.select_related("product").filter(is_active=True).order_by("product__name", "sku"),
+        purchase_variants=_purchase_variants_with_thumbnails(),
         purchase_form_error=error,
     )
     return render(request, "backoffice/pages/purchases/purchase_add.html", context)
