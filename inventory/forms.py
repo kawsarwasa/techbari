@@ -54,13 +54,15 @@ class StockAdjustmentForm(forms.Form):
 class StockTransferForm(forms.Form):
     from_warehouse = forms.ModelChoiceField(
         queryset=Warehouse.objects.none(),
-        widget=forms.Select(attrs=CONTROL),
+        widget=forms.Select(attrs={"class": "control", "data-search-placeholder": "Select source warehouse..."}),
         label="From Warehouse",
+        empty_label="Select source warehouse",
     )
     to_warehouse = forms.ModelChoiceField(
         queryset=Warehouse.objects.none(),
-        widget=forms.Select(attrs=CONTROL),
+        widget=forms.Select(attrs={"class": "control", "data-search-placeholder": "Select destination warehouse..."}),
         label="To Warehouse",
+        empty_label="Select destination warehouse",
     )
     note = forms.CharField(required=False, widget=forms.Textarea(attrs={"class": "control textarea", "rows": 3}))
 
