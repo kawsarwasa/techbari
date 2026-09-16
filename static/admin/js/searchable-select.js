@@ -43,6 +43,34 @@
 
   const cleanBlankText = (text) => /^\s*-+\s*$/.test(text || '') ? '' : (text || '').trim();
 
+  const createMediaThumb = (option) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'tb-searchable-option-thumb';
+
+    const showFallback = () => {
+      thumb.replaceChildren();
+      const fallback = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      fallback.setAttribute('viewBox', '0 0 24 24');
+      fallback.setAttribute('aria-hidden', 'true');
+      fallback.innerHTML = '<path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"></path><path d="m4 7.5 8 4.5 8-4.5M12 12v9"></path>';
+      thumb.appendChild(fallback);
+    };
+
+    const imageUrl = (option.dataset.imageUrl || '').trim();
+    if (!imageUrl) {
+      showFallback();
+      return thumb;
+    }
+
+    const image = document.createElement('img');
+    image.src = imageUrl;
+    image.alt = '';
+    image.loading = 'lazy';
+    image.addEventListener('error', showFallback, { once: true });
+    thumb.appendChild(image);
+    return thumb;
+  };
+
   const closeState = (state, restore = true) => {
     if (!state || state.destroyed) return;
     state.wrapper.classList.remove('open');
@@ -69,6 +97,7 @@
     }
 
     const key = fieldKey(select);
+    const mediaOptions = select.dataset.optionImages === 'true';
     const wrapper = document.createElement('div');
     wrapper.className = 'tb-searchable-select';
 
@@ -98,6 +127,7 @@
 
     const menu = document.createElement('div');
     menu.className = 'tb-searchable-menu';
+    if (mediaOptions) menu.classList.add('tb-searchable-menu--media');
     menu.hidden = true;
     menu.setAttribute('role', 'listbox');
     menu.id = `tb-searchable-list-${++sequence}`;
@@ -194,11 +224,25 @@
         const parts = display.split(' — ');
         const title = document.createElement('strong');
         title.textContent = parts.shift() || display;
-        button.appendChild(title);
-        if (parts.length) {
-          const meta = document.createElement('span');
-          meta.textContent = parts.join(' • ');
-          button.appendChild(meta);
+
+        if (mediaOptions && option.value) {
+          button.classList.add('tb-searchable-option--media');
+          const copy = document.createElement('div');
+          copy.className = 'tb-searchable-option-copy';
+          copy.appendChild(title);
+          if (parts.length) {
+            const meta = document.createElement('span');
+            meta.textContent = parts.join(' • ');
+            copy.appendChild(meta);
+          }
+          button.append(createMediaThumb(option), copy);
+        } else {
+          button.appendChild(title);
+          if (parts.length) {
+            const meta = document.createElement('span');
+            meta.textContent = parts.join(' • ');
+            button.appendChild(meta);
+          }
         }
 
         button.addEventListener('mousedown', (event) => event.preventDefault());
