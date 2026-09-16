@@ -1,9 +1,9 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{% if is_edit %}Edit Purchase{% else %}Add Purchase{% endif %} | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/purchasing-v130.css' %}?v=1.3.1">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/purchasing-v130.css' %}?v=1.3.1"><link rel="stylesheet" href="{% static 'admin/css/purchase-add-compact-v132.css' %}?v=1.0.4">{% endblock %}
 {% block content %}
-<section class="page">
+<section class="page purchase-editor-page">
   {% include "backoffice/includes/breadcrumbs/purchase_add.html" %}
   <div class="page-head">
     <div><h1>{% if is_edit %}Edit Purchase Order{% else %}New Purchase Order{% endif %}</h1><p>Create a supplier purchase with exact Variant/SKU line items.</p></div>
@@ -27,24 +27,24 @@
         </div>
       </div>
 
-      <div class="card form-card purchase-panel" style="margin-top:18px">
+      <div class="card form-card purchase-panel purchase-items-panel">
         <div class="section-head"><h3>Purchase Items</h3><button class="btn btn-sm" type="button" data-add-purchase-row>Add Item</button></div>
         <div data-purchase-items>
           {% for row in item_rows %}
           <div class="purchase-item-row" data-purchase-row>
-            <label class="field variant-cell"><span>Variant / SKU</span><select class="control" name="variant_id" required><option value="">Choose Variant / SKU</option>{% for variant in purchase_variants %}<option value="{{ variant.id }}"{% if variant.id|stringformat:'s' == row.variant_id %} selected{% endif %}>{{ variant.product.name }} — {{ variant.display_name }} — {{ variant.sku }}</option>{% endfor %}</select></label>
+            <label class="field variant-cell"><span>Variant / SKU</span><select class="control" name="variant_id" required data-option-images="true"><option value="">Choose Variant / SKU</option>{% for variant in purchase_variants %}<option value="{{ variant.id }}" data-image-url="{{ variant.purchase_thumbnail_url }}"{% if variant.id|stringformat:'s' == row.variant_id %} selected{% endif %}>{{ variant.product.name }} — {{ variant.display_name }} — {{ variant.sku }}</option>{% endfor %}</select></label>
             <label class="field"><span>Qty</span><input class="control" type="number" min="1" name="ordered_quantity" value="{{ row.ordered_quantity }}" required></label>
             <label class="field"><span>Unit Cost</span><input class="control" type="number" min="0" step="0.01" name="unit_cost" value="{{ row.unit_cost }}" required></label>
-            <button class="btn remove-purchase-row" type="button" data-remove-purchase-row>×</button>
+            <button class="btn remove-purchase-row" type="button" data-remove-purchase-row aria-label="Remove item">×</button>
           </div>
           {% endfor %}
         </div>
         <template id="purchase-item-template">
           <div class="purchase-item-row" data-purchase-row>
-            <label class="field variant-cell"><span>Variant / SKU</span><select class="control" name="variant_id" required><option value="">Choose Variant / SKU</option>{% for variant in purchase_variants %}<option value="{{ variant.id }}">{{ variant.product.name }} — {{ variant.display_name }} — {{ variant.sku }}</option>{% endfor %}</select></label>
+            <label class="field variant-cell"><span>Variant / SKU</span><select class="control" name="variant_id" required data-option-images="true"><option value="">Choose Variant / SKU</option>{% for variant in purchase_variants %}<option value="{{ variant.id }}" data-image-url="{{ variant.purchase_thumbnail_url }}">{{ variant.product.name }} — {{ variant.display_name }} — {{ variant.sku }}</option>{% endfor %}</select></label>
             <label class="field"><span>Qty</span><input class="control" type="number" min="1" name="ordered_quantity" value="1" required></label>
             <label class="field"><span>Unit Cost</span><input class="control" type="number" min="0" step="0.01" name="unit_cost" value="0.00" required></label>
-            <button class="btn remove-purchase-row" type="button" data-remove-purchase-row>×</button>
+            <button class="btn remove-purchase-row" type="button" data-remove-purchase-row aria-label="Remove item">×</button>
           </div>
         </template>
       </div>
@@ -53,15 +53,15 @@
     <aside>
       <div class="card form-side purchase-panel">
         <div class="section-head"><h3>Costs</h3></div>
-        <div class="purchase-form-grid" style="grid-template-columns:1fr">
+        <div class="purchase-form-grid purchase-cost-grid">
           <label class="field"><span>Shipping Cost</span>{{ form.shipping_cost }}{{ form.shipping_cost.errors }}</label>
           <label class="field"><span>Other Cost</span>{{ form.other_cost }}{{ form.other_cost.errors }}</label>
           <label class="field"><span>Order Discount</span>{{ form.discount_amount }}{{ form.discount_amount.errors }}</label>
-          <p class="muted" style="margin:-4px 0 0">Order Discount applies to the whole purchase.</p>
+          <p class="muted purchase-cost-note">Order Discount applies to the whole purchase.</p>
           <label class="field"><span>Notes</span>{{ form.notes }}{{ form.notes.errors }}</label>
         </div>
-        <div class="purchase-actions" style="margin-top:16px"><a class="btn" href="{% url 'backoffice:purchases' %}">Cancel</a><button class="btn btn-primary" type="submit">Save Purchase</button></div>
-        <p class="muted" style="margin-top:12px">Stock is not increased when the PO is saved. Inventory changes only through Receive Stock.</p>
+        <div class="purchase-actions purchase-actions-compact"><a class="btn" href="{% url 'backoffice:purchases' %}">Cancel</a><button class="btn btn-primary" type="submit">Save Purchase</button></div>
+        <p class="muted purchase-help">Stock is not increased when the PO is saved. Inventory changes only through Receive Stock.</p>
       </div>
     </aside>
   </form>
