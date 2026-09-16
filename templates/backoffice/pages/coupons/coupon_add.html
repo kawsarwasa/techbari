@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}{% if editing_coupon %}Edit{% else %}Add{% endif %} Coupon | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/coupons-compact-v142.css' %}?v=1.0.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/coupons-compact-v142.css' %}?v=1.0.1">{% endblock %}
 {% block content %}
 <section class="page coupon-form-page">
   <div class="page-head">
@@ -15,9 +15,21 @@
     {{ coupon_form.non_field_errors }}
     <div class="form-grid">
       {% for field in coupon_form %}
-      <div class="field coupon-field{% if field.name == 'products' or field.name == 'categories' %} coupon-field-full{% endif %}">
-        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-        {{ field }}
+      <div class="field coupon-field{% if field.name == 'products' or field.name == 'categories' %} coupon-field-full coupon-multi-field{% endif %}{% if field.name == 'is_active' %} coupon-active-field{% endif %}"{% if field.name == 'products' or field.name == 'categories' %} data-coupon-multi="{{ field.name }}"{% endif %}>
+        {% if field.name == 'is_active' %}
+          <span class="coupon-field-label">{{ field.label }}</span>
+          <label class="coupon-active-toggle" for="{{ field.id_for_label }}">
+            {{ field }}
+            <span class="coupon-active-track" aria-hidden="true"><span></span></span>
+            <span class="coupon-active-copy">
+              <strong>Enable this coupon</strong>
+              <small>Coupon can be used while its date and usage rules are valid.</small>
+            </span>
+          </label>
+        {% else %}
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+        {% endif %}
         {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
         {% for error in field.errors %}<small style="color:#b42318">{{ error }}</small>{% endfor %}
       </div>
@@ -27,3 +39,4 @@
   </form>
 </section>
 {% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/coupon-form-enhance-v143.js' %}?v=1.0.0"></script>{% endblock %}
