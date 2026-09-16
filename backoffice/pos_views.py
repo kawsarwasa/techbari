@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, render
 from django.templatetags.static import static
 from django.views.decorators.http import require_GET, require_POST
 
+from catalog.models import Category
 from customers.models import Customer
 from inventory.models import InventoryBalance, Warehouse
 from inventory.services import get_default_warehouse
@@ -31,6 +32,17 @@ def _product_image(product):
         if image.static_path:
             return static(image.static_path)
     return static("admin/images/baseus-e16.webp")
+
+
+def _category_image(category):
+    if category.image:
+        try:
+            return category.image.url
+        except ValueError:
+            pass
+    if category.static_image_path:
+        return static(category.static_image_path)
+    return ""
 
 
 def _catalog_for_warehouse(warehouse):
@@ -110,6 +122,11 @@ def pos(request):
         warehouses = [selected]
 
     products, categories = _catalog_for_warehouse(selected)
+    category_rows = Category.objects.filter(name__in=categories, is_active=True).order_by("sort_order", "name")
+    pos_categories = [
+        {"name": category.name, "image": _category_image(category)}
+        for category in category_rows
+    ]
     customers = list(Customer.objects.filter(is_active=True).order_by("name"))
     held_orders = list(
         SalesOrder.objects.select_related("customer", "warehouse").prefetch_related("items").filter(
@@ -125,6 +142,7 @@ def pos(request):
             "selected_warehouse": selected,
             "customers_real": customers,
             "held_orders_real": held_orders,
+            "pos_categories": pos_categories,
             "pos_data": {
                 "products": products,
                 "categories": categories,
