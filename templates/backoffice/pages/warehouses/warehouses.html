@@ -7,7 +7,28 @@
   <div class="page-head"><div><h1>Warehouses</h1><p>Manage physical stock locations used by the inventory engine.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:inventory' %}">Inventory</a><a class="btn btn-primary" href="{% url 'backoffice:warehouse_add' %}">＋ Add Warehouse</a></div></div>
   {% if inventory_notice %}<div class="inventory-notice">✓ {{ inventory_notice }}</div>{% endif %}
   {% if inventory_error %}<div class="inventory-error">{{ inventory_error }}</div>{% endif %}
-  <div class="cards kpi-grid-4">{% for stat in warehouse_stats %}<div class="kpi"><div><div class="kpi-label">{{ stat.label }}</div><div class="kpi-value">{{ stat.value }}</div><span class="trend">{{ stat.trend }}</span></div></div>{% endfor %}</div>
+  <div class="cards kpi-grid-4 warehouse-kpi-grid">
+    {% for stat in warehouse_stats %}
+      <div class="kpi warehouse-kpi">
+        <div class="warehouse-kpi-copy">
+          <div class="kpi-label">{{ stat.label }}</div>
+          <div class="kpi-value">{{ stat.value }}</div>
+          <span class="trend">{{ stat.trend }}</span>
+        </div>
+        <div class="warehouse-kpi-icon warehouse-kpi-icon-{{ forloop.counter }}" aria-hidden="true">
+          {% if forloop.counter == 1 %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1"/><path d="M14 9h1"/><path d="M9 13h1"/><path d="M14 13h1"/><path d="M10 21v-4h4v4"/></svg>
+          {% elif forloop.counter == 2 %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>
+          {% elif forloop.counter == 3 %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.75 5.57 6.15.9-4.45 4.33 1.05 6.12L12 17.03l-5.5 2.89 1.05-6.12L3.1 9.47l6.15-.9L12 3Z"/></svg>
+          {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 7 8-4 8 4-8 4-8-4Z"/><path d="m4 12 8 4 8-4"/><path d="m4 17 8 4 8-4"/></svg>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
   <div class="card orders-table-card"><div class="table-scroll"><table class="data-table"><thead><tr><th>#</th><th>Warehouse</th><th>Code</th><th>Address</th><th>SKU Balances</th><th>Default</th><th>Status</th><th>Actions</th></tr></thead><tbody>
   {% for warehouse in warehouse_rows %}
     <tr>
