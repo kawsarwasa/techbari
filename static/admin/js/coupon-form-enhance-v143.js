@@ -30,7 +30,6 @@
     select.dataset.couponEnhanced = '1';
 
     const fieldName = wrapper.dataset.couponMulti || select.name || 'items';
-    const singular = fieldName === 'categories' ? 'category' : 'product';
     const plural = fieldName === 'categories' ? 'categories' : 'products';
 
     const root = document.createElement('div');
@@ -128,6 +127,7 @@
         triggerText.textContent = `Select ${plural}...`;
         trigger.classList.add('is-placeholder');
         triggerCount.hidden = true;
+        trigger.removeAttribute('title');
         return;
       }
 
@@ -185,6 +185,45 @@
 
     syncSummary();
   });
+
+  const scopeSelect = document.querySelector('#id_scope');
+  const productsWrapper = document.querySelector('[data-coupon-multi="products"]');
+  const categoriesWrapper = document.querySelector('[data-coupon-multi="categories"]');
+
+  const clearSelection = (wrapper) => {
+    if (!wrapper) return;
+    const select = wrapper.querySelector('select[multiple]');
+    if (!select) return;
+    let changed = false;
+    Array.from(select.options).forEach((option) => {
+      if (option.selected) {
+        option.selected = false;
+        changed = true;
+      }
+    });
+    if (changed) select.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  const setFieldVisible = (wrapper, visible, clearWhenHidden = true) => {
+    if (!wrapper) return;
+    const root = wrapper.querySelector('.coupon-multi');
+    if (!visible && root && root === openRoot) closeRoot(root);
+    wrapper.hidden = !visible;
+    wrapper.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    if (!visible && clearWhenHidden) clearSelection(wrapper);
+  };
+
+  const syncScopeFields = () => {
+    if (!scopeSelect) return;
+    const scope = scopeSelect.value;
+    setFieldVisible(productsWrapper, scope === 'products');
+    setFieldVisible(categoriesWrapper, scope === 'categories');
+  };
+
+  if (scopeSelect) {
+    scopeSelect.addEventListener('change', syncScopeFields);
+    syncScopeFields();
+  }
 
   document.addEventListener('click', (event) => {
     if (openRoot && !openRoot.contains(event.target)) closeOpen();
