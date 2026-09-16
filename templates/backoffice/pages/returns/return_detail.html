@@ -2,7 +2,7 @@
 {% load static %}
 {% load demo %}
 {% block title %}{{ sales_return.return_no }} | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/return-detail-compact-v137.css' %}?v=1.0.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/return-detail-compact-v137.css' %}?v=1.0.1">{% endblock %}
 {% block content %}
 <section class="page return-detail-page">
   <div class="page-head">
@@ -54,10 +54,13 @@
     </div></div>
     <div class="card info-card"><div class="section-head"><h3>Reject / Cancel</h3></div><div class="info-body">
       {% if sales_return.status == 'requested' or sales_return.status == 'approved' or sales_return.status == 'received' %}
-        <form method="post" action="{% url 'backoffice:return_reject' sales_return.id %}" onsubmit="return confirm('Reject this return?');">{% csrf_token %}<label class="field"><span>Reason</span><textarea class="control" name="note" rows="2" required></textarea></label><button class="btn" type="submit">Reject</button></form>
-      {% endif %}
-      {% if sales_return.status == 'requested' or sales_return.status == 'approved' %}
-        <form method="post" action="{% url 'backoffice:return_cancel' sales_return.id %}" class="return-cancel-form" onsubmit="return confirm('Cancel this return?');">{% csrf_token %}<input type="hidden" name="note" value="Return cancelled from Dashboard."><button class="btn" type="submit">Cancel</button></form>
+        <form id="return-reject-form" method="post" action="{% url 'backoffice:return_reject' sales_return.id %}" onsubmit="return confirm('Reject this return?');">{% csrf_token %}</form>
+        {% if sales_return.status == 'requested' or sales_return.status == 'approved' %}<form id="return-cancel-form" method="post" action="{% url 'backoffice:return_cancel' sales_return.id %}" onsubmit="return confirm('Cancel this return?');">{% csrf_token %}<input type="hidden" name="note" value="Return cancelled from Dashboard."></form>{% endif %}
+        <div class="return-reject-layout{% if sales_return.status == 'requested' or sales_return.status == 'approved' %} has-cancel{% endif %}">
+          <label class="field return-reject-reason"><span>Reason</span><textarea class="control" name="note" rows="2" required form="return-reject-form"></textarea></label>
+          <button class="btn return-reject-btn" type="submit" form="return-reject-form">Reject</button>
+          {% if sales_return.status == 'requested' or sales_return.status == 'approved' %}<button class="btn return-cancel-btn" type="submit" form="return-cancel-form">Cancel</button>{% endif %}
+        </div>
       {% endif %}
     </div></div>
   </div>
