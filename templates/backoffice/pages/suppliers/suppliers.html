@@ -1,9 +1,9 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Suppliers | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/purchasing-v130.css' %}?v=1.3.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/purchasing-v130.css' %}?v=1.3.0"><link rel="stylesheet" href="{% static 'admin/css/suppliers-compact-v134.css' %}?v=1.3.4">{% endblock %}
 {% block content %}
-<section class="page">
+<section class="page suppliers-page">
   <div class="page-head">
     <div><h1>Suppliers</h1><p>Manage supplier profiles, payment terms and live outstanding balances.</p></div>
     <div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:supplier_add' %}">Add Supplier</a><a class="btn" href="{% url 'backoffice:purchases' %}">Purchases</a></div>
@@ -14,7 +14,7 @@
     {% for stat in supplier_stats %}{% include "backoffice/components/stat_card.html" with stat=stat %}{% endfor %}
   </div>
   <div class="filters-card">
-    <form method="get" class="purchase-filters">
+    <form method="get" class="purchase-filters supplier-filters">
       <input class="control search" name="q" value="{{ supplier_query }}" placeholder="Search code, supplier, phone or email...">
       <select class="control" name="status">
         <option value="">All Status</option>
@@ -27,19 +27,19 @@
   </div>
   <div class="card orders-table-card">
     <div class="table-scroll">
-      <table class="data-table">
+      <table class="data-table supplier-table">
         <thead><tr><th>Code</th><th>Supplier</th><th>Contact</th><th>Purchases</th><th>Outstanding</th><th>Terms</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>
         {% for supplier in supplier_rows %}
           <tr>
-            <td><strong>{{ supplier.code }}</strong></td>
-            <td><strong>{{ supplier.name }}</strong>{% if supplier.contact_person %}<div class="muted">{{ supplier.contact_person }}</div>{% endif %}</td>
-            <td>{{ supplier.phone|default:"—" }}{% if supplier.email %}<div class="muted">{{ supplier.email }}</div>{% endif %}</td>
-            <td>৳ {{ supplier.total_purchases|floatformat:2 }}</td>
-            <td>{% if supplier.outstanding_balance > 0 %}<span class="supplier-due">৳ {{ supplier.outstanding_balance|floatformat:2 }}</span>{% else %}<span class="supplier-ok">৳ 0.00</span>{% endif %}</td>
-            <td>{{ supplier.payment_terms_days }} day{{ supplier.payment_terms_days|pluralize }}</td>
-            <td><span class="purchase-status {% if supplier.is_active %}received{% else %}cancelled{% endif %}">{% if supplier.is_active %}Active{% else %}Inactive{% endif %}</span></td>
-            <td>
+            <td data-label="Code"><strong>{{ supplier.code }}</strong></td>
+            <td data-label="Supplier"><strong>{{ supplier.name }}</strong>{% if supplier.contact_person %}<div class="muted">{{ supplier.contact_person }}</div>{% endif %}</td>
+            <td data-label="Contact">{{ supplier.phone|default:"—" }}{% if supplier.email %}<div class="muted">{{ supplier.email }}</div>{% endif %}</td>
+            <td data-label="Purchases">৳ {{ supplier.total_purchases|floatformat:2 }}</td>
+            <td data-label="Outstanding">{% if supplier.outstanding_balance > 0 %}<span class="supplier-due">৳ {{ supplier.outstanding_balance|floatformat:2 }}</span>{% else %}<span class="supplier-ok">৳ 0.00</span>{% endif %}</td>
+            <td data-label="Terms">{{ supplier.payment_terms_days }} day{{ supplier.payment_terms_days|pluralize }}</td>
+            <td data-label="Status"><span class="purchase-status {% if supplier.is_active %}received{% else %}cancelled{% endif %}">{% if supplier.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+            <td data-label="Actions">
               <div class="purchase-actions">
                 <a class="btn btn-sm" href="{% url 'backoffice:supplier_add' %}?id={{ supplier.id }}">Edit</a>
                 <form method="post" action="{% url 'backoffice:supplier_delete' supplier.id %}" onsubmit="return confirm('Delete this supplier?');">{% csrf_token %}<button class="btn btn-sm" type="submit">Delete</button></form>
