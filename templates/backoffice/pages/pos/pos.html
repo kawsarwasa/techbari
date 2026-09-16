@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Point of Sale | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/pos-held-ux.css' %}?v=1.0.4">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/pos-held-ux.css' %}?v=1.0.5">{% endblock %}
 {% block content %}
 <section class="page" data-pos-real="1">
   <div class="page-head pos-page-head">
@@ -57,7 +57,7 @@
         <div class="pos-discount-row"><select class="control" data-real-pos-discount-type><option value="fixed">Fixed Amount</option><option value="percent">Percentage</option></select><div class="pos-discount-input"><input class="control" type="number" min="0" step="0.01" value="0" data-real-pos-discount><span data-real-pos-discount-unit>৳</span></div></div>
       </div>
 
-      <div class="field" style="margin-top:12px"><label>Sale Note</label><input class="control" data-real-pos-note placeholder="Optional counter note"></div>
+      <div class="field pos-sale-note-field"><label>Sale Note</label><input class="control" data-real-pos-note placeholder="Optional counter note"></div>
 
       <div class="pos-summary">
         <div><span>Subtotal</span><strong data-real-pos-subtotal>৳ 0</strong></div>
