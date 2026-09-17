@@ -1,22 +1,95 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Stock Adjustment | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/inventory-v110.css' %}">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/inventory-v110.css' %}">
+<link rel="stylesheet" href="{% static 'admin/css/stock-adjustment-polish-v146.css' %}?v=1.0.0">
+{% endblock %}
 {% block content %}
-<section class="page">
-  <div class="page-head"><div><h1>Stock Adjustment</h1><p>Post the physically counted quantity. The system calculates the difference and writes an immutable movement.</p></div><div class="head-actions"><a class="btn" href="{% url 'backoffice:inventory' %}">Cancel</a><button class="btn btn-primary" type="submit" form="adjustmentForm">Post Adjustment</button></div></div>
+<section class="page stock-adjustment-page">
+  <div class="page-head">
+    <div>
+      <h1>Stock Adjustment</h1>
+      <p>Post a physical stock count and let the system record the audited difference automatically.</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn" href="{% url 'backoffice:inventory' %}">Cancel</a>
+      <button class="btn btn-primary" type="submit" form="adjustmentForm">Post Adjustment</button>
+    </div>
+  </div>
+
   {% if inventory_form_error %}<div class="inventory-error">{{ inventory_form_error }}</div>{% endif %}
   {% if form.errors %}<div class="inventory-error">Please correct the form errors. {{ form.non_field_errors }}</div>{% endif %}
-  <form id="adjustmentForm" method="post" class="card form-card">{% csrf_token %}
-    <div class="inventory-form-grid">
-      <label class="field"><span>Warehouse</span>{{ form.warehouse }}{{ form.warehouse.errors }}</label>
-      <label class="field"><span>Product / SKU</span>{{ form.variant }}{{ form.variant.errors }}</label>
-      <label class="field"><span>Actual Counted Quantity</span>{{ form.actual_quantity }}{{ form.actual_quantity.errors }}<small class="inventory-help">System quantity is read directly from the database when this is posted.</small></label>
-      <label class="field"><span>Reason</span>{{ form.reason }}{{ form.reason.errors }}</label>
-      <label class="field full"><span>Note</span>{{ form.note }}{{ form.note.errors }}</label>
+
+  <form id="adjustmentForm" method="post" class="card form-card stock-adjustment-card">
+    {% csrf_token %}
+
+    <div class="stock-adjustment-section">
+      <div class="stock-adjustment-section-head">
+        <div class="stock-adjustment-section-title">
+          <h3>Stock Location</h3>
+          <p>Select where the product is stored and which SKU you are counting.</p>
+        </div>
+        <span class="stock-adjustment-step">Step 1</span>
+      </div>
+
+      <div class="stock-adjustment-grid">
+        <label class="field stock-adjustment-field">
+          <span>Warehouse</span>
+          {{ form.warehouse }}
+          {{ form.warehouse.errors }}
+        </label>
+
+        <label class="field stock-adjustment-field">
+          <span>Product / SKU</span>
+          {{ form.variant }}
+          {{ form.variant.errors }}
+        </label>
+      </div>
     </div>
-    <div class="soft-note" style="margin-top:14px">Adjustments cannot reduce stock below the quantity already reserved. Each posted adjustment creates an Adjustment In/Out ledger movement and stores the before/after quantities.</div>
-    <div class="head-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Post Adjustment</button></div>
+
+    <div class="stock-adjustment-section">
+      <div class="stock-adjustment-section-head">
+        <div class="stock-adjustment-section-title">
+          <h3>Physical Count</h3>
+          <p>Enter the quantity you actually counted and explain why an adjustment is needed.</p>
+        </div>
+        <span class="stock-adjustment-step">Step 2</span>
+      </div>
+
+      <div class="stock-adjustment-grid">
+        <label class="field stock-adjustment-field stock-adjustment-count-field">
+          <span>Actual Counted Quantity</span>
+          {{ form.actual_quantity }}
+          <span class="stock-adjustment-unit">Units</span>
+          {{ form.actual_quantity.errors }}
+          <small class="inventory-help">The current system quantity is read directly from the database when you post.</small>
+        </label>
+
+        <label class="field stock-adjustment-field">
+          <span>Reason</span>
+          {{ form.reason }}
+          {{ form.reason.errors }}
+          <small class="inventory-help">Example: Physical count correction, damaged stock, or recount.</small>
+        </label>
+
+        <label class="field stock-adjustment-field full">
+          <span>Note <small class="inventory-help" style="display:inline;margin-left:4px">Optional</small></span>
+          {{ form.note }}
+          {{ form.note.errors }}
+        </label>
+      </div>
+    </div>
+
+    <div class="stock-adjustment-info">
+      <div class="stock-adjustment-info-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+      </div>
+      <div class="stock-adjustment-info-copy">
+        <strong>Adjustment protection</strong>
+        <span>Stock cannot be reduced below the quantity already reserved. Every posted adjustment creates an immutable Adjustment In/Out ledger movement with before and after quantities.</span>
+      </div>
+    </div>
   </form>
 </section>
 {% endblock %}
