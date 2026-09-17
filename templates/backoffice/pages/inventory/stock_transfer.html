@@ -3,7 +3,7 @@
 {% block title %}Stock Transfer | TechBari Admin{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'admin/css/inventory-v110.css' %}">
-<link rel="stylesheet" href="{% static 'admin/css/stock-transfer-polish-v145.css' %}?v=1.0.1">
+<link rel="stylesheet" href="{% static 'admin/css/stock-transfer-polish-v145.css' %}?v=1.1.0">
 {% endblock %}
 {% block content %}
 <section class="page stock-transfer-page">
@@ -33,16 +33,36 @@
       <span data-transfer-route-copy>Choose the source and destination warehouses. They must be different.</span>
     </div>
 
-    <div class="section-head stock-transfer-section"><h3>Transfer Items</h3><span class="muted">Up to 5 SKU rows per dashboard transfer</span></div>
+    <div class="section-head stock-transfer-section">
+      <h3>Transfer Items</h3>
+      <span class="muted">Start with 1 item. Add more only when needed.</span>
+    </div>
     {{ item_formset.management_form }}
-    <div class="transfer-items stock-transfer-items">
+    <div class="transfer-items stock-transfer-items" data-transfer-items>
       {% for item_form in item_formset %}
-      <div class="transfer-item-row stock-transfer-row">
-        <div class="stock-transfer-row-no" aria-hidden="true">{{ forloop.counter }}</div>
+      <div class="transfer-item-row stock-transfer-row" data-transfer-item-row>
+        <div class="stock-transfer-row-no" aria-hidden="true" data-transfer-row-number>{{ forloop.counter }}</div>
         <label class="field"><span>Product / SKU</span>{{ item_form.variant }}{{ item_form.variant.errors }}</label>
         <label class="field stock-transfer-qty"><span>Quantity</span>{{ item_form.quantity }}{{ item_form.quantity.errors }}</label>
+        <button class="stock-transfer-remove" type="button" data-remove-transfer-item aria-label="Remove this transfer item" title="Remove item">&times;</button>
       </div>
       {% endfor %}
+    </div>
+
+    <template id="stockTransferEmptyRow">
+      <div class="transfer-item-row stock-transfer-row" data-transfer-item-row>
+        <div class="stock-transfer-row-no" aria-hidden="true" data-transfer-row-number></div>
+        <label class="field"><span>Product / SKU</span>{{ item_formset.empty_form.variant }}</label>
+        <label class="field stock-transfer-qty"><span>Quantity</span>{{ item_formset.empty_form.quantity }}</label>
+        <button class="stock-transfer-remove" type="button" data-remove-transfer-item aria-label="Remove this transfer item" title="Remove item">&times;</button>
+      </div>
+    </template>
+
+    <div class="stock-transfer-add-wrap">
+      <button class="btn stock-transfer-add" type="button" data-add-transfer-item>
+        <span aria-hidden="true">+</span> Add More Item
+      </button>
+      <span class="muted" data-transfer-item-count></span>
     </div>
 
     <div class="soft-note stock-transfer-note">The transfer is rejected if any selected SKU does not have enough available stock in the source warehouse. Reserved stock cannot be transferred.</div>
@@ -72,4 +92,4 @@
   </div>
 </section>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'admin/js/stock-transfer-polish-v145.js' %}?v=1.0.2"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/stock-transfer-polish-v145.js' %}?v=1.1.0"></script>{% endblock %}
