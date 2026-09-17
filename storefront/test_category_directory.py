@@ -1,4 +1,5 @@
 from decimal import Decimal
+from urllib.parse import quote
 
 from django.test import TestCase
 from django.urls import reverse
@@ -49,4 +50,4 @@ class StorefrontCategoryDirectoryTests(TestCase):
     def test_category_directory_card_links_to_filtered_products(self):
         response = self.client.get(reverse("storefront:categories"))
         self.assertContains(response, reverse("storefront:products"))
-        self.assertContains(response, f"category={self.audio.name.replace(' ', '+')}")
+        self.assertContains(response, f"category={quote(self.audio.name)}")
