@@ -21,6 +21,7 @@ ALLOWED_CONTENT_TAGS = {
     "h3",
     "blockquote",
 }
+DROP_CONTENT_TAGS = {"script", "style", "iframe", "object", "embed"}
 
 _HTML_TAG_RE = re.compile(r"<\s*/?\s*[A-Za-z][^>]*>")
 
@@ -30,9 +31,15 @@ class _ContentPageHTMLSanitizer(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.parts = []
         self.div_depth = 0
+        self.drop_depth = 0
 
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
+        if tag in DROP_CONTENT_TAGS:
+            self.drop_depth += 1
+            return
+        if self.drop_depth:
+            return
         if tag == "div":
             self.parts.append("<p>")
             self.div_depth += 1
@@ -41,11 +48,20 @@ class _ContentPageHTMLSanitizer(HTMLParser):
             self.parts.append("<br>" if tag == "br" else f"<{tag}>")
 
     def handle_startendtag(self, tag, attrs):
-        if tag.lower() == "br":
+        tag = tag.lower()
+        if self.drop_depth or tag in DROP_CONTENT_TAGS:
+            return
+        if tag == "br":
             self.parts.append("<br>")
 
     def handle_endtag(self, tag):
         tag = tag.lower()
+        if tag in DROP_CONTENT_TAGS:
+            if self.drop_depth:
+                self.drop_depth -= 1
+            return
+        if self.drop_depth:
+            return
         if tag == "div" and self.div_depth:
             self.parts.append("</p>")
             self.div_depth -= 1
@@ -54,7 +70,8 @@ class _ContentPageHTMLSanitizer(HTMLParser):
             self.parts.append(f"</{tag}>")
 
     def handle_data(self, data):
-        self.parts.append(escape(data))
+        if not self.drop_depth:
+            self.parts.append(escape(data))
 
     def handle_comment(self, data):
         return
