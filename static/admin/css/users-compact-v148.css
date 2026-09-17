@@ -1,0 +1,102 @@
+.users-refresh{padding-bottom:16px}
+.users-refresh .users-head{align-items:flex-end;gap:16px;margin-bottom:12px}
+.users-refresh .users-breadcrumb{gap:7px;margin-bottom:5px;font-size:11.5px;line-height:1.2}
+.users-refresh .users-head h1{font-size:28px;line-height:1.05;letter-spacing:-.025em}
+.users-refresh .users-head p{margin-top:4px;font-size:12.5px;line-height:1.35}
+.users-refresh .users-head-actions{gap:8px;flex-wrap:nowrap}
+.users-refresh .ur-btn{min-height:36px;height:36px;padding:0 13px;border-radius:8px;gap:7px;font-size:12px;white-space:nowrap}
+.users-refresh .ur-btn svg{width:16px;height:16px}
+.users-refresh .ur-btn-primary{box-shadow:0 4px 10px rgba(22,119,255,.14)}
+
+.users-refresh .ur-kpis{gap:10px;margin-bottom:12px}
+.users-refresh .ur-kpi{min-height:82px;padding:11px 13px;border-radius:10px;gap:11px;box-shadow:0 2px 8px rgba(24,65,110,.035)}
+.users-refresh .ur-kpi-icon{width:38px;height:38px;flex-basis:38px}
+.users-refresh .ur-kpi-icon svg{width:18px;height:18px}
+.users-refresh .ur-kpi span:not(.ur-kpi-icon){font-size:11px;line-height:1.2}
+.users-refresh .ur-kpi strong{font-size:22px;line-height:1;margin:3px 0}
+.users-refresh .ur-kpi small{font-size:10px;line-height:1.25}
+
+.users-refresh .ur-layout{grid-template-columns:minmax(0,1fr) 286px;gap:12px}
+.users-refresh .ur-main-card,.users-refresh .ur-side-card{border-radius:10px;box-shadow:0 2px 8px rgba(24,65,110,.035)}
+.users-refresh .ur-tabs-row{padding:0 11px}
+.users-refresh .ur-tabs{gap:1px}
+.users-refresh .ur-tab{padding:11px 9px 9px;font-size:11.5px}
+.users-refresh .ur-tab span{min-width:20px;height:18px;margin-left:4px;font-size:10px}
+
+.users-refresh .ur-filters{grid-template-columns:minmax(210px,1fr) 145px 130px auto;gap:8px;padding:10px 11px}
+.users-refresh .ur-search-wrap input,.users-refresh .ur-filters select{height:36px;border-radius:7px;font-size:11.5px}
+.users-refresh .ur-search-wrap svg{left:11px;width:15px;height:15px}
+.users-refresh .ur-search-wrap input{padding-left:34px}
+.users-refresh .ur-filters select{padding-left:10px;padding-right:27px}
+.users-refresh .ur-filter-btn{height:36px;border-radius:7px;padding:0 12px;gap:6px;font-size:11.5px}
+.users-refresh .ur-filter-btn svg{width:14px;height:14px}
+
+.users-refresh .ur-table{min-width:850px}
+.users-refresh .ur-table th{padding:8px 10px;font-size:10.5px}
+.users-refresh .ur-table td{padding:8px 10px;font-size:11.5px}
+.users-refresh .ur-user-cell{gap:8px;min-width:150px}
+.users-refresh .ur-avatar{width:30px;height:30px;flex-basis:30px;font-size:11px}
+.users-refresh .ur-avatar.small{width:28px;height:28px;flex-basis:28px;font-size:10.5px}
+.users-refresh .ur-user-cell strong{font-size:11.5px}
+.users-refresh .ur-user-cell small{margin-top:1px;font-size:9.5px}
+.users-refresh .ur-role,.users-refresh .ur-status{padding:4px 7px;font-size:9.5px}
+.users-refresh .ur-grants{min-width:24px;height:22px;border-radius:7px;font-size:10px}
+.users-refresh .ur-status{gap:5px}
+.users-refresh .ur-status i,.users-refresh .ur-last-login i{width:6px;height:6px}
+.users-refresh .ur-last-login i{margin-right:5px}
+.users-refresh .ur-actions{gap:5px}
+.users-refresh .ur-icon-btn{width:28px;height:28px;border-radius:7px}
+.users-refresh .ur-icon-btn svg{width:13px;height:13px}
+.users-refresh .ur-table-footer{min-height:46px;padding:8px 11px;font-size:10.5px}
+.users-refresh .ur-pagination{gap:5px}
+.users-refresh .ur-pagination a,.users-refresh .ur-pagination span,.users-refresh .ur-pagination strong{width:28px;height:28px;border-radius:7px}
+
+.users-refresh .ur-side{gap:10px}
+.users-refresh .ur-side-card{padding:12px}
+.users-refresh .ur-side-title{margin-bottom:9px}
+.users-refresh .ur-side-title h2{font-size:13.5px}
+.users-refresh .ur-overview-grid{gap:7px}
+.users-refresh .ur-overview-grid>div{min-height:76px;padding:9px;border-radius:8px}
+.users-refresh .ur-mini-icon{width:27px;height:27px;margin-bottom:5px}
+.users-refresh .ur-mini-icon svg{width:14px;height:14px}
+.users-refresh .ur-overview-grid strong{font-size:18px;line-height:1.05}
+.users-refresh .ur-overview-grid small{font-size:9.5px;margin-top:1px}
+.users-refresh .ur-side-link{margin-top:9px;padding-top:9px;font-size:10.5px}
+.users-refresh .ur-access-list{gap:0}
+.users-refresh .ur-access-item{grid-template-columns:28px minmax(0,1fr) 7px;gap:8px;padding:7px 0}
+.users-refresh .ur-access-item strong{font-size:10.5px}
+.users-refresh .ur-access-item small,.users-refresh .ur-access-item em{font-size:9px;line-height:1.25}
+.users-refresh .ur-access-item em{margin-top:1px}
+.users-refresh .ur-access-item>i{width:6px;height:6px}
+.users-refresh .ur-security-card{padding:12px;border-radius:10px;gap:9px}
+.users-refresh .ur-security-icon{width:34px;height:34px;flex-basis:34px}
+.users-refresh .ur-security-icon svg{width:17px;height:17px}
+.users-refresh .ur-security-card strong{font-size:11px}
+.users-refresh .ur-security-card p{margin:3px 0 7px;font-size:9.5px;line-height:1.35}
+.users-refresh .ur-security-card a{font-size:9.5px}
+
+@media(max-width:1180px){
+  .users-refresh .ur-layout{grid-template-columns:1fr}
+  .users-refresh .ur-side{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .users-refresh .ur-security-card{grid-column:1/-1}
+}
+@media(max-width:820px){
+  .users-refresh .users-head{align-items:flex-start;gap:10px;margin-bottom:10px}
+  .users-refresh .users-head-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}
+  .users-refresh .ur-btn{width:100%}
+  .users-refresh .ur-kpis{gap:8px}
+  .users-refresh .ur-filters{grid-template-columns:1fr 1fr}
+  .users-refresh .ur-search-wrap{grid-column:1/-1}
+}
+@media(max-width:560px){
+  .users-refresh .users-head h1{font-size:25px}
+  .users-refresh .users-head-actions{grid-template-columns:1fr}
+  .users-refresh .ur-kpis{grid-template-columns:1fr 1fr}
+  .users-refresh .ur-kpi{min-height:74px;padding:9px 10px}
+  .users-refresh .ur-kpi small{display:none}
+  .users-refresh .ur-filters{grid-template-columns:1fr}
+  .users-refresh .ur-search-wrap{grid-column:auto}
+  .users-refresh .ur-side{grid-template-columns:1fr}
+  .users-refresh .ur-security-card{grid-column:auto}
+  .users-refresh .ur-table-footer{gap:8px}
+}
