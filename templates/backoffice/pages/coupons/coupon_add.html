@@ -1,3 +1,45 @@
 {% extends "backoffice/base.html" %}
+{% load static %}
 {% block title %}{% if editing_coupon %}Edit{% else %}Add{% endif %} Coupon | TechBari Admin{% endblock %}
-{% block content %}<section class="page"><div class="page-head"><div><h1>{% if editing_coupon %}Edit Coupon{% else %}Add Coupon{% endif %}</h1><p>Configure server-authoritative discount rules.</p></div><a class="btn" href="{% url 'backoffice:coupons' %}">Back to Coupons</a></div>{% if promotion_error %}<div class="card" style="padding:12px;margin-bottom:14px">{{ promotion_error }}</div>{% endif %}<form method="post" class="card" style="padding:22px">{% csrf_token %}{% if editing_coupon %}<input type="hidden" name="coupon_id" value="{{ editing_coupon.id }}">{% endif %}{{ coupon_form.non_field_errors }}<div class="form-grid">{% for field in coupon_form %}<div class="field" {% if field.name == "products" or field.name == "categories" %}style="grid-column:span 2"{% endif %}><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<small style="color:#b42318">{{ error }}</small>{% endfor %}</div>{% endfor %}</div><div class="head-actions" style="margin-top:18px"><button class="btn btn-primary" type="submit">Save Coupon</button></div></form></section>{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/coupons-compact-v142.css' %}?v=1.0.1">
+<link rel="stylesheet" href="{% static 'admin/css/coupon-form-enhance-v143.css' %}?v=1.0.1">
+{% endblock %}
+{% block content %}
+<section class="page coupon-form-page">
+  <div class="page-head">
+    <div><h1>{% if editing_coupon %}Edit Coupon{% else %}Add Coupon{% endif %}</h1><p>Configure server-authoritative discount rules.</p></div>
+    <a class="btn" href="{% url 'backoffice:coupons' %}">Back to Coupons</a>
+  </div>
+  {% if promotion_error %}<div class="card coupon-notice">{{ promotion_error }}</div>{% endif %}
+  <form method="post" class="card coupon-form-card">
+    {% csrf_token %}
+    {% if editing_coupon %}<input type="hidden" name="coupon_id" value="{{ editing_coupon.id }}">{% endif %}
+    {{ coupon_form.non_field_errors }}
+    <div class="form-grid">
+      {% for field in coupon_form %}
+      <div class="field coupon-field{% if field.name == 'products' or field.name == 'categories' %} coupon-field-full coupon-multi-field{% endif %}{% if field.name == 'is_active' %} coupon-active-field{% endif %}"{% if field.name == 'products' or field.name == 'categories' %} data-coupon-multi="{{ field.name }}"{% endif %}>
+        {% if field.name == 'is_active' %}
+          <span class="coupon-field-label">{{ field.label }}</span>
+          <label class="coupon-active-toggle" for="{{ field.id_for_label }}">
+            {{ field }}
+            <span class="coupon-active-track" aria-hidden="true"><span></span></span>
+            <span class="coupon-active-copy">
+              <strong>Enable this coupon</strong>
+              <small>Coupon can be used while its date and usage rules are valid.</small>
+            </span>
+          </label>
+        {% else %}
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+        {% endif %}
+        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<small style="color:#b42318">{{ error }}</small>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="head-actions coupon-form-actions"><button class="btn btn-primary" type="submit">Save Coupon</button></div>
+  </form>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/coupon-form-enhance-v143.js' %}?v=1.0.1"></script>{% endblock %}

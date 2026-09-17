@@ -45,10 +45,20 @@ class CouponForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        if cleaned.get("scope") == Coupon.Scope.PRODUCTS and not cleaned.get("products"):
-            self.add_error("products", "Select at least one product for a product-specific coupon.")
-        if cleaned.get("scope") == Coupon.Scope.CATEGORIES and not cleaned.get("categories"):
-            self.add_error("categories", "Select at least one category for a category-specific coupon.")
+        scope = cleaned.get("scope")
+
+        if scope == Coupon.Scope.PRODUCTS:
+            if not cleaned.get("products"):
+                self.add_error("products", "Select at least one product for a product-specific coupon.")
+            cleaned["categories"] = self.fields["categories"].queryset.none()
+        elif scope == Coupon.Scope.CATEGORIES:
+            if not cleaned.get("categories"):
+                self.add_error("categories", "Select at least one category for a category-specific coupon.")
+            cleaned["products"] = self.fields["products"].queryset.none()
+        elif scope == Coupon.Scope.ALL:
+            cleaned["products"] = self.fields["products"].queryset.none()
+            cleaned["categories"] = self.fields["categories"].queryset.none()
+
         return cleaned
 
 

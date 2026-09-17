@@ -4,6 +4,7 @@ from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
+from catalog.models import ProductVariant
 from inventory.forms import (
     LowStockThresholdForm,
     StockAdjustmentForm,
@@ -179,26 +180,44 @@ def stock_transfer(request):
 
 
 def movements(request):
-    rows = StockMovement.objects.select_related("warehouse", "variant").all()
+    rows = StockMovement.objects.select_related("warehouse", "variant", "variant__product").all()
     warehouse_id = request.GET.get("warehouse")
     movement_type = request.GET.get("type")
+    variant_id = (request.GET.get("variant") or "").strip()
     query = (request.GET.get("q") or "").strip()
+
     if warehouse_id:
         rows = rows.filter(warehouse_id=warehouse_id)
     if movement_type:
         rows = rows.filter(movement_type=movement_type)
+    if variant_id.isdigit():
+        rows = rows.filter(variant_id=variant_id)
+    else:
+        variant_id = ""
     if query:
         rows = rows.filter(
             Q(sku_snapshot__icontains=query)
             | Q(product_snapshot__icontains=query)
             | Q(reference_no__icontains=query)
+            | Q(reference_type__icontains=query)
+            | Q(actor__icontains=query)
         )
+
+    variants_filter = (
+        ProductVariant.objects.filter(stock_movements__isnull=False)
+        .select_related("product")
+        .distinct()
+        .order_by("product__name", "name", "sku")
+    )
+
     context = _context("inventory", request)
     context.update(
         movements=rows[:250],
         warehouses_filter=Warehouse.objects.order_by("name"),
+        variants_filter=variants_filter,
         movement_types=StockMovement.Type.choices,
         selected_warehouse=warehouse_id or "",
+        selected_variant=variant_id,
         selected_type=movement_type or "",
         search_query=query,
     )
