@@ -297,23 +297,31 @@ def _trial_balance_report(filters):
     rows_data, total_debit, total_credit = trial_balance(as_of=filters["date_to"])
     rows = []
     nonzero = 0
+    accounts_with_activity = 0
     total_debit_activity = ZERO
     total_credit_activity = ZERO
     for item in rows_data:
-        if item["debit"] != ZERO or item["credit"] != ZERO:
+        debit_activity = item["debit_activity"] or ZERO
+        credit_activity = item["credit_activity"] or ZERO
+        ending_debit = item["debit"] or ZERO
+        ending_credit = item["credit"] or ZERO
+        if ending_debit != ZERO or ending_credit != ZERO:
             nonzero += 1
-        total_debit_activity += item["debit_activity"] or ZERO
-        total_credit_activity += item["credit_activity"] or ZERO
+        total_debit_activity += debit_activity
+        total_credit_activity += credit_activity
+        if not any((debit_activity, credit_activity, ending_debit, ending_credit)):
+            continue
+        accounts_with_activity += 1
         rows.append({
             "cells": [
                 _cell(item["account"].code), _cell(item["account"].name),
                 _cell(item["account"].get_account_type_display()),
-                _cell(item["debit_activity"], "money"), _cell(item["credit_activity"], "money"),
-                _cell(item["debit"], "money"), _cell(item["credit"], "money"),
+                _cell(debit_activity, "money"), _cell(credit_activity, "money"),
+                _cell(ending_debit, "money"), _cell(ending_credit, "money"),
             ],
             "csv": [
                 item["account"].code, item["account"].name, item["account"].get_account_type_display(),
-                _money(item["debit_activity"]), _money(item["credit_activity"]), _money(item["debit"]), _money(item["credit"]),
+                _money(debit_activity), _money(credit_activity), _money(ending_debit), _money(ending_credit),
             ],
         })
     total_debit_activity = _money(total_debit_activity)
@@ -328,13 +336,13 @@ def _trial_balance_report(filters):
     })
     difference = _money(total_debit - total_credit)
     kpis = [
-        {"label": "Active Accounts", "value": len(rows_data), "kind": "number"},
+        {"label": "Accounts with Activity", "value": accounts_with_activity, "kind": "number"},
         {"label": "Non-zero Balances", "value": nonzero, "kind": "number"},
         {"label": "Total Debit", "value": total_debit, "kind": "money"},
         {"label": "Total Credit", "value": total_credit, "kind": "money"},
         {"label": "Difference", "value": difference, "kind": "money"},
     ]
-    return ["Code", "Account", "Type", "Debit Activity", "Credit Activity", "Ending Debit", "Ending Credit"], rows, kpis, "As of", "No Chart of Accounts rows are available."
+    return ["Code", "Account", "Type", "Debit Activity", "Credit Activity", "Ending Debit", "Ending Credit"], rows, kpis, "As of", "No General Ledger activity found as of this date."
 
 
 def build_financial_report(params):
