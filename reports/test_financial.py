@@ -172,6 +172,12 @@ class FinancialStatementReportTests(TestCase):
         self.assertEqual(total_row[6], kpis["Total Credit"])
         self.assertEqual(total_row[3], total_row[4])
 
+        visible_codes = {row["csv"][0] for row in report["rows"][:-1]}
+        self.assertIn("1000", visible_codes)
+        self.assertIn("1100", visible_codes)  # Has activity even though ending balance is zero.
+        self.assertNotIn("1010", visible_codes)  # No bank activity, so it should stay hidden.
+        self.assertEqual(kpis["Accounts with Activity"], len(visible_codes))
+
     def test_financial_tabs_render_and_export_csv(self):
         url = reverse("backoffice:reports")
         for report_key in ("pnl", "balance_sheet", "cash_flow", "trial_balance"):
