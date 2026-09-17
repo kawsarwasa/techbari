@@ -1,23 +1,161 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Manual Journal | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">
+<link rel="stylesheet" href="{% static 'admin/css/manual-journal-v301.css' %}?v=3.0.1">
+{% endblock %}
 {% block content %}
-<section class="page">
-  <div class="page-head"><div><h1>Manual Journal</h1><p>Post a balanced manual double-entry journal. Closed accounting periods cannot accept new postings.</p></div><a class="btn" href="{% url 'backoffice:journals' %}">Back to Journals</a></div>
+<section class="page mj-page">
+  <div class="mj-page-head">
+    <div>
+      <h1>Manual Journal</h1>
+      <p>Post a balanced manual double-entry journal. Closed accounting periods cannot accept new postings.</p>
+    </div>
+    <div class="mj-head-actions">
+      <a class="btn" href="{% url 'backoffice:journals' %}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m6 6-6-6 6-6"/></svg>
+        Back to Journals
+      </a>
+    </div>
+  </div>
+
   {% if accounting_error %}<div class="acct-error">{{ accounting_error }}</div>{% endif %}
   {% include "backoffice/pages/accounts/_subnav.html" with accounting_tab="journals" %}
-  <form method="post" class="acct-form-card">{% csrf_token %}
-    <div class="acct-form-grid">
-      <div class="field"><label for="{{ journal_form.entry_date.id_for_label }}">Entry Date</label>{{ journal_form.entry_date }}{% if journal_form.entry_date.errors %}<div class="acct-error">{{ journal_form.entry_date.errors|striptags }}</div>{% endif %}</div>
-      <div class="field"><label for="{{ journal_form.source_reference.id_for_label }}">Reference</label>{{ journal_form.source_reference }}{% if journal_form.source_reference.errors %}<div class="acct-error">{{ journal_form.source_reference.errors|striptags }}</div>{% endif %}</div>
-      <div class="field wide"><label for="{{ journal_form.description.id_for_label }}">Description</label>{{ journal_form.description }}{% if journal_form.description.errors %}<div class="acct-error">{{ journal_form.description.errors|striptags }}</div>{% endif %}</div>
-    </div>
-    <div class="acct-note">Every line must contain either a debit or a credit. Total debit must exactly equal total credit before the journal can be posted.</div>
-    <div class="table-scroll"><table class="acct-table acct-line-table"><thead><tr><th>Account</th><th class="num">Debit</th><th class="num">Credit</th><th>Memo</th></tr></thead><tbody>
-      {% for i in "123456" %}<tr><td><select class="control" name="account_id"><option value="">Select account</option>{% for account in journal_accounts %}<option value="{{ account.id }}">{{ account.code }} — {{ account.name }}</option>{% endfor %}</select></td><td><input class="control" type="number" step="0.01" min="0" name="debit" placeholder="0.00"></td><td><input class="control" type="number" step="0.01" min="0" name="credit" placeholder="0.00"></td><td><input class="control memo" name="memo" placeholder="Optional line memo"></td></tr>{% endfor %}
-    </tbody></table></div>
-    <div class="acct-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Post Balanced Journal</button><a class="btn" href="{% url 'backoffice:journals' %}">Cancel</a></div>
+
+  <form method="post" class="mj-form" data-manual-journal-form>
+    {% csrf_token %}
+
+    <section class="mj-card">
+      <div class="mj-card-head">
+        <div class="mj-card-title">
+          <span class="mj-card-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6"/></svg>
+          </span>
+          <div>
+            <h2>Journal Information</h2>
+            <p>Set the posting date, reference and a clear journal description.</p>
+          </div>
+        </div>
+      </div>
+      <div class="mj-info-body">
+        <div class="mj-info-grid">
+          <div class="mj-field">
+            <label for="{{ journal_form.entry_date.id_for_label }}">Entry Date</label>
+            {{ journal_form.entry_date }}
+            {% if journal_form.entry_date.errors %}<div class="mj-inline-error">{{ journal_form.entry_date.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="mj-field">
+            <label for="{{ journal_form.source_reference.id_for_label }}">Reference <span class="acct-help">(optional)</span></label>
+            {{ journal_form.source_reference }}
+            {% if journal_form.source_reference.errors %}<div class="mj-inline-error">{{ journal_form.source_reference.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="mj-field is-wide">
+            <label for="{{ journal_form.description.id_for_label }}">Description</label>
+            {{ journal_form.description }}
+            {% if journal_form.description.errors %}<div class="mj-inline-error">{{ journal_form.description.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mj-card">
+      <div class="mj-card-head">
+        <div class="mj-card-title">
+          <span class="mj-card-icon is-green">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M8 3v18"/></svg>
+          </span>
+          <div>
+            <h2>Journal Lines</h2>
+            <p>Choose the accounts and enter debit or credit amounts for each line.</p>
+          </div>
+        </div>
+        <span class="mj-line-count" data-visible-line-count>2 lines</span>
+      </div>
+
+      <div class="mj-rule">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg>
+        <span>Every line must contain either a debit or a credit. Total debit must exactly equal total credit before the journal can be posted.</span>
+      </div>
+
+      <div class="mj-table-wrap">
+        <table class="mj-line-table">
+          <colgroup><col style="width:37%"><col style="width:15%"><col style="width:15%"><col style="width:28%"><col style="width:5%"></colgroup>
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th class="mj-num">Debit</th>
+              <th class="mj-num">Credit</th>
+              <th>Memo</th>
+              <th aria-label="Actions"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in "123456" %}
+            <tr class="mj-line{% if forloop.counter > 2 %} is-hidden{% endif %}" data-journal-line aria-hidden="{% if forloop.counter > 2 %}true{% else %}false{% endif %}">
+              <td>
+                <select class="control mj-account" name="account_id" aria-label="Account for journal line {{ forloop.counter }}">
+                  <option value="">Select account</option>
+                  {% for account in journal_accounts %}<option value="{{ account.id }}">{{ account.code }} — {{ account.name }}</option>{% endfor %}
+                </select>
+              </td>
+              <td><input class="control" type="number" step="0.01" min="0" name="debit" placeholder="0.00" inputmode="decimal" aria-label="Debit for journal line {{ forloop.counter }}"></td>
+              <td><input class="control" type="number" step="0.01" min="0" name="credit" placeholder="0.00" inputmode="decimal" aria-label="Credit for journal line {{ forloop.counter }}"></td>
+              <td><input class="control memo" name="memo" placeholder="Optional line memo" aria-label="Memo for journal line {{ forloop.counter }}"></td>
+              <td class="mj-remove-cell">
+                <button class="mj-remove-line" type="button" data-remove-journal-line aria-label="Remove journal line {{ forloop.counter }}" title="Remove line">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mj-line-tools">
+        <button class="mj-button" type="button" data-add-journal-line>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Add Line
+        </button>
+        <span class="mj-line-help">Up to 6 journal lines can be entered in this form.</span>
+      </div>
+
+      <div class="mj-summary" aria-live="polite">
+        <div class="mj-summary-item">
+          <span>Total Debit</span>
+          <strong data-total-debit>৳0.00</strong>
+        </div>
+        <div class="mj-summary-item">
+          <span>Total Credit</span>
+          <strong data-total-credit>৳0.00</strong>
+        </div>
+        <div class="mj-summary-item is-difference">
+          <div>
+            <span>Difference</span>
+            <strong data-balance-difference>৳0.00</strong>
+          </div>
+          <span class="mj-balance-badge is-neutral" data-balance-status>Waiting for entries</span>
+        </div>
+      </div>
+
+      <div class="mj-footer">
+        <div class="mj-footer-note">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V7z"/><path d="m9 12 2 2 4-4"/></svg>
+          Server-side accounting validation is still applied when you post.
+        </div>
+        <div class="mj-actions">
+          <a class="btn" href="{% url 'backoffice:journals' %}">Cancel</a>
+          <button class="btn btn-primary" type="submit" data-post-journal>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 4v6h8V4M8 16h8"/></svg>
+            Post Journal
+          </button>
+        </div>
+      </div>
+    </section>
   </form>
 </section>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'admin/js/manual-journal-v301.js' %}?v=3.0.1"></script>
 {% endblock %}

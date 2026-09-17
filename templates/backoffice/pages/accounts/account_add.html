@@ -1,17 +1,113 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Add Account | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/accounting-v200.css' %}?v=2.0.0">
+<link rel="stylesheet" href="{% static 'admin/css/account-add-v301.css' %}?v=3.0.1">
+{% endblock %}
 {% block content %}
-<section class="page">
-  <div class="page-head"><div><h1>Add Account</h1><p>Create a non-system General Ledger account.</p></div><a class="btn" href="{% url 'backoffice:chart_accounts' %}">Back to Chart</a></div>
+<section class="page aa-page">
+  <div class="aa-head">
+    <div>
+      <h1>Add Account</h1>
+      <p>Create a non-system General Ledger account for TechBari accounting.</p>
+    </div>
+    <a class="btn" href="{% url 'backoffice:chart_accounts' %}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m6 6-6-6 6-6"/></svg>
+      Back to Chart
+    </a>
+  </div>
+
   {% if accounting_error %}<div class="acct-error">{{ accounting_error }}</div>{% endif %}
   {% include "backoffice/pages/accounts/_subnav.html" with accounting_tab="chart" %}
-  <form method="post" class="acct-form-card">{% csrf_token %}
-    <div class="acct-form-grid">
-      {% for field in account_form %}<div class="field {% if field.name == 'description' %}wide{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<div class="acct-error">{{ field.errors|striptags }}</div>{% endif %}{% if field.help_text %}<div class="acct-help">{{ field.help_text }}</div>{% endif %}</div>{% endfor %}
-    </div>
-    <div class="acct-actions" style="margin-top:16px"><button class="btn btn-primary" type="submit">Save Account</button><a class="btn" href="{% url 'backoffice:chart_accounts' %}">Cancel</a></div>
+
+  <form method="post" class="aa-form">
+    {% csrf_token %}
+    <section class="aa-card">
+      <div class="aa-card-head">
+        <span class="aa-card-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4z"/><path d="M8 3h8v4H8zM8 11h8M8 15h5"/></svg>
+        </span>
+        <div>
+          <h2>Account Information</h2>
+          <p>Define the ledger code, name, classification and normal balance.</p>
+        </div>
+      </div>
+
+      <div class="aa-card-body">
+        <div class="aa-grid">
+          <div class="aa-field">
+            <label for="{{ account_form.code.id_for_label }}">Code</label>
+            {{ account_form.code }}
+            {% if account_form.code.errors %}<div class="aa-inline-error">{{ account_form.code.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="aa-field">
+            <label for="{{ account_form.name.id_for_label }}">Name</label>
+            {{ account_form.name }}
+            {% if account_form.name.errors %}<div class="aa-inline-error">{{ account_form.name.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="aa-field">
+            <label for="{{ account_form.account_type.id_for_label }}">Account Type</label>
+            {{ account_form.account_type }}
+            {% if account_form.account_type.errors %}<div class="aa-inline-error">{{ account_form.account_type.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="aa-field">
+            <label for="{{ account_form.normal_balance.id_for_label }}">Normal Balance</label>
+            {{ account_form.normal_balance }}
+            {% if account_form.normal_balance.errors %}<div class="aa-inline-error">{{ account_form.normal_balance.errors|striptags }}</div>{% endif %}
+          </div>
+
+          <div class="aa-field is-wide">
+            <label for="{{ account_form.description.id_for_label }}">Description</label>
+            {{ account_form.description }}
+            {% if account_form.description.errors %}<div class="aa-inline-error">{{ account_form.description.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="aa-settings">
+          <label class="aa-setting" for="{{ account_form.allow_manual_entries.id_for_label }}">
+            {{ account_form.allow_manual_entries }}
+            <span class="aa-switch" aria-hidden="true"></span>
+            <span class="aa-setting-copy">
+              <strong>Allow manual entries</strong>
+              <span>Allow this account to be selected when creating manual journals.</span>
+            </span>
+          </label>
+
+          <label class="aa-setting" for="{{ account_form.is_active.id_for_label }}">
+            {{ account_form.is_active }}
+            <span class="aa-switch" aria-hidden="true"></span>
+            <span class="aa-setting-copy">
+              <strong>Active account</strong>
+              <span>Keep the account available for new accounting activity and reporting.</span>
+            </span>
+          </label>
+        </div>
+
+        <div class="aa-info-strip">
+          <div class="aa-info"><span class="aa-dot"></span><div><b>Account code</b>Use a clear code that fits your Chart of Accounts structure.</div></div>
+          <div class="aa-info"><span class="aa-dot"></span><div><b>Classification</b>Account type and normal balance drive how ledger balances are interpreted.</div></div>
+          <div class="aa-info"><span class="aa-dot"></span><div><b>Non-system account</b>This form creates a user-managed account and does not replace protected system accounts.</div></div>
+        </div>
+      </div>
+
+      <div class="aa-footer">
+        <div class="aa-footer-note">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v5c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V7z"/><path d="m9 12 2 2 4-4"/></svg>
+          Account validation is applied before the record is saved.
+        </div>
+        <div class="aa-actions">
+          <a class="btn" href="{% url 'backoffice:chart_accounts' %}">Cancel</a>
+          <button class="btn btn-primary aa-primary" type="submit">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 4v6h8V4M8 16h8"/></svg>
+            Save Account
+          </button>
+        </div>
+      </div>
+    </section>
   </form>
 </section>
 {% endblock %}
