@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.db.models import Sum
@@ -66,6 +66,13 @@ def _positive_int(value):
     return int(value) if value.isdigit() and int(value) > 0 else None
 
 
+def _datetime_bounds(start_date, end_date):
+    current_tz = timezone.get_current_timezone()
+    start_at = timezone.make_aware(datetime.combine(start_date, time.min), current_tz)
+    end_at = timezone.make_aware(datetime.combine(end_date + timedelta(days=1), time.min), current_tz)
+    return start_at, end_at
+
+
 def parse_operational_filters(params):
     today = timezone.localdate()
     start_date = _parse_date(params.get("date_from")) or today.replace(day=1)
@@ -100,7 +107,8 @@ def _cell(value, kind="text"):
 
 
 def _historical_stock_rows(filters):
-    qs = StockMovement.objects.filter(created_at__date__lte=filters["date_to"]).select_related(
+    _, end_at = _datetime_bounds(filters["date_to"], filters["date_to"])
+    qs = StockMovement.objects.filter(created_at__lt=end_at).select_related(
         "warehouse",
         "variant__product__category",
         "variant__product__brand",
@@ -227,7 +235,11 @@ def _valuation_report(filters):
 
 
 def _movement_report(filters):
-    qs = StockMovement.objects.filter(created_at__date__range=(filters["date_from"], filters["date_to"])).select_related("warehouse")
+    start_at, end_at = _datetime_bounds(filters["date_from"], filters["date_to"])
+    qs = StockMovement.objects.filter(
+        created_at__gte=start_at,
+        created_at__lt=end_at,
+    ).select_related("warehouse")
     if filters["warehouse"]:
         qs = qs.filter(warehouse_id=filters["warehouse"])
     if filters["movement_type"]:

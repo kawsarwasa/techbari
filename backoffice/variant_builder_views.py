@@ -98,7 +98,7 @@ def _bulk_save_variants(request, product):
         for variant in variants:
             regular = _decimal_or_none(request.POST.get(f"regular_{variant.pk}"), "regular price")
             selling = _decimal_or_none(request.POST.get(f"price_{variant.pk}"), "selling price")
-            effective_regular = regular if regular is not None else product.regular_price
+            effective_regular = regular if regular is not None else _decimal_or_none(product.regular_price, "regular price")
             if selling is not None and effective_regular is not None and selling > effective_regular:
                 raise ValueError(
                     f"Selling price cannot exceed the effective regular price for {variant.sku}."

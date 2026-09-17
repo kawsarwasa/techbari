@@ -140,11 +140,13 @@ class StoreSettingsCMSTests(TestCase):
         self.assertIn("<strong>content</strong>", saved.body)
         self.assertNotIn("onclick", saved.body)
         self.assertNotIn("<script", saved.body)
+        self.assertNotIn("alert(1)", saved.body)
 
         response = self.client.get(reverse("storefront:privacy_policy"))
         self.assertContains(response, "<h2>Privacy Matters</h2>", html=False)
         self.assertContains(response, "<strong>content</strong>", html=False)
-        self.assertNotContains(response, "<script", html=False)
+        self.assertNotContains(response, "onclick=", html=False)
+        self.assertNotContains(response, "alert(1)", html=False)
 
     def test_content_page_browser_div_blocks_are_normalized_to_paragraphs(self):
         page = ContentPage.objects.get(slug="privacy-policy")
