@@ -1,7 +1,10 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Users & Roles | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/users-refresh.css' %}?v=1.0.0">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/users-refresh.css' %}?v=1.0.0">
+<link rel="stylesheet" href="{% static 'admin/css/users-compact-v148.css' %}?v=1.0.0">
+{% endblock %}
 {% block content %}
 <section class="page users-refresh">
   <div class="users-head">
