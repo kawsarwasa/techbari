@@ -17,19 +17,6 @@
     if (option) option.disabled = true;
   };
 
-  const availableValues = (select) => [...select.options]
-    .filter((option) => option.value && !option.disabled)
-    .map((option) => option.value);
-
-  const selectOnlyRemainingWarehouse = (select) => {
-    if (select.value) return false;
-    const values = availableValues(select);
-    if (values.length !== 1) return false;
-    select.value = values[0];
-    syncSearchable(select);
-    return true;
-  };
-
   const renderState = (changedField = null) => {
     if (syncing) return;
     syncing = true;
@@ -54,27 +41,6 @@
 
     disableValue(destination, sourceValue);
     disableValue(source, destinationValue);
-
-    let autoSelected = false;
-    if (sourceValue && !destinationValue) {
-      autoSelected = selectOnlyRemainingWarehouse(destination);
-      destinationValue = destination.value;
-    } else if (destinationValue && !sourceValue) {
-      autoSelected = selectOnlyRemainingWarehouse(source);
-      sourceValue = source.value;
-    }
-
-    if (autoSelected) {
-      resetDisabled(source);
-      resetDisabled(destination);
-      sourceValue = source.value;
-      destinationValue = destination.value;
-      disableValue(destination, sourceValue);
-      disableValue(source, destinationValue);
-    }
-
-    syncSearchable(source);
-    syncSearchable(destination);
 
     const ready = Boolean(sourceValue && destinationValue && sourceValue !== destinationValue);
     submitButtons.forEach((button) => {
@@ -102,7 +68,26 @@
     syncing = false;
   };
 
+  const bindSearchableClear = (select) => {
+    const searchable = select._tbSearchable;
+    const input = searchable?.input;
+    if (!input) return;
+
+    input.addEventListener('input', () => {
+      // The shared searchable-select clears the native <select> when the
+      // visible search input is cleared. Refresh the cross-field filtering
+      // immediately so previously-disabled warehouses come back without a
+      // full page reload. Close the stale open menu; the next click rebuilds
+      // it from the freshly-enabled native options.
+      if (input.value.trim() || select.value) return;
+      renderState(select);
+      searchable.close?.();
+    });
+  };
+
   source.addEventListener('change', () => renderState(source));
   destination.addEventListener('change', () => renderState(destination));
+  bindSearchableClear(source);
+  bindSearchableClear(destination);
   renderState();
 })();
