@@ -23,7 +23,7 @@
   {% if accounting_error %}<div class="acct-error">{{ accounting_error }}</div>{% endif %}
   {% include "backoffice/pages/accounts/_subnav.html" with accounting_tab="journals" %}
 
-  <form method="post" class="mj-form" data-manual-journal-form novalidate>
+  <form method="post" class="mj-form" data-manual-journal-form>
     {% csrf_token %}
 
     <section class="mj-card">
