@@ -297,9 +297,13 @@ def _trial_balance_report(filters):
     rows_data, total_debit, total_credit = trial_balance(as_of=filters["date_to"])
     rows = []
     nonzero = 0
+    total_debit_activity = ZERO
+    total_credit_activity = ZERO
     for item in rows_data:
         if item["debit"] != ZERO or item["credit"] != ZERO:
             nonzero += 1
+        total_debit_activity += item["debit_activity"] or ZERO
+        total_credit_activity += item["credit_activity"] or ZERO
         rows.append({
             "cells": [
                 _cell(item["account"].code), _cell(item["account"].name),
@@ -312,6 +316,16 @@ def _trial_balance_report(filters):
                 _money(item["debit_activity"]), _money(item["credit_activity"]), _money(item["debit"]), _money(item["credit"]),
             ],
         })
+    total_debit_activity = _money(total_debit_activity)
+    total_credit_activity = _money(total_credit_activity)
+    rows.append({
+        "cells": [
+            _cell(""), _cell("Total"), _cell(""),
+            _cell(total_debit_activity, "money"), _cell(total_credit_activity, "money"),
+            _cell(total_debit, "money"), _cell(total_credit, "money"),
+        ],
+        "csv": ["", "Total", "", total_debit_activity, total_credit_activity, total_debit, total_credit],
+    })
     difference = _money(total_debit - total_credit)
     kpis = [
         {"label": "Active Accounts", "value": len(rows_data), "kind": "number"},
