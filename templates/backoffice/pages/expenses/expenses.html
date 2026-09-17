@@ -1,51 +1,124 @@
 {% extends "backoffice/base.html" %}
 {% load static demo %}
 {% block title %}Expenses | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/expense-v210.css' %}?v=2.1.0">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin/css/expense-v210.css' %}?v=2.1.0">
+<link rel="stylesheet" href="{% static 'admin/css/expense-list-polish-v301.css' %}?v=3.0.1">
+{% endblock %}
 {% block content %}
-<section class="page">
+<section class="page expense-list-page">
   <div class="page-head">
-    <div><h1>Expense Management</h1><p>Track business expenses from draft and approval through payment and Accounting.</p></div>
-    <div class="head-actions"><a class="btn btn-primary" href="{% url 'backoffice:expense_add' %}">+ Add Expense</a><a class="btn" href="{% url 'backoffice:expense_categories' %}">Categories</a></div>
+    <div>
+      <h1>Expense Management</h1>
+      <p>Track business expenses from draft and approval through payment and Accounting.</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn btn-primary" href="{% url 'backoffice:expense_add' %}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Add Expense
+      </a>
+      <a class="btn" href="{% url 'backoffice:expense_categories' %}">Categories</a>
+    </div>
   </div>
-  {% if expense_notice %}<div class="expense-success">{{ expense_notice }}</div>{% endif %}{% if expense_error %}<div class="expense-error">{{ expense_error }}</div>{% endif %}
+
+  {% if expense_notice %}<div class="expense-success">{{ expense_notice }}</div>{% endif %}
+  {% if expense_error %}<div class="expense-error">{{ expense_error }}</div>{% endif %}
   {% include "backoffice/pages/expenses/_subnav.html" %}
 
   <div class="expense-kpis">
-    <div class="expense-kpi"><span>Paid This Month</span><strong>{{ expense_kpis.month_paid|money }}</strong><small>Paid expenses in the current month</small></div>
-    <div class="expense-kpi"><span>Paid This Year</span><strong>{{ expense_kpis.year_paid|money }}</strong><small>Year-to-date paid operating expense</small></div>
-    <div class="expense-kpi"><span>Approved / Unpaid</span><strong>{{ expense_kpis.approved_unpaid|money }}</strong><small>Approved expenses awaiting payment</small></div>
-    <div class="expense-kpi"><span>Pending Approval</span><strong>{{ expense_kpis.pending_count }}</strong><small>Expenses waiting for approval</small></div>
+    <div class="expense-kpi kpi-month">
+      <div class="expense-kpi-top">
+        <div class="expense-kpi-copy"><span>Paid This Month</span><strong>{{ expense_kpis.month_paid|money }}</strong></div>
+        <span class="expense-kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span>
+      </div>
+      <small>Paid expenses in the current month</small>
+    </div>
+    <div class="expense-kpi kpi-year">
+      <div class="expense-kpi-top">
+        <div class="expense-kpi-copy"><span>Paid This Year</span><strong>{{ expense_kpis.year_paid|money }}</strong></div>
+        <span class="expense-kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19V3"/></svg></span>
+      </div>
+      <small>Year-to-date paid operating expense</small>
+    </div>
+    <div class="expense-kpi kpi-unpaid">
+      <div class="expense-kpi-top">
+        <div class="expense-kpi-copy"><span>Approved / Unpaid</span><strong>{{ expense_kpis.approved_unpaid|money }}</strong></div>
+        <span class="expense-kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v11H4z"/><path d="M7 7V5h10v2M8 12h8"/></svg></span>
+      </div>
+      <small>Approved expenses awaiting payment</small>
+    </div>
+    <div class="expense-kpi kpi-pending">
+      <div class="expense-kpi-top">
+        <div class="expense-kpi-copy"><span>Pending Approval</span><strong>{{ expense_kpis.pending_count }}</strong></div>
+        <span class="expense-kpi-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+      </div>
+      <small>Expenses waiting for approval</small>
+    </div>
   </div>
 
-  <div class="card card-pad">
+  <div class="card card-pad expense-filter-card">
     <form method="get" class="expense-toolbar">
-      <label class="field search"><span>Search</span><input class="control" name="q" value="{{ expense_query }}" placeholder="Expense no, payee, description, receipt, reference"></label>
-      <label class="field"><span>Status</span><select class="control" name="status"><option value="">All statuses</option>{% for value,label in expense_status_choices %}<option value="{{ value }}"{% if expense_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-      <label class="field"><span>Category</span><select class="control" name="category"><option value="">All categories</option>{% for row in expense_categories %}<option value="{{ row.id }}"{% if expense_category == row.id|stringformat:'s' %} selected{% endif %}>{{ row.name }}</option>{% endfor %}</select></label>
-      <label class="field"><span>Method</span><select class="control" name="method"><option value="">All methods</option>{% for value,label in expense_method_choices %}<option value="{{ value }}"{% if expense_method == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-      <label class="field"><span>From</span><input class="control" type="date" name="from" value="{{ expense_date_from|date:'Y-m-d' }}"></label>
-      <label class="field"><span>To</span><input class="control" type="date" name="to" value="{{ expense_date_to|date:'Y-m-d' }}"></label>
-      <button class="btn" type="submit">Filter</button>
-      <a class="btn" href="{% url 'backoffice:expenses' %}">Reset</a>
+      <label class="field search expense-filter-search">
+        <span>Search</span>
+        <input class="control" name="q" value="{{ expense_query }}" placeholder="Expense no, payee, description, receipt, reference">
+      </label>
+      <label class="field expense-filter-status">
+        <span>Status</span>
+        <select class="control" name="status"><option value="">All statuses</option>{% for value,label in expense_status_choices %}<option value="{{ value }}"{% if expense_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      </label>
+      <label class="field expense-filter-category">
+        <span>Category</span>
+        <select class="control" name="category"><option value="">All categories</option>{% for row in expense_categories %}<option value="{{ row.id }}"{% if expense_category == row.id|stringformat:'s' %} selected{% endif %}>{{ row.name }}</option>{% endfor %}</select>
+      </label>
+      <label class="field expense-filter-method">
+        <span>Method</span>
+        <select class="control" name="method"><option value="">All methods</option>{% for value,label in expense_method_choices %}<option value="{{ value }}"{% if expense_method == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      </label>
+      <label class="field expense-filter-from">
+        <span>From</span>
+        <input class="control" type="date" name="from" value="{{ expense_date_from|date:'Y-m-d' }}">
+      </label>
+      <label class="field expense-filter-to">
+        <span>To</span>
+        <input class="control" type="date" name="to" value="{{ expense_date_to|date:'Y-m-d' }}">
+      </label>
+      <button class="btn expense-filter-submit" type="submit">Filter</button>
+      <a class="btn expense-filter-reset" href="{% url 'backoffice:expenses' %}">Reset</a>
     </form>
   </div>
 
-  <div class="card orders-table-card">
-    <div class="table-scroll"><table class="expense-table"><thead><tr><th>Date</th><th>Expense</th><th>Category</th><th>Payee / Description</th><th>Method</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead><tbody>
-      {% for row in expense_rows %}
-      <tr>
-        <td>{{ row.expense_date }}</td>
-        <td><a href="{% url 'backoffice:expense_detail' row.id %}"><strong>{{ row.expense_no }}</strong></a>{% if row.receipt_no %}<br><small>Receipt: {{ row.receipt_no }}</small>{% endif %}</td>
-        <td>{{ row.category.name }}<br><small>{{ row.category.account.code }} · {{ row.category.account.name }}</small></td>
-        <td>{% if row.payee %}<strong>{{ row.payee }}</strong><br>{% endif %}{{ row.description }}</td>
-        <td>{% if row.payment_method %}{{ row.get_payment_method_display }}{% elif row.preferred_payment_method %}<span title="Preferred method">{{ row.get_preferred_payment_method_display }}*</span>{% else %}—{% endif %}</td>
-        <td><span class="expense-badge {{ row.status }}">{{ row.get_status_display }}</span></td>
-        <td class="num"><strong>{{ row.amount|money }}</strong></td>
-        <td><a class="btn" href="{% url 'backoffice:expense_detail' row.id %}">View</a></td>
-      </tr>
-      {% empty %}<tr><td colspan="8" class="expense-empty">No expenses match the selected filters.</td></tr>{% endfor %}
-    </tbody></table></div>
+  <div class="card orders-table-card expense-table-card">
+    <div class="table-scroll">
+      <table class="expense-table">
+        <thead>
+          <tr><th>Date</th><th>Expense</th><th>Category</th><th>Payee / Description</th><th>Method</th><th>Status</th><th class="num">Amount</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for row in expense_rows %}
+          <tr>
+            <td>{{ row.expense_date }}</td>
+            <td><a href="{% url 'backoffice:expense_detail' row.id %}"><strong>{{ row.expense_no }}</strong></a>{% if row.receipt_no %}<br><small>Receipt: {{ row.receipt_no }}</small>{% endif %}</td>
+            <td>{{ row.category.name }}<br><small>{{ row.category.account.code }} · {{ row.category.account.name }}</small></td>
+            <td>{% if row.payee %}<strong>{{ row.payee }}</strong><br>{% endif %}{{ row.description }}</td>
+            <td>{% if row.payment_method %}{{ row.get_payment_method_display }}{% elif row.preferred_payment_method %}<span title="Preferred method">{{ row.get_preferred_payment_method_display }}*</span>{% else %}—{% endif %}</td>
+            <td><span class="expense-badge {{ row.status }}">{{ row.get_status_display }}</span></td>
+            <td class="num"><strong>{{ row.amount|money }}</strong></td>
+            <td><a class="btn" href="{% url 'backoffice:expense_detail' row.id %}">View</a></td>
+          </tr>
+          {% empty %}
+          <tr class="expense-empty-row">
+            <td colspan="8" class="expense-empty">
+              <div class="expense-empty-state">
+                <span class="expense-empty-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4z"/><path d="M8 7V5h8v2M8 12h8M8 16h5"/></svg></span>
+                <strong>No expenses found</strong>
+                <span>No expenses match the selected filters.</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
 {% endblock %}
