@@ -1,9 +1,15 @@
+from decimal import Decimal
+
 from django import forms
 
 from payments.models import PaymentMethodConfig
 from sales.models import SalesOrder
 
 from .models import CODSettlement, CourierProvider, Shipment
+
+
+def _money_attr(value):
+    return f"{Decimal(value or 0):.2f}"
 
 
 class ShipmentOrderSelect(forms.Select):
@@ -16,9 +22,9 @@ class ShipmentOrderSelect(forms.Select):
         raw_value = getattr(value, "value", value)
         meta = self.order_meta.get(str(raw_value))
         if meta:
-            option["attrs"]["data-outstanding"] = str(meta["outstanding"])
-            option["attrs"]["data-shipping-charge"] = str(meta["shipping_charge"])
-            option["attrs"]["data-grand-total"] = str(meta["grand_total"])
+            option["attrs"]["data-outstanding"] = _money_attr(meta["outstanding"])
+            option["attrs"]["data-shipping-charge"] = _money_attr(meta["shipping_charge"])
+            option["attrs"]["data-grand-total"] = _money_attr(meta["grand_total"])
         return option
 
 
@@ -32,7 +38,7 @@ class ShipmentCourierSelect(forms.Select):
         raw_value = getattr(value, "value", value)
         meta = self.courier_meta.get(str(raw_value))
         if meta:
-            option["attrs"]["data-default-fee"] = str(meta["default_fee"])
+            option["attrs"]["data-default-fee"] = _money_attr(meta["default_fee"])
             option["attrs"]["data-supports-cod"] = "1" if meta["supports_cod"] else "0"
         return option
 
@@ -118,15 +124,15 @@ class ShipmentForm(forms.ModelForm):
             self.fields["order"].widget.order_meta = {
                 str(order.pk): {
                     "outstanding": order.outstanding_amount,
-                    "shipping_charge": order.shipping_charge or 0,
-                    "grand_total": order.grand_total or 0,
+                    "shipping_charge": order.shipping_charge,
+                    "grand_total": order.grand_total,
                 }
                 for order in orders
             }
         if isinstance(self.fields["courier"].widget, ShipmentCourierSelect):
             self.fields["courier"].widget.courier_meta = {
                 str(courier.pk): {
-                    "default_fee": courier.default_courier_fee or 0,
+                    "default_fee": courier.default_courier_fee,
                     "supports_cod": courier.supports_cod,
                 }
                 for courier in couriers
