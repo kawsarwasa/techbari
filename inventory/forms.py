@@ -114,9 +114,11 @@ class StockTransferItemForm(forms.Form):
 
 StockTransferItemFormSet = formset_factory(
     StockTransferItemForm,
-    extra=5,
+    extra=0,
     min_num=1,
     validate_min=True,
+    max_num=50,
+    validate_max=True,
 )
 
 
