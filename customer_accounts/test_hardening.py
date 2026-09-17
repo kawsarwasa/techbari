@@ -118,8 +118,8 @@ class CustomerAccountHardeningTests(TestCase):
                 "phone": account.customer.phone,
                 "email": account.customer.email,
                 "division": "Dhaka",
-                "district": "Shipping District",
-                "upazila": "Shipping Area",
+                "district": "Dhaka",
+                "upazila": "Gulshan",
                 "address": "Temporary Shipping Address",
                 "landmark": "Near Market",
                 "delivery_option": "inside",
@@ -138,5 +138,5 @@ class CustomerAccountHardeningTests(TestCase):
         self.assertEqual(account.customer.district, "Profile District")
         order = SalesOrder.objects.filter(customer=account.customer).latest("id")
         self.assertEqual(order.shipping_address, "Temporary Shipping Address (Landmark: Near Market)")
-        self.assertEqual(order.shipping_city, "Shipping Area")
-        self.assertEqual(order.shipping_district, "Shipping District")
+        self.assertEqual(order.shipping_city, "Gulshan")
+        self.assertEqual(order.shipping_district, "Dhaka")
