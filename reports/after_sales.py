@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.utils import timezone
@@ -60,6 +60,13 @@ def _positive_int(value):
 def _valid_choice(value, choices):
     value = str(value or "").strip().lower()
     return value if value in set(choices) else ""
+
+
+def _datetime_bounds(start_date, end_date):
+    current_tz = timezone.get_current_timezone()
+    start_at = timezone.make_aware(datetime.combine(start_date, time.min), current_tz)
+    end_at = timezone.make_aware(datetime.combine(end_date + timedelta(days=1), time.min), current_tz)
+    return start_at, end_at
 
 
 def parse_after_sales_filters(params):
@@ -347,8 +354,10 @@ def _warranty_report(filters):
 
 
 def _serial_report(filters):
+    start_at, end_at = _datetime_bounds(filters["date_from"], filters["date_to"])
     qs = SerializedUnit.objects.filter(
-        created_at__date__range=(filters["date_from"], filters["date_to"])
+        created_at__gte=start_at,
+        created_at__lt=end_at,
     ).select_related("variant__product", "warehouse")
     if filters["serial_status"]:
         qs = qs.filter(status=filters["serial_status"])
