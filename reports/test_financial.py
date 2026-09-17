@@ -166,6 +166,11 @@ class FinancialStatementReportTests(TestCase):
         kpis = {row["label"]: row["value"] for row in report["kpis"]}
         self.assertEqual(kpis["Total Debit"], kpis["Total Credit"])
         self.assertEqual(kpis["Difference"], Decimal("0.00"))
+        total_row = report["rows"][-1]["csv"]
+        self.assertEqual(total_row[1], "Total")
+        self.assertEqual(total_row[5], kpis["Total Debit"])
+        self.assertEqual(total_row[6], kpis["Total Credit"])
+        self.assertEqual(total_row[3], total_row[4])
 
     def test_financial_tabs_render_and_export_csv(self):
         url = reverse("backoffice:reports")
