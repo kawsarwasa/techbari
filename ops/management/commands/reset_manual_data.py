@@ -80,9 +80,9 @@ class Command(BaseCommand):
                 f"Destructive reset not confirmed. Re-run with --confirm {CONFIRM_PHRASE}."
             )
 
-        # flush clears application rows without removing migration history, then Django
-        # recreates content types/permissions via post_migrate. We restore the intentionally
-        # preserved identities/configuration immediately afterward.
+        # flush clears application rows without removing migration history. Django's
+        # post_migrate hooks may immediately recreate framework data and TechBari's
+        # built-in staff-role groups, so the restore step must be idempotent.
         call_command(
             "flush",
             verbosity=0,
@@ -187,6 +187,7 @@ class Command(BaseCommand):
 
     def _restore_preserved_data(self, database, snapshot):
         User = get_user_model()
+        user_pk_name = User._meta.pk.attname
 
         with transaction.atomic(using=database):
             permission_map = {
@@ -194,43 +195,72 @@ class Command(BaseCommand):
                 for permission in Permission.objects.using(database).select_related("content_type")
             }
 
+            # TechBari's post_migrate signal recreates built-in groups such as Admin.
+            # Reuse those rows instead of blindly inserting duplicate group names.
             group_map = {}
             for row in snapshot["groups"]:
-                group = Group.objects.using(database).create(name=row["name"])
+                group, _ = Group.objects.using(database).get_or_create(name=row["name"])
                 permissions = [
                     permission_map[key]
                     for key in row["permissions"]
                     if key in permission_map
                 ]
-                if permissions:
-                    group.permissions.set(permissions)
+                group.permissions.set(permissions)
                 group_map[group.name] = group
 
             user_map = {}
             for row in snapshot["users"]:
-                user = User(**row["fields"])
-                user.save(using=database, force_insert=True)
+                fields = dict(row["fields"])
+                user_pk = fields.pop(user_pk_name)
+                user, _ = User._default_manager.using(database).update_or_create(
+                    **{user_pk_name: user_pk},
+                    defaults=fields,
+                )
                 user_map[user.pk] = user
 
                 groups = [group_map[name] for name in row["groups"] if name in group_map]
-                if groups:
-                    user.groups.set(groups)
+                user.groups.set(groups)
 
                 permissions = [
                     permission_map[key]
                     for key in row["permissions"]
                     if key in permission_map
                 ]
-                if permissions:
-                    user.user_permissions.set(permissions)
+                user.user_permissions.set(permissions)
 
             for row in snapshot["staff_profiles"]:
-                if row["user_id"] not in user_map:
+                user_id = row["user_id"]
+                if user_id not in user_map:
                     continue
-                StaffProfile.objects.using(database).create(**row)
+                defaults = {
+                    "phone": row["phone"],
+                    "branch": row["branch"],
+                    "force_password_change": row["force_password_change"],
+                }
+                StaffProfile.objects.using(database).update_or_create(
+                    user_id=user_id,
+                    defaults=defaults,
+                )
 
             for row in snapshot["system_accounts"]:
-                Account.objects.using(database).create(**row)
+                account_id = row["id"]
+                code = row["code"]
+                defaults = {
+                    "name": row["name"],
+                    "account_type": row["account_type"],
+                    "normal_balance": row["normal_balance"],
+                    "description": row["description"],
+                    "is_system": row["is_system"],
+                    "allow_manual_entries": row["allow_manual_entries"],
+                    "is_active": row["is_active"],
+                }
+                account = Account.objects.using(database).filter(code=code).first()
+                if account is None:
+                    Account.objects.using(database).create(id=account_id, code=code, **defaults)
+                else:
+                    for field, value in defaults.items():
+                        setattr(account, field, value)
+                    account.save(using=database, update_fields=[*defaults.keys(), "updated_at"])
 
     def _media_file_count(self, media_root):
         if not media_root.exists():
