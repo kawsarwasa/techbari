@@ -185,52 +185,52 @@ class Command(BaseCommand):
             "system_accounts": system_accounts,
         }
 
-    @transaction.atomic
     def _restore_preserved_data(self, database, snapshot):
         User = get_user_model()
 
-        permission_map = {
-            (permission.content_type.app_label, permission.codename): permission
-            for permission in Permission.objects.using(database).select_related("content_type")
-        }
+        with transaction.atomic(using=database):
+            permission_map = {
+                (permission.content_type.app_label, permission.codename): permission
+                for permission in Permission.objects.using(database).select_related("content_type")
+            }
 
-        group_map = {}
-        for row in snapshot["groups"]:
-            group = Group.objects.using(database).create(name=row["name"])
-            permissions = [
-                permission_map[key]
-                for key in row["permissions"]
-                if key in permission_map
-            ]
-            if permissions:
-                group.permissions.set(permissions)
-            group_map[group.name] = group
+            group_map = {}
+            for row in snapshot["groups"]:
+                group = Group.objects.using(database).create(name=row["name"])
+                permissions = [
+                    permission_map[key]
+                    for key in row["permissions"]
+                    if key in permission_map
+                ]
+                if permissions:
+                    group.permissions.set(permissions)
+                group_map[group.name] = group
 
-        user_map = {}
-        for row in snapshot["users"]:
-            user = User(**row["fields"])
-            user.save(using=database, force_insert=True)
-            user_map[user.pk] = user
+            user_map = {}
+            for row in snapshot["users"]:
+                user = User(**row["fields"])
+                user.save(using=database, force_insert=True)
+                user_map[user.pk] = user
 
-            groups = [group_map[name] for name in row["groups"] if name in group_map]
-            if groups:
-                user.groups.set(groups)
+                groups = [group_map[name] for name in row["groups"] if name in group_map]
+                if groups:
+                    user.groups.set(groups)
 
-            permissions = [
-                permission_map[key]
-                for key in row["permissions"]
-                if key in permission_map
-            ]
-            if permissions:
-                user.user_permissions.set(permissions)
+                permissions = [
+                    permission_map[key]
+                    for key in row["permissions"]
+                    if key in permission_map
+                ]
+                if permissions:
+                    user.user_permissions.set(permissions)
 
-        for row in snapshot["staff_profiles"]:
-            if row["user_id"] not in user_map:
-                continue
-            StaffProfile.objects.using(database).create(**row)
+            for row in snapshot["staff_profiles"]:
+                if row["user_id"] not in user_map:
+                    continue
+                StaffProfile.objects.using(database).create(**row)
 
-        for row in snapshot["system_accounts"]:
-            Account.objects.using(database).create(**row)
+            for row in snapshot["system_accounts"]:
+                Account.objects.using(database).create(**row)
 
     def _media_file_count(self, media_root):
         if not media_root.exists():
