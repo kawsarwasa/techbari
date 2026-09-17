@@ -47,27 +47,41 @@
   // The module landing page itself does not need a back-to-self button.
   if (normalizedCurrent === normalizedParent) return;
 
-  const header = document.querySelector('.page-head, .detail-head');
+  const header = document.querySelector('.page-head, .detail-head, .users-head');
   if (!header) return;
 
-  let actions = header.querySelector('.head-actions');
+  // Look across the entire page header, not only inside .head-actions.
+  // Several older templates keep their parent link as a direct child of the
+  // header. Reuse that link instead of creating a duplicate button.
+  const existingParentLinks = [...header.querySelectorAll('a[href]')]
+    .filter((link) => normalizePath(link.getAttribute('href')) === normalizedParent);
+
+  if (existingParentLinks.length) {
+    const parentLink = existingParentLinks.find((link) => link.dataset.moduleParentNavigation !== 'true')
+      || existingParentLinks[0];
+
+    parentLink.textContent = `← ${rule.label}`;
+    parentLink.setAttribute('aria-label', `Back to ${rule.label}`);
+    parentLink.dataset.moduleParentNavigation = 'true';
+
+    // If an earlier script execution already injected the same parent button,
+    // remove only those generated duplicates and keep the template-owned link.
+    existingParentLinks.forEach((link) => {
+      if (link !== parentLink && link.dataset.moduleParentNavigation === 'true') {
+        link.remove();
+      }
+    });
+    return;
+  }
+
+  let actions = header.querySelector('.head-actions, .users-head-actions');
   if (!actions) {
     actions = document.createElement('div');
     actions.className = 'head-actions';
     header.appendChild(actions);
   }
 
-  const links = [...actions.querySelectorAll('a[href]')];
-  let parentLink = links.find((link) => normalizePath(link.getAttribute('href')) === normalizedParent);
-
-  if (parentLink) {
-    parentLink.textContent = `← ${rule.label}`;
-    parentLink.setAttribute('aria-label', `Back to ${rule.label}`);
-    parentLink.dataset.moduleParentNavigation = 'true';
-    return;
-  }
-
-  parentLink = document.createElement('a');
+  const parentLink = document.createElement('a');
   parentLink.className = 'btn';
   parentLink.href = parentHref;
   parentLink.textContent = `← ${rule.label}`;
