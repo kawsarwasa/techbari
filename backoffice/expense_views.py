@@ -124,7 +124,7 @@ def expenses(request):
         expense_date_to=date_to,
         expense_status_choices=Expense.Status.choices,
         expense_method_choices=Expense.Method.choices,
-        expense_categories=ExpenseCategory.objects.filter(is_active=True).select_related("account"),
+        expense_categories=ExpenseCategory.objects.filter(is_active=True, entry_type=ExpenseCategory.EntryType.EXPENSE).select_related("account"),
         expense_kpis={
             "month_paid": month_paid,
             "year_paid": year_paid,
@@ -286,7 +286,7 @@ def expense_categories(request):
     context = _base_context(request, tab="categories")
     context.update(
         category_form=form,
-        category_rows=ExpenseCategory.objects.select_related("account").order_by("sort_order", "name"),
+        category_rows=ExpenseCategory.objects.filter(entry_type=ExpenseCategory.EntryType.EXPENSE).select_related("account").order_by("sort_order", "name"),
         editing_category=instance,
         expense_error=error or context.get("expense_error", ""),
     )
