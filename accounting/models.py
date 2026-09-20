@@ -115,6 +115,8 @@ class JournalEntry(models.Model):
         PURCHASE_RETURN = "purchase_return", "Purchase Return"
         COURIER_FEE = "courier_fee", "Courier / Collection Fee"
         EXPENSE = "expense", "Business Expense"
+        CASHBOOK = "cashbook", "Income & Expense"
+        CASHBOOK_SETTLEMENT = "cashbook_settlement", "Income & Expense Settlement"
         OPENING_BALANCE = "opening_balance", "Opening Balance"
         MANUAL = "manual", "Manual Journal"
         REVERSAL = "reversal", "Journal Reversal"

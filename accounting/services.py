@@ -19,8 +19,10 @@ SYSTEM_ACCOUNTS = {
     "nagad": "1040",
     "other": "1090",
     "receivable": "1100",
+    "other_receivable": "1150",
     "inventory": "1200",
     "payable": "2000",
+    "other_payable": "2050",
     "opening_equity": "3000",
     "sales": "4000",
     "shipping_revenue": "4010",
@@ -625,8 +627,14 @@ def accounting_summary(*, as_of=None):
     receivable = bal(SYSTEM_ACCOUNTS["receivable"])
     inventory = bal(SYSTEM_ACCOUNTS["inventory"])
     payable = bal(SYSTEM_ACCOUNTS["payable"])
-    revenue = bal(SYSTEM_ACCOUNTS["sales"]) + bal(SYSTEM_ACCOUNTS["shipping_revenue"])
-    sales_returns = bal(SYSTEM_ACCOUNTS["sales_returns"])
+    revenue = ZERO
+    sales_returns = ZERO
+    for account in Account.objects.filter(account_type=Account.Type.REVENUE, is_active=True):
+        balance = account_balance(account, as_of=as_of)
+        if account.normal_balance == Account.NormalBalance.DEBIT:
+            sales_returns += balance
+        else:
+            revenue += balance
     net_revenue = revenue - sales_returns
     expenses = ZERO
     for account in Account.objects.filter(account_type=Account.Type.EXPENSE, is_active=True):

@@ -1,12 +1,15 @@
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
+from django.utils.text import slugify
 
 from accounting.expense_posting import post_expense
 from accounting.models import Account, JournalEntry
-from accounting.services import AccountingError, reverse_journal
+from accounting.services import AccountingError, PAYMENT_ASSET_CODES, SYSTEM_ACCOUNTS, post_journal, reverse_journal
 
-from .models import Expense, ExpenseEvent
+from .models import CashbookEntry, CashbookSettlement, Expense, ExpenseCategory, ExpenseEvent
 
 
 class ExpenseError(ValidationError):
@@ -206,3 +209,213 @@ def void_paid_expense(*, expense, reason="", actor="Dashboard", reversal_date=No
         actor=actor,
     )
     return expense
+
+
+class CashbookError(ValidationError):
+    pass
+
+
+def _cashbook_method_for_account(account):
+    reverse_map = {code: method for method, code in PAYMENT_ASSET_CODES.items()}
+    return reverse_map.get(account.code, CashbookSettlement.Method.OTHER)
+
+
+def _cashbook_category_code(entry_type, name):
+    prefix = "INC" if entry_type == ExpenseCategory.EntryType.INCOME else "EXP"
+    stem = slugify(name).replace("-", "").upper()[:16] or "CATEGORY"
+    base = f"{prefix}-{stem}"[:24]
+    candidate = base
+    counter = 2
+    while ExpenseCategory.objects.filter(code=candidate).exists():
+        suffix = f"-{counter}"
+        candidate = f"{base[:24-len(suffix)]}{suffix}"
+        counter += 1
+    return candidate
+
+
+def _next_category_account_code(entry_type):
+    if entry_type == ExpenseCategory.EntryType.INCOME:
+        candidates = range(4100, 4900, 10)
+    else:
+        candidates = range(6400, 6990, 10)
+    used = set(Account.objects.values_list("code", flat=True))
+    for value in candidates:
+        code = str(value)
+        if code not in used:
+            return code
+    raise CashbookError("No free automatic account code is available for this category.")
+
+
+@transaction.atomic
+def create_simple_category(*, entry_type, name, description="", actor="Dashboard"):
+    entry_type = str(entry_type or "").strip().lower()
+    if entry_type not in ExpenseCategory.EntryType.values:
+        raise CashbookError("Select Income or Expense.")
+    name = str(name or "").strip()
+    if not name:
+        raise CashbookError("Category name is required.")
+    if ExpenseCategory.objects.filter(name__iexact=name).exists():
+        raise CashbookError("A category with this name already exists.")
+
+    account_type = Account.Type.REVENUE if entry_type == ExpenseCategory.EntryType.INCOME else Account.Type.EXPENSE
+    normal = Account.NormalBalance.CREDIT if entry_type == ExpenseCategory.EntryType.INCOME else Account.NormalBalance.DEBIT
+    account_code = _next_category_account_code(entry_type)
+    account = Account.objects.create(
+        code=account_code,
+        name=name,
+        account_type=account_type,
+        normal_balance=normal,
+        description=str(description or "").strip() or f"Auto-created for Income & Expense category: {name}.",
+        is_system=False,
+        allow_manual_entries=False,
+        is_active=True,
+    )
+    category = ExpenseCategory(
+        code=_cashbook_category_code(entry_type, name),
+        entry_type=entry_type,
+        name=name,
+        account=account,
+        description=str(description or "").strip(),
+        is_active=True,
+        sort_order=500,
+    )
+    category.full_clean()
+    category.save()
+    return category
+
+
+def _post_cashbook_recognition(entry, *, actor="Dashboard"):
+    if entry.entry_type == CashbookEntry.EntryType.EXPENSE:
+        lines = [
+            {"account": entry.category.account, "debit": entry.amount, "credit": Decimal("0.00"), "memo": entry.counterparty or entry.category.name},
+            {"account": SYSTEM_ACCOUNTS["other_payable"], "debit": Decimal("0.00"), "credit": entry.amount, "memo": entry.entry_no},
+        ]
+    else:
+        lines = [
+            {"account": SYSTEM_ACCOUNTS["other_receivable"], "debit": entry.amount, "credit": Decimal("0.00"), "memo": entry.entry_no},
+            {"account": entry.category.account, "debit": Decimal("0.00"), "credit": entry.amount, "memo": entry.counterparty or entry.category.name},
+        ]
+    return post_journal(
+        entry_date=entry.entry_date,
+        source_type=JournalEntry.SourceType.CASHBOOK,
+        source_key=entry.accounting_source_key,
+        source_reference=entry.entry_no,
+        description=f"{entry.get_entry_type_display()} — {entry.category.name}" + (f" — {entry.description}" if entry.description else ""),
+        lines=lines,
+        actor=actor,
+    )
+
+
+@transaction.atomic
+def register_cashbook_entry(*, entry, initial_amount=Decimal("0.00"), payment_account=None, reference="", actor="Dashboard"):
+    initial_amount = Decimal(initial_amount or 0)
+    if initial_amount < Decimal("0.00"):
+        raise CashbookError("Initial payment cannot be negative.")
+    entry.created_by = entry.created_by or actor
+    entry.full_clean()
+    entry.save()
+    try:
+        _post_cashbook_recognition(entry, actor=actor)
+        if initial_amount > Decimal("0.00"):
+            settle_cashbook_entry(
+                entry=entry,
+                amount=initial_amount,
+                payment_account=payment_account,
+                settlement_date=entry.entry_date,
+                reference=reference,
+                actor=actor,
+            )
+    except (AccountingError, ValidationError) as exc:
+        raise CashbookError(_error_text(exc)) from exc
+    return CashbookEntry.objects.get(pk=entry.pk)
+
+
+@transaction.atomic
+def settle_cashbook_entry(*, entry, amount, payment_account, settlement_date=None, reference="", note="", actor="Dashboard"):
+    entry = CashbookEntry.objects.select_for_update().select_related("category__account").get(pk=entry.pk)
+    if entry.is_voided:
+        raise CashbookError("A voided entry cannot receive another payment.")
+    amount = Decimal(amount or 0)
+    if amount <= Decimal("0.00"):
+        raise CashbookError("Payment amount must be greater than zero.")
+    due = entry.due_amount
+    if amount > due:
+        raise CashbookError("Payment amount cannot exceed the remaining due.")
+    try:
+        payment_account = Account.objects.get(pk=getattr(payment_account, "pk", payment_account))
+    except (Account.DoesNotExist, TypeError, ValueError) as exc:
+        raise CashbookError("Choose a valid payment account.") from exc
+
+    settlement = CashbookSettlement(
+        entry=entry,
+        amount=amount,
+        payment_account=payment_account,
+        method=_cashbook_method_for_account(payment_account),
+        settlement_date=settlement_date or timezone.localdate(),
+        reference=str(reference or "").strip(),
+        note=str(note or "").strip(),
+        actor=actor or "",
+    )
+    settlement.full_clean()
+    settlement.save()
+
+    if entry.entry_type == CashbookEntry.EntryType.EXPENSE:
+        lines = [
+            {"account": SYSTEM_ACCOUNTS["other_payable"], "debit": amount, "credit": Decimal("0.00"), "memo": entry.entry_no},
+            {"account": payment_account, "debit": Decimal("0.00"), "credit": amount, "memo": settlement.reference or settlement.get_method_display()},
+        ]
+    else:
+        lines = [
+            {"account": payment_account, "debit": amount, "credit": Decimal("0.00"), "memo": settlement.reference or settlement.get_method_display()},
+            {"account": SYSTEM_ACCOUNTS["other_receivable"], "debit": Decimal("0.00"), "credit": amount, "memo": entry.entry_no},
+        ]
+
+    try:
+        post_journal(
+            entry_date=settlement.settlement_date,
+            source_type=JournalEntry.SourceType.CASHBOOK_SETTLEMENT,
+            source_key=settlement.accounting_source_key,
+            source_reference=entry.entry_no,
+            description=f"{entry.get_entry_type_display()} settlement — {entry.entry_no}",
+            lines=lines,
+            actor=actor,
+        )
+    except (AccountingError, ValidationError) as exc:
+        raise CashbookError(_error_text(exc)) from exc
+    return settlement
+
+
+@transaction.atomic
+def void_cashbook_entry(*, entry, reason, reversal_date=None, actor="Dashboard"):
+    entry = CashbookEntry.objects.select_for_update().get(pk=entry.pk)
+    if entry.is_voided:
+        return entry
+    reason = str(reason or "").strip()
+    if not reason:
+        raise CashbookError("A void reason is required.")
+    reversal_date = reversal_date or timezone.localdate()
+
+    source_keys = [entry.accounting_source_key]
+    source_keys.extend(
+        settlement.accounting_source_key
+        for settlement in entry.settlements.all()
+    )
+    journals = JournalEntry.objects.filter(source_key__in=source_keys).order_by("-entry_date", "-id")
+    try:
+        for journal in journals:
+            if journal.status == JournalEntry.Status.POSTED:
+                reverse_journal(
+                    journal=journal,
+                    reversal_date=reversal_date,
+                    reason=reason,
+                    actor=actor,
+                )
+    except (AccountingError, ValidationError) as exc:
+        raise CashbookError(_error_text(exc)) from exc
+
+    entry.is_voided = True
+    entry.void_reason = reason
+    entry.voided_by = actor or ""
+    entry.voided_at = timezone.now()
+    entry.save(update_fields=["is_voided", "void_reason", "voided_by", "voided_at", "updated_at"])
+    return entry

@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Sum
 from django.utils import timezone
 
 
@@ -14,8 +15,18 @@ def make_expense_number():
     return f"EXP-{stamp}-{uuid4().hex[:7].upper()}"
 
 
+def make_cashbook_number():
+    stamp = timezone.localtime().strftime("%y%m%d")
+    return f"IE-{stamp}-{uuid4().hex[:7].upper()}"
+
+
 class ExpenseCategory(models.Model):
+    class EntryType(models.TextChoices):
+        EXPENSE = "expense", "Expense"
+        INCOME = "income", "Income"
+
     code = models.CharField(max_length=24, unique=True)
+    entry_type = models.CharField(max_length=12, choices=EntryType.choices, default=EntryType.EXPENSE)
     name = models.CharField(max_length=120, unique=True)
     account = models.ForeignKey(
         "accounting.Account",
@@ -37,8 +48,11 @@ class ExpenseCategory(models.Model):
         self.name = str(self.name or "").strip()
         if not self.code:
             raise ValidationError({"code": "Category code is required."})
-        if self.account_id and self.account.account_type != self.account.Type.EXPENSE:
-            raise ValidationError({"account": "Expense categories must map to an Expense-type account."})
+        if self.account_id:
+            expected_type = self.account.Type.REVENUE if self.entry_type == self.EntryType.INCOME else self.account.Type.EXPENSE
+            if self.account.account_type != expected_type:
+                label = "Revenue" if self.entry_type == self.EntryType.INCOME else "Expense"
+                raise ValidationError({"account": f"{self.get_entry_type_display()} categories must map to a {label}-type account."})
 
     def __str__(self):
         return f"{self.code} — {self.name}"
@@ -167,3 +181,132 @@ class ExpenseEvent(models.Model):
 
     def __str__(self):
         return f"{self.expense.expense_no}: {self.get_event_display()}"
+
+
+class CashbookEntry(models.Model):
+    class EntryType(models.TextChoices):
+        INCOME = "income", "Income"
+        EXPENSE = "expense", "Expense"
+
+    entry_no = models.CharField(max_length=64, unique=True, default=make_cashbook_number)
+    entry_date = models.DateField(default=timezone.localdate)
+    entry_type = models.CharField(max_length=12, choices=EntryType.choices)
+    category = models.ForeignKey(ExpenseCategory, on_delete=models.PROTECT, related_name="cashbook_entries")
+    counterparty = models.CharField(max_length=160, blank=True)
+    description = models.CharField(max_length=255, blank=True)
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    due_date = models.DateField(null=True, blank=True)
+    attachment = models.FileField(upload_to="income_expense/attachments/%Y/%m/", blank=True)
+    is_voided = models.BooleanField(default=False)
+    void_reason = models.TextField(blank=True)
+    voided_by = models.CharField(max_length=160, blank=True)
+    voided_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.CharField(max_length=160, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-entry_date", "-id")
+        indexes = [
+            models.Index(fields=("entry_type", "entry_date"), name="cashbook_type_date_idx"),
+            models.Index(fields=("category", "entry_date"), name="cashbook_cat_date_idx"),
+            models.Index(fields=("due_date", "is_voided"), name="cashbook_due_date_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(amount__gt=0), name="cashbook_amount_positive"),
+        ]
+
+    def clean(self):
+        if (self.amount or ZERO) <= ZERO:
+            raise ValidationError({"amount": "Amount must be greater than zero."})
+        if self.category_id:
+            if self.category.entry_type != self.entry_type:
+                raise ValidationError({"category": "Select a category that matches Income or Expense."})
+            if not self.category.is_active and not self.pk:
+                raise ValidationError({"category": "Select an active category."})
+
+    @property
+    def settled_amount(self):
+        if not self.pk:
+            return ZERO
+        return self.settlements.aggregate(total=Sum("amount"))["total"] or ZERO
+
+    @property
+    def due_amount(self):
+        return max(ZERO, (self.amount or ZERO) - self.settled_amount)
+
+    @property
+    def payment_status(self):
+        if self.is_voided:
+            return "Voided"
+        if self.due_amount <= ZERO:
+            return "Paid"
+        if self.settled_amount > ZERO:
+            return "Partial"
+        return "Due"
+
+    @property
+    def is_overdue(self):
+        return bool(
+            not self.is_voided
+            and self.due_amount > ZERO
+            and self.due_date
+            and self.due_date < timezone.localdate()
+        )
+
+    @property
+    def accounting_source_key(self):
+        return f"cashbook_entry:{self.pk}:recognition" if self.pk else ""
+
+    def __str__(self):
+        return f"{self.entry_no} — {self.get_entry_type_display()}"
+
+
+class CashbookSettlement(models.Model):
+    class Method(models.TextChoices):
+        CASH = "cash", "Cash"
+        BANK = "bank", "Bank"
+        CARD = "card", "Card"
+        BKASH = "bkash", "bKash"
+        NAGAD = "nagad", "Nagad"
+        OTHER = "other", "Other"
+
+    entry = models.ForeignKey(CashbookEntry, on_delete=models.PROTECT, related_name="settlements")
+    amount = models.DecimalField(max_digits=18, decimal_places=2)
+    payment_account = models.ForeignKey(
+        "accounting.Account",
+        on_delete=models.PROTECT,
+        related_name="cashbook_settlements",
+    )
+    method = models.CharField(max_length=20, choices=Method.choices)
+    settlement_date = models.DateField(default=timezone.localdate)
+    reference = models.CharField(max_length=160, blank=True)
+    note = models.TextField(blank=True)
+    actor = models.CharField(max_length=160, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("settlement_date", "id")
+        indexes = [
+            models.Index(fields=("entry", "settlement_date"), name="cashbook_settle_date_idx"),
+            models.Index(fields=("payment_account", "settlement_date"), name="cashbook_payacct_date_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(amount__gt=0), name="cashbook_settle_positive"),
+        ]
+
+    def clean(self):
+        if (self.amount or ZERO) <= ZERO:
+            raise ValidationError({"amount": "Settlement amount must be greater than zero."})
+        if self.payment_account_id:
+            if self.payment_account.account_type != "asset":
+                raise ValidationError({"payment_account": "Select a cash, bank, card or mobile-wallet account."})
+            if not self.payment_account.is_active or not self.payment_account.allow_manual_entries:
+                raise ValidationError({"payment_account": "Select an active payment account."})
+
+    @property
+    def accounting_source_key(self):
+        return f"cashbook_settlement:{self.pk}" if self.pk else ""
+
+    def __str__(self):
+        return f"{self.entry.entry_no} — {self.amount}"
