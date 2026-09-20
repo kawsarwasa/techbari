@@ -136,6 +136,13 @@ class IncomeExpenseServiceTests(TestCase):
 
 
 class IncomeExpenseDashboardTests(TestCase):
+    def test_entry_form_has_no_blank_type_choice_and_defaults_to_expense(self):
+        from expenses.forms import CashbookEntryForm
+
+        form = CashbookEntryForm()
+        self.assertEqual(list(form.fields["entry_type"].choices), list(CashbookEntry.EntryType.choices))
+        self.assertEqual(form.fields["entry_type"].initial, CashbookEntry.EntryType.EXPENSE)
+
     def test_pages_render(self):
         self.assertEqual(self.client.get(reverse("backoffice:income_expense")).status_code, 200)
         self.assertEqual(self.client.get(reverse("backoffice:income_expense_add")).status_code, 200)
