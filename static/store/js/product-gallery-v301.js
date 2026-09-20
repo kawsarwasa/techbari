@@ -38,14 +38,44 @@
     return result;
   };
 
-  const groupedUrls = product?.image_groups
-    ? Object.values(product.image_groups).flat().filter(Boolean)
-    : [];
-  const galleryUrls = uniqueUrls([
-    ...(product?.images || []),
-    ...groupedUrls,
-    product?.image_url,
-  ]);
+  const groups = product?.image_groups || {};
+  const hasMappedGroups = Object.values(groups).some(
+    (urls) => Array.isArray(urls) && urls.length,
+  );
+  const commonImageUrls = uniqueUrls(
+    product?.general_images?.length
+      ? product.general_images
+      : (!hasMappedGroups
+        ? [product?.image_url, ...(product?.images || []), product?.detail_image_url]
+        : []),
+  );
+
+  const selectedMappedUrls = () => {
+    const activeValues = [
+      ...document.querySelectorAll('[data-structured-value].active'),
+    ].map((control) => control.dataset.structuredValue).filter(Boolean);
+
+    const selectedValues = [
+      ...document.querySelectorAll('select[data-structured-attribute]'),
+    ].map((select) => select.value).filter(Boolean);
+
+    for (const valueId of [...activeValues, ...selectedValues]) {
+      const urls = groups[String(valueId)] || [];
+      if (urls.length) return urls;
+    }
+    return [];
+  };
+
+  const desiredGalleryUrls = () => {
+    const mapped = selectedMappedUrls();
+    const combined = uniqueUrls([...mapped, ...commonImageUrls]);
+    if (combined.length) return combined;
+    return uniqueUrls([
+      ...(product?.images || []),
+      product?.image_url,
+      product?.detail_image_url,
+    ]);
+  };
 
   const resetZoom = () => {
     stage.classList.remove('is-zooming');
@@ -78,6 +108,7 @@
   };
 
   const renderAllThumbs = () => {
+    const galleryUrls = desiredGalleryUrls();
     if (!thumbHost || !galleryUrls.length) return;
     const expected = galleryUrls.map(absoluteUrl);
     const current = currentThumbUrls();
@@ -101,6 +132,12 @@
       thumbHost.replaceChildren(fragment);
     }
 
+    const allowed = new Set(expected);
+    const currentMain = absoluteUrl(mainImage.currentSrc || mainImage.src);
+    if (!allowed.has(currentMain)) {
+      setMainImage(galleryUrls[0]);
+      return;
+    }
     setActiveThumb();
   };
 
@@ -154,6 +191,12 @@
     window.requestAnimationFrame(syncVariantSku);
   };
 
+  const scheduleGallerySync = () => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(renderAllThumbs);
+    });
+  };
+
   stage.addEventListener('pointerenter', (event) => {
     if (event.pointerType === 'mouse') stage.classList.add('is-zooming');
   });
@@ -176,10 +219,14 @@
   });
 
   document.addEventListener('click', (event) => {
-    if (event.target.closest('[data-structured-value]')) scheduleVariantSkuSync();
+    if (!event.target.closest('[data-structured-value]')) return;
+    scheduleVariantSkuSync();
+    scheduleGallerySync();
   });
   document.addEventListener('change', (event) => {
-    if (event.target.matches('select[data-structured-attribute]')) scheduleVariantSkuSync();
+    if (!event.target.matches('select[data-structured-attribute]')) return;
+    scheduleVariantSkuSync();
+    scheduleGallerySync();
   });
 
   const variantSummary = document.querySelector('.structured-variant-summary');

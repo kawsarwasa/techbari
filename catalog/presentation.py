@@ -37,6 +37,18 @@ def _image_url(image):
     return ""
 
 
+def _image_urls(images):
+    urls = []
+    seen = set()
+    for image in images:
+        url = _image_url(image)
+        if not url or url in seen:
+            continue
+        seen.add(url)
+        urls.append(url)
+    return urls
+
+
 def _category_image_url(category):
     if category.image:
         try:
@@ -185,6 +197,7 @@ def serialize_product(product):
         gallery_urls.append(url)
     if not gallery_urls:
         gallery_urls = [image_url]
+    general_image_urls = _image_urls(generic_images)
 
     description, short_description, description_paragraphs, description_html = _description_data(product)
 
@@ -267,6 +280,7 @@ def serialize_product(product):
         "image_url": image_url,
         "image": image_url,
         "images": gallery_urls,
+        "general_images": general_image_urls,
         "detail_image": detail_image_url,
         "detail_image_url": detail_image_url,
         "image_groups": image_groups,
