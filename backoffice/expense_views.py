@@ -9,17 +9,22 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 
-from expenses.forms import ExpenseActionForm, ExpenseCategoryForm, ExpenseForm, ExpensePaymentForm
-from expenses.models import Expense, ExpenseCategory
+from expenses.forms import CashbookEntryForm, CashbookSettlementForm, ExpenseActionForm, ExpenseCategoryForm, ExpenseForm, ExpensePaymentForm, SimpleCategoryForm
+from expenses.models import CashbookEntry, CashbookSettlement, Expense, ExpenseCategory
 from expenses.services import (
+    CashbookError,
     ExpenseError,
+    create_simple_category,
     approve_expense,
     cancel_expense,
     pay_expense,
     register_expense,
     reject_expense,
+    register_cashbook_entry,
+    settle_cashbook_entry,
     submit_expense,
     update_draft_expense,
+    void_cashbook_entry,
     void_paid_expense,
 )
 
@@ -299,3 +304,236 @@ def expense_category_toggle(request, category_id):
         return _redirect_with("backoffice:expense_categories", notice="category-updated")
     except ValidationError as exc:
         return _redirect_with("backoffice:expense_categories", error=_message(exc))
+
+
+CASHBOOK_NOTICE_TEXT = {
+    "created": "Entry saved and posted to Accounting.",
+    "settled": "Payment recorded successfully.",
+    "voided": "Entry voided and Accounting reversals posted.",
+    "category-created": "Category created successfully.",
+    "category-updated": "Category updated successfully.",
+}
+
+
+def _cashbook_actor(request):
+    user = getattr(request, "user", None)
+    if user is not None and getattr(user, "is_authenticated", False):
+        return user.get_full_name() or user.get_username()
+    return "Dashboard"
+
+
+def _cashbook_context(request, *, tab="transactions"):
+    context = page_context("expenses")
+    context.update(
+        active_section="income_expense",
+        cashbook_tab=tab,
+        cashbook_notice=CASHBOOK_NOTICE_TEXT.get(request.GET.get("notice", ""), ""),
+        cashbook_error=request.GET.get("error", ""),
+    )
+    return context
+
+
+def income_expense(request):
+    query = (request.GET.get("q") or "").strip()
+    entry_type = (request.GET.get("type") or "").strip().lower()
+    category_id = (request.GET.get("category") or "").strip()
+    payment_status = (request.GET.get("status") or "").strip().lower()
+    method = (request.GET.get("method") or "").strip().lower()
+    date_from = parse_date(request.GET.get("from") or "")
+    date_to = parse_date(request.GET.get("to") or "")
+
+    qs = CashbookEntry.objects.select_related("category", "category__account").prefetch_related(
+        "settlements", "settlements__payment_account"
+    )
+    if query:
+        qs = qs.filter(
+            Q(entry_no__icontains=query)
+            | Q(category__name__icontains=query)
+            | Q(counterparty__icontains=query)
+            | Q(description__icontains=query)
+        )
+    if entry_type in CashbookEntry.EntryType.values:
+        qs = qs.filter(entry_type=entry_type)
+    if category_id.isdigit():
+        qs = qs.filter(category_id=int(category_id))
+    if date_from:
+        qs = qs.filter(entry_date__gte=date_from)
+    if date_to:
+        qs = qs.filter(entry_date__lte=date_to)
+    if method in CashbookSettlement.Method.values:
+        qs = qs.filter(settlements__method=method).distinct()
+
+    rows = list(qs.order_by("-entry_date", "-id"))
+    if payment_status:
+        def matches_status(entry):
+            if payment_status == "overdue":
+                return entry.is_overdue
+            if payment_status == "voided":
+                return entry.is_voided
+            return entry.payment_status.lower() == payment_status
+        rows = [entry for entry in rows if matches_status(entry)]
+
+    active_rows = [entry for entry in rows if not entry.is_voided]
+    income_rows = [entry for entry in active_rows if entry.entry_type == CashbookEntry.EntryType.INCOME]
+    expense_rows = [entry for entry in active_rows if entry.entry_type == CashbookEntry.EntryType.EXPENSE]
+    income_received = sum((entry.settled_amount for entry in income_rows), ZERO)
+    expense_paid = sum((entry.settled_amount for entry in expense_rows), ZERO)
+    income_due = sum((entry.due_amount for entry in income_rows), ZERO)
+    expense_due = sum((entry.due_amount for entry in expense_rows), ZERO)
+
+    context = _cashbook_context(request)
+    context.update(
+        cashbook_rows=rows,
+        cashbook_query=query,
+        cashbook_type=entry_type,
+        cashbook_category=category_id,
+        cashbook_status=payment_status,
+        cashbook_method=method,
+        cashbook_date_from=date_from,
+        cashbook_date_to=date_to,
+        cashbook_categories=ExpenseCategory.objects.filter(is_active=True).order_by("entry_type", "sort_order", "name"),
+        cashbook_type_choices=CashbookEntry.EntryType.choices,
+        cashbook_method_choices=CashbookSettlement.Method.choices,
+        cashbook_status_choices=[
+            ("paid", "Paid / Received"),
+            ("partial", "Partial"),
+            ("due", "Due"),
+            ("overdue", "Overdue"),
+            ("voided", "Voided"),
+        ],
+        cashbook_kpis={
+            "income_received": income_received,
+            "expense_paid": expense_paid,
+            "income_due": income_due,
+            "expense_due": expense_due,
+            "net_cash": income_received - expense_paid,
+            "entries": len(rows),
+        },
+    )
+    return render(request, "backoffice/pages/income_expense/transactions.html", context)
+
+
+def income_expense_add(request):
+    form = CashbookEntryForm(
+        request.POST or None,
+        request.FILES or None,
+        initial={"entry_date": timezone.localdate(), "entry_type": CashbookEntry.EntryType.EXPENSE},
+    )
+    error = ""
+    if request.method == "POST" and form.is_valid():
+        try:
+            entry = form.save(commit=False)
+            entry = register_cashbook_entry(
+                entry=entry,
+                initial_amount=form.cleaned_data["initial_amount"],
+                payment_account=form.cleaned_data.get("payment_account"),
+                reference=form.cleaned_data.get("reference", ""),
+                actor=_cashbook_actor(request),
+            )
+            return _redirect_with("backoffice:income_expense_detail", args=[entry.pk], notice="created")
+        except (CashbookError, ValidationError) as exc:
+            error = _message(exc)
+    elif request.method == "POST":
+        error = "Please correct the highlighted fields."
+
+    context = _cashbook_context(request, tab="add")
+    context.update(cashbook_form=form, cashbook_error=error or context.get("cashbook_error", ""))
+    return render(request, "backoffice/pages/income_expense/entry_add.html", context)
+
+
+def income_expense_detail(request, entry_id):
+    entry = get_object_or_404(
+        CashbookEntry.objects.select_related("category", "category__account").prefetch_related(
+            "settlements", "settlements__payment_account"
+        ),
+        pk=entry_id,
+    )
+    context = _cashbook_context(request)
+    context.update(cashbook_entry=entry)
+    return render(request, "backoffice/pages/income_expense/entry_detail.html", context)
+
+
+def income_expense_settle(request, entry_id):
+    entry = get_object_or_404(
+        CashbookEntry.objects.select_related("category").prefetch_related("settlements"),
+        pk=entry_id,
+    )
+    if entry.is_voided or entry.due_amount <= ZERO:
+        return _redirect_with("backoffice:income_expense_detail", args=[entry.pk], error="This entry has no remaining due.")
+    form = CashbookSettlementForm(
+        request.POST or None,
+        entry=entry,
+        initial={"settlement_date": timezone.localdate()},
+    )
+    error = ""
+    if request.method == "POST" and form.is_valid():
+        try:
+            settle_cashbook_entry(
+                entry=entry,
+                amount=form.cleaned_data["amount"],
+                payment_account=form.cleaned_data["payment_account"],
+                settlement_date=form.cleaned_data["settlement_date"],
+                reference=form.cleaned_data["reference"],
+                note=form.cleaned_data["note"],
+                actor=_cashbook_actor(request),
+            )
+            return _redirect_with("backoffice:income_expense_detail", args=[entry.pk], notice="settled")
+        except (CashbookError, ValidationError) as exc:
+            error = _message(exc)
+    elif request.method == "POST":
+        error = "Please correct the payment fields."
+
+    context = _cashbook_context(request)
+    context.update(cashbook_entry=entry, settlement_form=form, cashbook_error=error or context.get("cashbook_error", ""))
+    return render(request, "backoffice/pages/income_expense/settle.html", context)
+
+
+def income_expense_void(request, entry_id):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+    entry = get_object_or_404(CashbookEntry, pk=entry_id)
+    try:
+        void_cashbook_entry(
+            entry=entry,
+            reason=(request.POST.get("reason") or "").strip(),
+            reversal_date=parse_date(request.POST.get("reversal_date") or "") or timezone.localdate(),
+            actor=_cashbook_actor(request),
+        )
+        return _redirect_with("backoffice:income_expense_detail", args=[entry.pk], notice="voided")
+    except (CashbookError, ValidationError) as exc:
+        return _redirect_with("backoffice:income_expense_detail", args=[entry.pk], error=_message(exc))
+
+
+def income_expense_categories(request):
+    form = SimpleCategoryForm(request.POST or None, initial={"entry_type": ExpenseCategory.EntryType.EXPENSE})
+    error = ""
+    if request.method == "POST" and form.is_valid():
+        try:
+            create_simple_category(
+                entry_type=form.cleaned_data["entry_type"],
+                name=form.cleaned_data["name"],
+                description=form.cleaned_data["description"],
+                actor=_cashbook_actor(request),
+            )
+            return _redirect_with("backoffice:income_expense_categories", notice="category-created")
+        except (CashbookError, ValidationError) as exc:
+            error = _message(exc)
+    elif request.method == "POST":
+        error = "Please correct the category fields."
+
+    context = _cashbook_context(request, tab="categories")
+    context.update(
+        cashbook_category_form=form,
+        cashbook_category_rows=ExpenseCategory.objects.select_related("account").order_by("entry_type", "sort_order", "name"),
+        cashbook_error=error or context.get("cashbook_error", ""),
+    )
+    return render(request, "backoffice/pages/income_expense/categories.html", context)
+
+
+def income_expense_category_toggle(request, category_id):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+    category = get_object_or_404(ExpenseCategory, pk=category_id)
+    category.is_active = not category.is_active
+    category.save(update_fields=["is_active", "updated_at"])
+    return _redirect_with("backoffice:income_expense_categories", notice="category-updated")
