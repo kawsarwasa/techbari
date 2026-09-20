@@ -1,0 +1,56 @@
+{% extends "backoffice/base.html" %}
+{% load static demo %}
+{% block title %}{{ cashbook_entry.entry_no }} | Income & Expense{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/income-expense-v1.css' %}?v=1.0.0">{% endblock %}
+{% block content %}
+<section class="page ie-page">
+  <div class="page-head ie-head">
+    <div><div class="page-kicker">{{ cashbook_entry.entry_no }}</div><h1>{{ cashbook_entry.category.name }}</h1><p>{{ cashbook_entry.description|default:"Business income / expense entry" }}</p></div>
+    <div class="head-actions"><a class="btn" href="{% url 'backoffice:income_expense' %}">Transactions</a>{% if not cashbook_entry.is_voided and cashbook_entry.due_amount > 0 %}<a class="btn btn-primary" href="{% url 'backoffice:income_expense_settle' cashbook_entry.id %}">{% if cashbook_entry.entry_type == 'income' %}Receive Payment{% else %}Pay Due{% endif %}</a>{% endif %}</div>
+  </div>
+  {% if cashbook_notice %}<div class="ie-notice success">{{ cashbook_notice }}</div>{% endif %}
+  {% if cashbook_error %}<div class="ie-notice error">{{ cashbook_error }}</div>{% endif %}
+  {% include "backoffice/pages/income_expense/_subnav.html" %}
+
+  <div class="ie-detail-layout">
+    <div class="card ie-form-card">
+      <div class="ie-detail-hero">
+        <span class="ie-type {{ cashbook_entry.entry_type }}">{{ cashbook_entry.get_entry_type_display }}</span>
+        <div><small>Total Amount</small><strong class="{% if cashbook_entry.entry_type == 'income' %}ie-positive{% else %}ie-negative{% endif %}">{{ cashbook_entry.amount|money }}</strong></div>
+        <div><small>Paid / Received</small><strong>{{ cashbook_entry.settled_amount|money }}</strong></div>
+        <div><small>Remaining Due</small><strong>{{ cashbook_entry.due_amount|money }}</strong></div>
+        <div><small>Status</small>{% if cashbook_entry.is_voided %}<span class="ie-status voided">Voided</span>{% elif cashbook_entry.is_overdue %}<span class="ie-status overdue">Overdue</span>{% elif cashbook_entry.payment_status == 'Paid' %}<span class="ie-status paid">Paid</span>{% elif cashbook_entry.payment_status == 'Partial' %}<span class="ie-status partial">Partial</span>{% else %}<span class="ie-status due">Due</span>{% endif %}</div>
+      </div>
+      <div class="ie-detail-grid">
+        <div><small>Date</small><strong>{{ cashbook_entry.entry_date|date:"M d, Y" }}</strong></div>
+        <div><small>Due Date</small><strong>{{ cashbook_entry.due_date|date:"M d, Y"|default:"—" }}</strong></div>
+        <div><small>Person / Shop / Source</small><strong>{{ cashbook_entry.counterparty|default:"—" }}</strong></div>
+        <div><small>Category</small><strong>{{ cashbook_entry.category.name }}</strong></div>
+        <div><small>Attachment</small><strong>{% if cashbook_entry.attachment %}<a href="{{ cashbook_entry.attachment.url }}" target="_blank" rel="noopener">View attachment</a>{% else %}—{% endif %}</strong></div>
+        <div><small>Created By</small><strong>{{ cashbook_entry.created_by|default:"—" }}</strong></div>
+      </div>
+
+      <div class="ie-card-head ie-history-head"><div><h3>Payment History</h3><p>Every partial payment stays recorded.</p></div></div>
+      <div class="ie-history">
+        {% for row in cashbook_entry.settlements.all %}
+        <div class="ie-history-row"><div><strong>{{ row.settlement_date|date:"M d, Y" }} · {{ row.get_method_display }}</strong><span>{{ row.payment_account.name }}{% if row.reference %} · {{ row.reference }}{% endif %}</span></div><strong>{{ row.amount|money }}</strong></div>
+        {% empty %}<div class="ie-empty compact"><strong>No payment yet</strong><span>The full amount is currently due.</span></div>{% endfor %}
+      </div>
+    </div>
+
+    <aside class="card ie-save-card">
+      <div class="ie-save-icon">✓</div><h3>Accounting is automatic</h3>
+      <p>This entry is already reflected in the General Ledger and P&amp;L. Payments affect cash and the remaining due automatically.</p>
+      {% if cashbook_entry.is_voided %}
+      <div class="ie-auto-note"><strong>Voided</strong><span>{{ cashbook_entry.void_reason }}</span></div>
+      {% else %}
+      <form method="post" action="{% url 'backoffice:income_expense_void' cashbook_entry.id %}" class="ie-void-form" onsubmit="return confirm('Void this entry and reverse its accounting history?');">{% csrf_token %}
+        <label class="field"><span>Void reason</span><textarea class="control" name="reason" rows="3" required></textarea></label>
+        <label class="field"><span>Reversal date</span><input class="control" type="date" name="reversal_date" required></label>
+        <button class="btn" type="submit">Void &amp; Reverse</button>
+      </form>
+      {% endif %}
+    </aside>
+  </div>
+</section>
+{% endblock %}
