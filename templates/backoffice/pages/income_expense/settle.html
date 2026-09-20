@@ -1,0 +1,24 @@
+{% extends "backoffice/base.html" %}
+{% load static demo %}
+{% block title %}{% if cashbook_entry.entry_type == 'income' %}Receive Payment{% else %}Pay Due{% endif %} | TechBari{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/income-expense-v1.css' %}?v=1.0.0">{% endblock %}
+{% block content %}
+<section class="page ie-page">
+  <div class="page-head ie-head"><div><div class="page-kicker">{{ cashbook_entry.entry_no }}</div><h1>{% if cashbook_entry.entry_type == 'income' %}Receive Payment{% else %}Pay Due{% endif %}</h1><p>{{ cashbook_entry.category.name }} · Remaining {{ cashbook_entry.due_amount|money }}</p></div><a class="btn" href="{% url 'backoffice:income_expense_detail' cashbook_entry.id %}">Cancel</a></div>
+  {% if cashbook_error %}<div class="ie-notice error">{{ cashbook_error }}</div>{% endif %}
+  <div class="ie-settle-layout">
+    <form method="post" class="card ie-form-card">{% csrf_token %}
+      <div class="ie-section-title"><span>৳</span><div><h3>{% if cashbook_entry.entry_type == 'income' %}Money Received{% else %}Payment{% endif %}</h3><p>You can pay the full due or only part of it.</p></div></div>
+      <div class="ie-form-grid">
+        <label class="field"><span>Amount</span>{{ settlement_form.amount }}{{ settlement_form.amount.errors }}</label>
+        <label class="field"><span>{% if cashbook_entry.entry_type == 'income' %}Received In{% else %}Paid From{% endif %}</span>{{ settlement_form.payment_account }}{{ settlement_form.payment_account.errors }}</label>
+        <label class="field"><span>Date</span>{{ settlement_form.settlement_date }}{{ settlement_form.settlement_date.errors }}</label>
+        <label class="field"><span>Reference <small>Optional</small></span>{{ settlement_form.reference }}{{ settlement_form.reference.errors }}</label>
+        <label class="field full"><span>Note <small>Optional</small></span>{{ settlement_form.note }}</label>
+      </div>
+      <button class="btn btn-primary ie-save-button" type="submit">Save Payment</button>
+    </form>
+    <aside class="card ie-save-card"><h3>Current Position</h3><div class="ie-mini-summary"><div><span>Total</span><strong>{{ cashbook_entry.amount|money }}</strong></div><div><span>Already Paid / Received</span><strong>{{ cashbook_entry.settled_amount|money }}</strong></div><div><span>Remaining</span><strong>{{ cashbook_entry.due_amount|money }}</strong></div></div></aside>
+  </div>
+</section>
+{% endblock %}
