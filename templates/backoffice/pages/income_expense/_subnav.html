@@ -1,0 +1,5 @@
+<nav class="ie-subnav" aria-label="Income and Expense">
+  <a class="{% if cashbook_tab == 'transactions' %}active{% endif %}" href="{% url 'backoffice:income_expense' %}">Transactions</a>
+  <a class="{% if cashbook_tab == 'add' %}active{% endif %}" href="{% url 'backoffice:income_expense_add' %}">Add Entry</a>
+  <a class="{% if cashbook_tab == 'categories' %}active{% endif %}" href="{% url 'backoffice:income_expense_categories' %}">Categories</a>
+</nav>
