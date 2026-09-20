@@ -16,6 +16,8 @@ OPERATING_SOURCE_TYPES = {
     JournalEntry.SourceType.SUPPLIER_PAYMENT,
     JournalEntry.SourceType.COURIER_FEE,
     JournalEntry.SourceType.EXPENSE,
+    JournalEntry.SourceType.CASHBOOK,
+    JournalEntry.SourceType.CASHBOOK_SETTLEMENT,
 }
 
 FINANCIAL_REPORT_KEYS = {"pnl", "balance_sheet", "cash_flow", "trial_balance"}
