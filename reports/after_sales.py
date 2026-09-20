@@ -3,7 +3,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.utils import timezone
 
-from expenses.models import Expense, ExpenseCategory
+from expenses.models import CashbookEntry, CashbookSettlement, Expense, ExpenseCategory
 from inventory.models import Warehouse
 from payments.models import PaymentMethodConfig, PaymentTransaction
 from returns.models import SalesReturn
@@ -15,6 +15,7 @@ MONEY = Decimal("0.01")
 
 AFTER_SALES_REPORT_KEYS = {
     "payment",
+    "income_expense",
     "expense",
     "returns",
     "warranty",
@@ -23,6 +24,7 @@ AFTER_SALES_REPORT_KEYS = {
 
 AFTER_SALES_TABS = [
     ("payment", "Payment"),
+    ("income_expense", "Income & Expense"),
     ("expense", "Expense"),
     ("returns", "Returns"),
     ("warranty", "Warranty"),
@@ -31,7 +33,8 @@ AFTER_SALES_TABS = [
 
 AFTER_SALES_META = {
     "payment": ("Payment Report", "Payment-ledger activity across sales, supplier payments, refunds and reversals."),
-    "expense": ("Expense Report", "Business expense lifecycle, category, payment method and payment-account reporting."),
+    "income_expense": ("Income & Expense Report", "Simple non-sales income and normal business expense entries with paid, partial and due positions."),
+    "expense": ("Expense Report", "Legacy approval-workflow expense records."),
     "returns": ("Returns Report", "Customer/POS/courier return cases with credit, refund and restock outcomes."),
     "warranty": ("Warranty Report", "Warranty/RMA claims with service status, coverage and replacement outcome."),
     "serial_imei": ("Serial / IMEI Report", "Serialized-unit registry with current warehouse, lifecycle status and warranty references."),
@@ -81,8 +84,12 @@ def parse_after_sales_filters(params):
         report_key = "payment"
 
     expense_category = _positive_int(params.get("expense_category"))
-    if expense_category and not ExpenseCategory.objects.filter(pk=expense_category).exists():
+    if expense_category and not ExpenseCategory.objects.filter(pk=expense_category, entry_type=ExpenseCategory.EntryType.EXPENSE).exists():
         expense_category = None
+
+    cashbook_category = _positive_int(params.get("cashbook_category"))
+    if cashbook_category and not ExpenseCategory.objects.filter(pk=cashbook_category).exists():
+        cashbook_category = None
 
     warehouse = _positive_int(params.get("warehouse"))
     if warehouse and not Warehouse.objects.filter(pk=warehouse).exists():
@@ -101,6 +108,10 @@ def parse_after_sales_filters(params):
         "expense_status": _valid_choice(params.get("expense_status"), Expense.Status.values),
         "expense_category": expense_category,
         "expense_method": _valid_choice(params.get("expense_method"), Expense.Method.values),
+        "cashbook_type": _valid_choice(params.get("cashbook_type"), CashbookEntry.EntryType.values),
+        "cashbook_category": cashbook_category,
+        "cashbook_status": _valid_choice(params.get("cashbook_status"), ["paid", "partial", "due", "overdue", "voided"]),
+        "cashbook_method": _valid_choice(params.get("cashbook_method"), CashbookSettlement.Method.values),
         "return_status": _valid_choice(params.get("return_status"), SalesReturn.Status.values),
         "return_source": _valid_choice(params.get("return_source"), SalesReturn.Source.values),
         "return_reason": _valid_choice(params.get("return_reason"), SalesReturn.Reason.values),
@@ -195,6 +206,86 @@ def _payment_report(filters):
     return columns, rows, kpis, extra_filters, "Range", "No payment transactions found for this filter."
 
 
+def _income_expense_report(filters):
+    qs = CashbookEntry.objects.filter(
+        entry_date__range=(filters["date_from"], filters["date_to"])
+    ).select_related("category").prefetch_related("settlements", "settlements__payment_account")
+    if filters["cashbook_type"]:
+        qs = qs.filter(entry_type=filters["cashbook_type"])
+    if filters["cashbook_category"]:
+        qs = qs.filter(category_id=filters["cashbook_category"])
+    if filters["cashbook_method"]:
+        qs = qs.filter(settlements__method=filters["cashbook_method"]).distinct()
+
+    entries = list(qs.order_by("-entry_date", "-id"))
+    if filters["cashbook_status"]:
+        status = filters["cashbook_status"]
+
+        def matches(entry):
+            if status == "overdue":
+                return entry.is_overdue
+            if status == "voided":
+                return entry.is_voided
+            return entry.payment_status.lower() == status
+
+        entries = [entry for entry in entries if matches(entry)]
+
+    columns = ["Date", "Entry", "Type", "Category", "Person / Source", "Total", "Paid / Received", "Due", "Status", "Due Date", "Methods"]
+    rows = []
+    for entry in entries:
+        methods = ", ".join(dict.fromkeys(row.get_method_display() for row in entry.settlements.all())) or "—"
+        status_label = "Overdue" if entry.is_overdue else entry.payment_status
+        rows.append({
+            "cells": [
+                _cell(entry.entry_date, "date"),
+                _cell(entry.entry_no),
+                _cell(entry.get_entry_type_display()),
+                _cell(entry.category.name),
+                _cell(entry.counterparty or "—"),
+                _cell(entry.amount, "money"),
+                _cell(entry.settled_amount, "money"),
+                _cell(entry.due_amount, "money"),
+                _cell(status_label),
+                _date_cell(entry.due_date),
+                _cell(methods),
+            ],
+            "csv": [
+                entry.entry_date.isoformat(),
+                entry.entry_no,
+                entry.get_entry_type_display(),
+                entry.category.name,
+                entry.counterparty,
+                _money(entry.amount),
+                _money(entry.settled_amount),
+                _money(entry.due_amount),
+                status_label,
+                entry.due_date.isoformat() if entry.due_date else "",
+                methods if methods != "—" else "",
+            ],
+        })
+
+    active = [entry for entry in entries if not entry.is_voided]
+    income = [entry for entry in active if entry.entry_type == CashbookEntry.EntryType.INCOME]
+    expenses = [entry for entry in active if entry.entry_type == CashbookEntry.EntryType.EXPENSE]
+    income_received = _money(sum((entry.settled_amount for entry in income), ZERO))
+    expense_paid = _money(sum((entry.settled_amount for entry in expenses), ZERO))
+    kpis = [
+        {"label": "Income", "value": _money(sum((entry.amount for entry in income), ZERO)), "kind": "money"},
+        {"label": "Expense", "value": _money(sum((entry.amount for entry in expenses), ZERO)), "kind": "money"},
+        {"label": "Income Due", "value": _money(sum((entry.due_amount for entry in income), ZERO)), "kind": "money"},
+        {"label": "Expense Due", "value": _money(sum((entry.due_amount for entry in expenses), ZERO)), "kind": "money"},
+        {"label": "Net Cash", "value": _money(income_received - expense_paid), "kind": "money"},
+    ]
+    category_choices = [("", "All"), *[(str(row.pk), row.name) for row in ExpenseCategory.objects.filter(is_active=True).order_by("entry_type", "sort_order", "name")]]
+    extra_filters = [
+        _filter("cashbook_type", "Type", filters["cashbook_type"], _choices(CashbookEntry.EntryType.choices)),
+        _filter("cashbook_category", "Category", filters["cashbook_category"], category_choices),
+        _filter("cashbook_status", "Status", filters["cashbook_status"], [("", "All"), ("paid", "Paid / Received"), ("partial", "Partial"), ("due", "Due"), ("overdue", "Overdue"), ("voided", "Voided")]),
+        _filter("cashbook_method", "Method", filters["cashbook_method"], _choices(CashbookSettlement.Method.choices)),
+    ]
+    return columns, rows, kpis, extra_filters, "Range", "No Income & Expense entries found for this filter."
+
+
 def _expense_report(filters):
     qs = Expense.objects.filter(
         expense_date__range=(filters["date_from"], filters["date_to"])
@@ -244,7 +335,7 @@ def _expense_report(filters):
         {"label": "Pending Approval", "value": sum(row.status == Expense.Status.PENDING for row in expenses), "kind": "number"},
         {"label": "Approved / Unpaid", "value": sum(row.status == Expense.Status.APPROVED for row in expenses), "kind": "number"},
     ]
-    category_choices = [("", "All"), *[(str(row.pk), row.name) for row in ExpenseCategory.objects.order_by("sort_order", "name")]]
+    category_choices = [("", "All"), *[(str(row.pk), row.name) for row in ExpenseCategory.objects.filter(entry_type=ExpenseCategory.EntryType.EXPENSE).order_by("sort_order", "name")]]
     extra_filters = [
         _filter("expense_status", "Status", filters["expense_status"], _choices(Expense.Status.choices)),
         _filter("expense_category", "Category", filters["expense_category"], category_choices),
@@ -405,6 +496,8 @@ def build_after_sales_report(params):
 
     if report_key == "payment":
         columns, rows, kpis, extra_filters, date_scope_label, empty_message = _payment_report(filters)
+    elif report_key == "income_expense":
+        columns, rows, kpis, extra_filters, date_scope_label, empty_message = _income_expense_report(filters)
     elif report_key == "expense":
         columns, rows, kpis, extra_filters, date_scope_label, empty_message = _expense_report(filters)
     elif report_key == "returns":
