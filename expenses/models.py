@@ -229,7 +229,7 @@ class CashbookEntry(models.Model):
     def settled_amount(self):
         if not self.pk:
             return ZERO
-        return self.settlements.aggregate(total=Sum("amount"))["total"] or ZERO
+        return sum((row.amount for row in self.settlements.all()), ZERO)
 
     @property
     def due_amount(self):
