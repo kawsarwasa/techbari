@@ -13,7 +13,7 @@
       <p>Post a physical stock count and let the system record the audited difference automatically.</p>
     </div>
     <div class="head-actions">
-      <a class="btn" href="{% url 'backoffice:inventory' %}">&larr; Inventory</a>
+      <a class="btn" href="{% if return_product %}{% url 'backoffice:catalog_variant_builder' %}?product={{ return_product }}{% else %}{% url 'backoffice:inventory' %}{% endif %}">{% if return_product %}&larr; Variant Builder{% else %}&larr; Inventory{% endif %}</a>
       <button class="btn btn-primary" type="submit" form="adjustmentForm">Post Adjustment</button>
     </div>
   </div>
@@ -23,6 +23,7 @@
 
   <form id="adjustmentForm" method="post" class="card form-card stock-adjustment-card">
     {% csrf_token %}
+    {% if return_product %}<input type="hidden" name="return_product" value="{{ return_product }}">{% endif %}
 
     <div class="stock-adjustment-section">
       <div class="stock-adjustment-section-head">

@@ -6,12 +6,14 @@ from django.urls import reverse
 
 from catalog.models import Product, ProductVariant, VariantAttribute, VariantPreset
 from catalog.variant_services import VariantGenerationError, generate_variant_combinations, variant_signature
+from inventory.services import InventoryError
 from .context import page_context
 
 
 NOTICE_TEXT = {
     "generated": "Selected variant combinations generated successfully.",
-    "bulk-saved": "Variant pricing, stock and status updated successfully.",
+    "bulk-saved": "Variant pricing, low-stock alerts and status updated successfully.",
+    "stock-adjusted": "Inventory stock adjustment posted successfully.",
 }
 
 
@@ -105,7 +107,8 @@ def _bulk_save_variants(request, product):
                 )
             variant.regular_price_override = regular
             variant.price_override = selling
-            variant.stock_quantity = _int_nonnegative(request.POST.get(f"stock_{variant.pk}"), "stock")
+            # Stock is inventory-owned. Ignore any stale/malicious stock_<id>
+            # field posted by a client so Builder cannot bypass Inventory movements.
             variant.low_stock_alert = _int_nonnegative(request.POST.get(f"low_{variant.pk}"), "low stock alert", 5)
             variant.is_active = variant.pk in active_ids
             variant.is_default = bool(default_id and variant.pk == default_id)
@@ -144,8 +147,9 @@ def variant_builder(request):
                 if preset_id:
                     params += f"&preset={preset_id}"
                 return redirect(reverse("backoffice:catalog_variant_builder") + params)
-            except ValueError as exc:
-                generator_error = str(exc)
+            except (ValueError, InventoryError) as exc:
+                messages = getattr(exc, "messages", None)
+                generator_error = "; ".join(str(value) for value in messages) if messages else str(exc)
 
     presets = list(
         VariantPreset.objects.filter(is_active=True)
