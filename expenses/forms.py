@@ -122,10 +122,15 @@ class FriendlyAccountChoiceField(forms.ModelChoiceField):
 
 
 class CashbookEntryForm(forms.ModelForm):
-    class SettlementStatus(forms.TextChoices):
-        PAID = "paid", "Paid / Received"
-        DUE = "due", "Due"
-        PARTIAL = "partial", "Partial"
+    class SettlementStatus:
+        PAID = "paid"
+        DUE = "due"
+        PARTIAL = "partial"
+        choices = (
+            (PAID, "Paid / Received"),
+            (DUE, "Due"),
+            (PARTIAL, "Partial"),
+        )
 
     settlement_status = forms.ChoiceField(
         choices=SettlementStatus.choices,
