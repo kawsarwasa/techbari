@@ -122,6 +122,12 @@ class FriendlyAccountChoiceField(forms.ModelChoiceField):
 
 
 class CashbookEntryForm(forms.ModelForm):
+    entry_type = forms.ChoiceField(
+        choices=CashbookEntry.EntryType.choices,
+        initial=CashbookEntry.EntryType.EXPENSE,
+        widget=forms.RadioSelect,
+    )
+
     class SettlementStatus:
         PAID = "paid"
         DUE = "due"
