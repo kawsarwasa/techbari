@@ -1,0 +1,52 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Add Income / Expense | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/income-expense-v1.css' %}?v=1.0.0">{% endblock %}
+{% block content %}
+<section class="page ie-page" data-ie-entry-form>
+  <div class="page-head ie-head"><div><div class="page-kicker">SIMPLE ENTRY</div><h1>Add Income / Expense</h1><p>Choose what happened. TechBari handles the accounting in the background.</p></div><a class="btn" href="{% url 'backoffice:income_expense' %}">Transactions</a></div>
+  {% if cashbook_error %}<div class="ie-notice error">{{ cashbook_error }}</div>{% endif %}
+  {% include "backoffice/pages/income_expense/_subnav.html" %}
+  <form method="post" enctype="multipart/form-data" class="ie-entry-layout">{% csrf_token %}
+    <div class="card ie-form-card">
+      <div class="ie-section">
+        <div class="ie-section-title"><span>1</span><div><h3>What happened?</h3><p>Money came in or money went out.</p></div></div>
+        <div class="ie-choice-row ie-type-choice">{{ cashbook_form.entry_type }}</div>
+        <div class="ie-form-grid">
+          <label class="field"><span>Date</span>{{ cashbook_form.entry_date }}{{ cashbook_form.entry_date.errors }}</label>
+          <label class="field"><span>Category</span>{{ cashbook_form.category }}{{ cashbook_form.category.errors }}</label>
+          <label class="field ie-amount-field"><span>Amount</span><div class="ie-money-input"><b>৳</b>{{ cashbook_form.amount }}</div>{{ cashbook_form.amount.errors }}</label>
+          <label class="field"><span>Person / Shop / Source <small>Optional</small></span>{{ cashbook_form.counterparty }}{{ cashbook_form.counterparty.errors }}</label>
+          <label class="field full"><span>Details / Note <small>Optional</small></span>{{ cashbook_form.description }}{{ cashbook_form.description.errors }}</label>
+        </div>
+      </div>
+
+      <div class="ie-section">
+        <div class="ie-section-title"><span>2</span><div><h3>Payment status</h3><p>Paid now, completely due, or partly paid.</p></div></div>
+        <div class="ie-choice-row ie-status-choice">{{ cashbook_form.settlement_status }}</div>
+        <div class="ie-form-grid" data-ie-payment-fields>
+          <label class="field" data-ie-partial><span data-ie-initial-label>Paid / Received Now</span>{{ cashbook_form.initial_amount }}{{ cashbook_form.initial_amount.errors }}</label>
+          <label class="field" data-ie-account><span data-ie-account-label>Paid From / Received In</span>{{ cashbook_form.payment_account }}{{ cashbook_form.payment_account.errors }}</label>
+          <label class="field" data-ie-reference><span>Reference <small>Optional</small></span>{{ cashbook_form.reference }}{{ cashbook_form.reference.errors }}</label>
+          <label class="field" data-ie-due><span>Due Date <small>Optional</small></span>{{ cashbook_form.due_date }}{{ cashbook_form.due_date.errors }}</label>
+        </div>
+      </div>
+
+      <div class="ie-section">
+        <div class="ie-section-title"><span>3</span><div><h3>Proof</h3><p>Keep a receipt or document if you have one.</p></div></div>
+        <label class="ie-upload-field">{{ cashbook_form.attachment }}<strong>Attach receipt / document</strong><span>PDF, JPG, PNG or WebP · max 5 MB</span></label>
+        {{ cashbook_form.attachment.errors }}
+      </div>
+    </div>
+
+    <aside class="card ie-save-card">
+      <div class="ie-save-icon">৳</div>
+      <h3>Simple by design</h3>
+      <p>No debit/credit entry is required. Income, expense, due and partial payment are posted to Accounting automatically.</p>
+      <div class="ie-save-rules"><span>✓ Product sales stay in Sales</span><span>✓ Supplier purchases stay in Purchases</span><span>✓ This page is for other business income &amp; expenses</span></div>
+      <button class="btn btn-primary ie-save-button" type="submit">Save Entry</button>
+    </aside>
+  </form>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/income-expense-v1.js' %}?v=1.0.0"></script>{% endblock %}
