@@ -4,6 +4,7 @@ from backoffice import variant_builder_views
 from catalog.models import Brand, Category, Product, ProductVariant, VariantAttribute, VariantAttributeValue
 from catalog.variant_services import VariantGenerationError, generate_variant_combinations
 from inventory.models import InventoryBalance, StockMovement, Warehouse
+from inventory.services import adjust_stock, bootstrap_variant_stock
 
 
 class VariantBuilderPreviewTests(TestCase):
@@ -111,11 +112,22 @@ class VariantBuilderPreviewTests(TestCase):
             product=self.product,
             name="Black / 128GB",
             sku="PREVIEW-STOCK",
-            stock_quantity=7,
+            stock_quantity=0,
             low_stock_alert=5,
             is_default=True,
             is_active=True,
         )
+        # Inventory is authoritative: establish stock through the Inventory engine
+        # instead of relying on the legacy ProductVariant stock compatibility signal.
+        bootstrap_variant_stock(variant)
+        adjust_stock(
+            warehouse=self.warehouse,
+            variant=variant,
+            actual_quantity=7,
+            reason="Variant Builder regression setup",
+            actor="Test",
+        )
+        variant.refresh_from_db()
         balance = InventoryBalance.objects.get(warehouse=self.warehouse, variant=variant)
         self.assertEqual(balance.available_quantity, 7)
         movements_before = StockMovement.objects.filter(variant=variant).count()
