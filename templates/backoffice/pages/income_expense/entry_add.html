@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}Add Income / Expense | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/income-expense-v1.css' %}?v=1.0.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/income-expense-v1.css' %}?v=1.0.1">{% endblock %}
 {% block content %}
 <section class="page ie-page" data-ie-entry-form>
   <div class="page-head ie-head"><div><div class="page-kicker">SIMPLE ENTRY</div><h1>Add Income / Expense</h1><p>Choose what happened. TechBari handles the accounting in the background.</p></div><a class="btn" href="{% url 'backoffice:income_expense' %}">Transactions</a></div>
@@ -49,4 +49,4 @@
   </form>
 </section>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'admin/js/income-expense-v1.js' %}?v=1.0.0"></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'admin/js/income-expense-v1.js' %}?v=1.0.1"></script>{% endblock %}
