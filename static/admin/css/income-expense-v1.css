@@ -1,3 +1,4 @@
+.ie-page [hidden]{display:none!important}
 .ie-page{--ie-green:#0f9d68;--ie-red:#d84a4a;--ie-amber:#c98508;--ie-blue:#3569e8}
 .ie-head{align-items:flex-end}.ie-head h1{margin-bottom:5px}.ie-head p{max-width:720px}.page-kicker{font-size:11px;font-weight:800;letter-spacing:.14em;color:#6b7280;margin-bottom:7px}
 .ie-subnav{display:flex;gap:8px;margin:0 0 18px;padding:5px;background:#f4f6f8;border:1px solid #e7e9ee;border-radius:12px;width:max-content;max-width:100%;overflow:auto}.ie-subnav a{padding:9px 14px;border-radius:9px;font-weight:700;font-size:13px;color:#64748b;white-space:nowrap}.ie-subnav a.active{background:#fff;color:#172033;box-shadow:0 1px 4px rgba(15,23,42,.08)}
