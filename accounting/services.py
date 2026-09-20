@@ -624,9 +624,9 @@ def accounting_summary(*, as_of=None):
         return account_balance(account, as_of=as_of) if account else ZERO
 
     cash_equivalents = sum((bal(code) for code in ["1000", "1010", "1020", "1030", "1040", "1090"]), ZERO)
-    receivable = bal(SYSTEM_ACCOUNTS["receivable"])
+    receivable = bal(SYSTEM_ACCOUNTS["receivable"]) + bal(SYSTEM_ACCOUNTS["other_receivable"])
     inventory = bal(SYSTEM_ACCOUNTS["inventory"])
-    payable = bal(SYSTEM_ACCOUNTS["payable"])
+    payable = bal(SYSTEM_ACCOUNTS["payable"]) + bal(SYSTEM_ACCOUNTS["other_payable"])
     revenue = ZERO
     sales_returns = ZERO
     for account in Account.objects.filter(account_type=Account.Type.REVENUE, is_active=True):
