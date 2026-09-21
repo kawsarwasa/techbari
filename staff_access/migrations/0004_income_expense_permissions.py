@@ -49,7 +49,14 @@ def create_and_preserve_income_expense_access(apps, schema_editor):
     Group = apps.get_model("auth", "Group")
     User = apps.get_model("auth", "User")
 
-    content_type = ContentType.objects.get(app_label="staff_access", model="staffprofile")
+    # On a freshly created database (including Django's test database),
+    # content-type rows are normally populated by post_migrate, which has not
+    # run yet while this data migration is executing. Create/reuse the row
+    # explicitly so the migration works both on upgrades and fresh installs.
+    content_type, _ = ContentType.objects.get_or_create(
+        app_label="staff_access",
+        model="staffprofile",
+    )
     mapping = (
         ("view_expenses", "view_income_expense", "View Income & Expense"),
         ("manage_expenses", "manage_income_expense", "Manage Income & Expense"),
