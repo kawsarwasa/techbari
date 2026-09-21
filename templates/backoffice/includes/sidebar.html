@@ -68,7 +68,7 @@
     </a>
     {% endif %}
 
-    {% if perms.staff_access.view_expenses or request.user.is_superuser %}
+    {% if perms.staff_access.view_income_expense or request.user.is_superuser %}
     <a class="{% if active_section == 'income_expense' %}active{% endif %}" href="{% url 'backoffice:income_expense' %}">
       <span class="nav-icon"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="M4 7h16v12H4z"/><path d="M8 11h8M8 15h5"/><path d="M17 4v6M14 7h6"/></svg></span>
       <span class="nav-label">Income &amp; Expense</span>
