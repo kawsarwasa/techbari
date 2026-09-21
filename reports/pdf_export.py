@@ -153,7 +153,6 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
         leading=9.5,
         textColor=colors.HexColor("#1677FF"),
         alignment=TA_RIGHT,
-        uppercase=True,
     )
     brand_meta_style = ParagraphStyle(
         "BrandMeta",
