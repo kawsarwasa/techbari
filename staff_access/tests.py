@@ -120,6 +120,20 @@ class StaffAccessTests(TestCase):
         )
         self.assertEqual(reverse("backoffice:expenses"), "/dashboard/expenses/advanced/")
 
+    def test_income_expense_is_nested_under_accounts_sidebar(self):
+        user = self.make_user("income-nav", None)
+        permissions = Permission.objects.filter(
+            content_type__app_label="staff_access",
+            codename__in=["view_dashboard", "view_income_expense"],
+        )
+        user.user_permissions.add(*permissions)
+        self.client.force_login(user)
+        response = self.client.get(reverse("backoffice:dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-nav-group="accounts"')
+        self.assertContains(response, reverse("backoffice:income_expense"))
+        self.assertNotContains(response, reverse("backoffice:accounts"))
+
     def test_accountant_can_open_accounting(self):
         user = self.make_user("accountant1", "Accountant")
         self.client.force_login(user)
