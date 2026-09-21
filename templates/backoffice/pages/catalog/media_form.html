@@ -7,7 +7,7 @@
   <div class="page-head">
     <div>
       <h1>{% if is_edit %}Edit Product Image{% else %}Add Product Image{% endif %}</h1>
-      <p>Upload JPG, PNG or WebP images up to 2MB. Map an image to a variant only when it belongs to a specific color or option.</p>
+      <p>Upload storefront-ready product images. Recommended: 1200 × 1200 px (1:1), WebP or JPG preferred, up to 2MB. Map an image to a variant only when it belongs to a specific color or option.</p>
     </div>
     <div class="head-actions">
       <a class="btn" href="{% url 'backoffice:products' %}"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg> Products</a>
@@ -50,7 +50,7 @@
               <small class="media-remove-warning" id="mediaRemoveWarning" hidden>Current image will be removed when you save.</small>
             {% endif %}
             {{ form.image.errors }}
-            <small>JPG, PNG or WebP, maximum 2MB.</small>
+            <small><strong>Recommended: 1200 × 1200 px (1:1).</strong> WebP or JPG preferred · maximum 2MB. Keep the product centered with a clean/light background.</small>
           </div>
 
           <label class="field"><span>Alt Text</span>{{ form.alt_text }}{{ form.alt_text.errors }}</label>
