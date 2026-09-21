@@ -28,6 +28,8 @@ ACCESS_PERMISSIONS = (
     ("view_expenses", "View expenses"),
     ("manage_expenses", "Create, edit, submit, pay and void expenses"),
     ("approve_expenses", "Approve or reject expenses"),
+    ("view_income_expense", "View Income & Expense"),
+    ("manage_income_expense", "Manage Income & Expense"),
     ("view_reports", "View reports"),
     ("view_marketing", "View promotion and marketing"),
     ("manage_marketing", "Manage promotion and marketing"),
@@ -55,7 +57,8 @@ ROLE_DEFAULTS = {
     "Accountant": {
         "view_dashboard", "view_notifications", "view_purchasing", "view_customers", "view_sales", "view_payments",
         "manage_payments", "view_accounting", "manage_accounting", "manage_accounting_settings",
-        "view_expenses", "manage_expenses", "approve_expenses", "view_reports", "view_audit_log",
+        "view_expenses", "manage_expenses", "approve_expenses", "view_income_expense", "manage_income_expense",
+        "view_reports", "view_audit_log",
     },
     "Sales Staff": {
         "view_dashboard", "view_notifications", "view_catalog", "view_customers", "manage_customers", "view_sales",
