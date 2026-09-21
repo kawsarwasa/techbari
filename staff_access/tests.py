@@ -106,6 +106,17 @@ class StaffAccessTests(TestCase):
         self.assertEqual(self.client.get(reverse("backoffice:income_expense")).status_code, 200)
         self.assertEqual(self.client.get(reverse("backoffice:income_expense_add")).status_code, 200)
 
+    def test_legacy_expenses_root_redirects_to_income_expense(self):
+        user = self.make_user("expense-alias", "Accountant")
+        self.client.force_login(user)
+        response = self.client.get(reverse("backoffice:expenses_home"))
+        self.assertRedirects(
+            response,
+            reverse("backoffice:income_expense"),
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(reverse("backoffice:expenses"), "/dashboard/expenses/advanced/")
+
     def test_accountant_can_open_accounting(self):
         user = self.make_user("accountant1", "Accountant")
         self.client.force_login(user)
