@@ -71,6 +71,41 @@ class StaffAccessTests(TestCase):
         response = self.client.post(reverse("backoffice:accounting_period_toggle", args=[999]))
         self.assertEqual(response.status_code, 403)
 
+    def test_income_expense_permissions_are_separate_from_legacy_expenses(self):
+        user = self.make_user("incomeaccess", None)
+        legacy_view = Permission.objects.get(
+            content_type__app_label="staff_access",
+            codename="view_expenses",
+        )
+        income_view = Permission.objects.get(
+            content_type__app_label="staff_access",
+            codename="view_income_expense",
+        )
+        income_manage = Permission.objects.get(
+            content_type__app_label="staff_access",
+            codename="manage_income_expense",
+        )
+        user.user_permissions.add(legacy_view)
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(reverse("backoffice:income_expense")).status_code, 403)
+
+        user.user_permissions.add(income_view)
+        user = User.objects.get(pk=user.pk)
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(reverse("backoffice:income_expense")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("backoffice:income_expense_add")).status_code, 403)
+
+        user.user_permissions.add(income_manage)
+        user = User.objects.get(pk=user.pk)
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(reverse("backoffice:income_expense_add")).status_code, 200)
+
+    def test_accountant_has_income_expense_access_by_default(self):
+        user = self.make_user("accountant-income", "Accountant")
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(reverse("backoffice:income_expense")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("backoffice:income_expense_add")).status_code, 200)
+
     def test_accountant_can_open_accounting(self):
         user = self.make_user("accountant1", "Accountant")
         self.client.force_login(user)
@@ -170,7 +205,7 @@ class StaffAccessTests(TestCase):
         self.client.force_login(user)
         routes = (
             "dashboard", "products", "inventory", "serials", "purchases", "customers", "orders",
-            "pos", "payments", "shipping", "returns", "accounts", "expenses", "reports", "marketing",
+            "pos", "payments", "shipping", "returns", "accounts", "expenses", "income_expense", "reports", "marketing",
             "users", "roles", "audit_log", "settings",
         )
         for route in routes:
