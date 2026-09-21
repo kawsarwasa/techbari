@@ -26,7 +26,6 @@ def _paragraph_text(value: Any) -> str:
 def build_report_pdf(report: dict[str, Any], store) -> bytes:
     """Render a dashboard report as a professional landscape A4 PDF."""
 
-    from django.contrib.staticfiles import finders
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_LEFT, TA_RIGHT
     from reportlab.lib.pagesizes import A4, landscape
@@ -108,8 +107,9 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
 
     story = []
 
-    # Prefer the CMS / Store Settings logo. If none is uploaded (or storage
-    # cannot read it), use the existing TechBari raster logo as a safe fallback.
+    # Report branding comes only from CMS / Store Settings. Do not fall back
+    # to an unrelated legacy/static logo because that can mix brands in a
+    # customer-facing financial document.
     logo_flowable = None
     logo = getattr(store, "logo", None)
     if logo:
@@ -117,40 +117,85 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
             logo.open("rb")
             logo_bytes = BytesIO(logo.read())
             logo.close()
-            logo_flowable = Image(logo_bytes, width=34 * mm, height=18 * mm, kind="proportional")
-        except Exception:
-            logo_flowable = None
-
-    if logo_flowable is None:
-        try:
-            fallback_logo = finders.find("admin/images/logo-reference.webp")
-            if fallback_logo:
-                logo_flowable = Image(fallback_logo, width=34 * mm, height=18 * mm, kind="proportional")
+            logo_flowable = Image(
+                logo_bytes,
+                width=29 * mm,
+                height=14 * mm,
+                kind="proportional",
+            )
         except Exception:
             logo_flowable = None
 
     contact_parts = [
-        part
-        for part in [store.address, store.business_email or store.support_email, store.support_phone]
-        if part
+        str(part).strip()
+        for part in [
+            getattr(store, "address", ""),
+            getattr(store, "business_email", "") or getattr(store, "support_email", ""),
+            getattr(store, "support_phone", ""),
+        ]
+        if str(part or "").strip()
     ]
+    contact_text = "  |  ".join(contact_parts)
+
     company_block = [
         Paragraph(_paragraph_text(store.store_name), company_name_style),
-        Paragraph(_paragraph_text(store.tagline or ""), subtitle_style),
-        Paragraph(_paragraph_text(" | ".join(map(str, contact_parts))), meta_style),
     ]
+    if getattr(store, "tagline", ""):
+        company_block.append(Paragraph(_paragraph_text(store.tagline), subtitle_style))
+    if contact_text:
+        company_block.append(Paragraph(_paragraph_text(contact_text), meta_style))
+
+    report_brand_style = ParagraphStyle(
+        "ReportBrand",
+        parent=meta_style,
+        fontName="Helvetica-Bold",
+        fontSize=7.5,
+        leading=9.5,
+        textColor=colors.HexColor("#1677FF"),
+        alignment=TA_RIGHT,
+        uppercase=True,
+    )
+    brand_meta_style = ParagraphStyle(
+        "BrandMeta",
+        parent=meta_style,
+        alignment=TA_RIGHT,
+        textColor=colors.HexColor("#829AB1"),
+    )
+    right_brand_block = [
+        Paragraph("BUSINESS REPORT", report_brand_style),
+        Paragraph(_paragraph_text(f"Currency: {store.currency_code}"), brand_meta_style),
+    ]
+
     if logo_flowable:
-        header = Table([[logo_flowable, company_block]], colWidths=[40 * mm, doc.width - 40 * mm])
+        identity = Table(
+            [[logo_flowable, company_block, right_brand_block]],
+            colWidths=[34 * mm, doc.width - 79 * mm, 45 * mm],
+        )
     else:
-        header = Table([[company_block]], colWidths=[doc.width])
-    header.setStyle(TableStyle([
+        identity = Table(
+            [[company_block, right_brand_block]],
+            colWidths=[doc.width - 45 * mm, 45 * mm],
+        )
+
+    identity.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("LEFTPADDING", (0, 0), (-1, -1), 0),
         ("RIGHTPADDING", (0, 0), (-1, -1), 0),
         ("TOPPADDING", (0, 0), (-1, -1), 0),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
     ]))
-    story.append(header)
+    story.append(identity)
+    story.append(Spacer(1, 3 * mm))
+
+    brand_divider = Table([[""]], colWidths=[doc.width], rowHeights=[0.6 * mm])
+    brand_divider.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#D9E7F5")),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+    ]))
+    story.append(brand_divider)
     story.append(Spacer(1, 4 * mm))
 
     filters = report["filters"]
@@ -166,7 +211,7 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
         ],
         [
             Paragraph(_paragraph_text(report.get("report_description", "")), subtitle_style),
-            Paragraph(_paragraph_text(f"Currency: {store.currency_code}"), table_cell_right_style),
+            Paragraph("", table_cell_right_style),
         ],
     ], colWidths=[doc.width * 0.73, doc.width * 0.27])
     report_meta.setStyle(TableStyle([
@@ -177,7 +222,7 @@ def build_report_pdf(report: dict[str, Any], store) -> bytes:
         ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
     ]))
     story.append(report_meta)
-    story.append(Spacer(1, 4 * mm))
+    story.append(Spacer(1, 5 * mm))
 
     # PDF intentionally omits the dashboard KPI cards. The exported document
     # starts directly with the detailed report table requested by the user.
