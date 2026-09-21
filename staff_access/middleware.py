@@ -34,9 +34,11 @@ RETURN_MANAGE = {"return_add", "return_approve", "return_receive", "return_compl
 ACCOUNTING_VIEW = {"accounts", "chart_accounts", "journals", "journal_detail", "general_ledger", "trial_balance", "accounting_periods"}
 ACCOUNTING_MANAGE = {"journal_add", "journal_reverse"}
 ACCOUNTING_SETTINGS = {"account_add", "accounting_period_toggle"}
-EXPENSE_VIEW = {"expenses", "expense_detail", "expense_categories", "income_expense", "income_expense_detail", "income_expense_categories"}
-EXPENSE_MANAGE = {"expense_add", "expense_edit", "expense_submit", "expense_cancel", "expense_pay", "expense_void", "expense_category_toggle", "income_expense_add", "income_expense_settle", "income_expense_void", "income_expense_category_toggle"}
+EXPENSE_VIEW = {"expenses", "expense_detail", "expense_categories"}
+EXPENSE_MANAGE = {"expense_add", "expense_edit", "expense_submit", "expense_cancel", "expense_pay", "expense_void", "expense_category_toggle"}
 EXPENSE_APPROVE = {"expense_approve", "expense_reject"}
+INCOME_EXPENSE_VIEW = {"income_expense", "income_expense_detail", "income_expense_categories"}
+INCOME_EXPENSE_MANAGE = {"income_expense_add", "income_expense_settle", "income_expense_void", "income_expense_category_toggle"}
 MARKETING_VIEW = {"marketing", "coupons"}
 MARKETING_MANAGE = {"coupon_add"}
 STORE_SETTINGS_ROUTES = {"settings", "cms_banners", "cms_banner_add", "cms_banner_edit", "cms_banner_toggle", "cms_banner_delete", "cms_homepage_sections", "cms_homepage_section_update", "cms_content_pages", "cms_content_page_edit"}
@@ -74,6 +76,8 @@ def _permission(route_name, method):
     if route_name in ACCOUNTING_SETTINGS: return "staff_access.manage_accounting_settings"
     if route_name in ACCOUNTING_MANAGE or (route_name in ACCOUNTING_VIEW and write): return "staff_access.manage_accounting"
     if route_name in ACCOUNTING_VIEW: return "staff_access.view_accounting"
+    if route_name in INCOME_EXPENSE_MANAGE or (route_name in INCOME_EXPENSE_VIEW and write): return "staff_access.manage_income_expense"
+    if route_name in INCOME_EXPENSE_VIEW: return "staff_access.view_income_expense"
     if route_name in EXPENSE_APPROVE: return "staff_access.approve_expenses"
     if route_name in EXPENSE_MANAGE or (route_name in EXPENSE_VIEW and write): return "staff_access.manage_expenses"
     if route_name in EXPENSE_VIEW: return "staff_access.view_expenses"
