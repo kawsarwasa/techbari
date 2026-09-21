@@ -150,6 +150,11 @@ class FinancialStatementReportTests(TestCase):
         self.assertEqual(kpis["Total Equity"], Decimal("1150.00"))
         self.assertEqual(kpis["Cumulative Earnings"], Decimal("150.00"))
         self.assertEqual(kpis["Equation Difference"], Decimal("0.00"))
+        self.assertEqual(report["columns"], ["Account / Total", "Amount"])
+        self.assertEqual(report["csv_headers"], ["Account / Total", "Amount"])
+        self.assertEqual(report["rows"][0]["csv"], ["Assets", ""])
+        self.assertEqual(report["rows"][0]["row_type"], "section")
+        self.assertEqual(report["rows"][-1]["csv"], ["Accounting Equation Difference", Decimal("0.00")])
 
     def test_cash_flow_reconciles_opening_and_closing_cash(self):
         report = build_financial_report(self._params("cash_flow"))
