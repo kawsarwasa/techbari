@@ -193,19 +193,36 @@ def _balance_sheet_report(filters):
     total_equity = _money(base_equity + earnings)
     equation_difference = _money(total_assets - total_liabilities - total_equity)
 
-    rows = []
+    def statement_line(label, amount=None, *, row_type="detail"):
+        value = "" if amount is None else _money(amount)
+        return {
+            "cells": [
+                _cell(label),
+                _cell(value, "money" if amount is not None else "text"),
+            ],
+            "csv": [label, value],
+            "row_type": row_type,
+        }
+
+    rows = [statement_line("Assets", row_type="section")]
     for account in assets:
-        rows.append(_statement_row("Assets", account["name"], account["natural"], code=account["code"]))
-    rows.append(_statement_row("Assets", "Total Assets", total_assets))
+        rows.append(statement_line(account["name"], account["natural"]))
+    rows.append(statement_line("Total Assets", total_assets, row_type="total"))
+
+    rows.append(statement_line("Liabilities", row_type="section"))
     for account in liabilities:
-        rows.append(_statement_row("Liabilities", account["name"], account["natural"], code=account["code"]))
-    rows.append(_statement_row("Liabilities", "Total Liabilities", total_liabilities))
+        rows.append(statement_line(account["name"], account["natural"]))
+    rows.append(statement_line("Total Liabilities", total_liabilities, row_type="total"))
+
+    rows.append(statement_line("Equity", row_type="section"))
     for account in equity:
-        rows.append(_statement_row("Equity", account["name"], account["natural"], code=account["code"]))
-    rows.append(_statement_row("Equity", "Cumulative Earnings from GL", earnings))
-    rows.append(_statement_row("Equity", "Total Equity", total_equity))
-    rows.append(_statement_row("Check", "Liabilities + Equity", total_liabilities + total_equity))
-    rows.append(_statement_row("Check", "Accounting Equation Difference", equation_difference))
+        rows.append(statement_line(account["name"], account["natural"]))
+    rows.append(statement_line("Cumulative Earnings from GL", earnings))
+    rows.append(statement_line("Total Equity", total_equity, row_type="total"))
+
+    rows.append(statement_line("Balance Check", row_type="section"))
+    rows.append(statement_line("Liabilities + Equity", total_liabilities + total_equity, row_type="total"))
+    rows.append(statement_line("Accounting Equation Difference", equation_difference, row_type="check"))
 
     kpis = [
         {"label": "Total Assets", "value": total_assets, "kind": "money"},
@@ -214,7 +231,7 @@ def _balance_sheet_report(filters):
         {"label": "Cumulative Earnings", "value": earnings, "kind": "money"},
         {"label": "Equation Difference", "value": equation_difference, "kind": "money"},
     ]
-    return ["Section", "Code", "Account / Total", "Amount"], rows, kpis, "As of", "No General Ledger balance-sheet balances found as of this date."
+    return ["Account / Total", "Amount"], rows, kpis, "As of", "No General Ledger balance-sheet balances found as of this date."
 
 
 def _cash_balance(as_of):
