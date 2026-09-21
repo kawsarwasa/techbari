@@ -106,8 +106,7 @@ class StaffAccessTests(TestCase):
         self.assertEqual(self.client.get(reverse("backoffice:income_expense")).status_code, 200)
         self.assertEqual(self.client.get(reverse("backoffice:income_expense_add")).status_code, 200)
         accounting = self.client.get(reverse("backoffice:accounts"))
-        self.assertContains(accounting, "Income &amp; Expense", html=False)
-        self.assertContains(accounting, reverse("backoffice:income_expense"))
+        self.assertNotContains(accounting, reverse("backoffice:income_expense"))
 
     def test_legacy_expenses_root_redirects_to_income_expense(self):
         user = self.make_user("expense-alias", "Accountant")
