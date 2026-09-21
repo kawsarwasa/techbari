@@ -342,6 +342,23 @@ class CatalogViewTests(TestCase):
         self.assertNotContains(response, 'value="Bluetooth Version"')
         self.assertNotContains(response, 'value="Driver Size"')
 
+    def test_catalog_image_upload_pages_show_project_recommended_dimensions(self):
+        category_response = self.client.get(reverse("backoffice:category_add"))
+        self.assertEqual(category_response.status_code, 200)
+        self.assertContains(category_response, "600 × 600 px (1:1)")
+
+        brand_response = self.client.get(reverse("backoffice:brand_add"))
+        self.assertEqual(brand_response.status_code, 200)
+        self.assertContains(brand_response, "600 × 300 px (2:1)")
+
+        product_response = self.client.get(reverse("backoffice:product_add"))
+        self.assertEqual(product_response.status_code, 200)
+        self.assertContains(product_response, "1200 × 1200 px (1:1)")
+
+        media_response = self.client.get(reverse("backoffice:catalog_media_form"))
+        self.assertEqual(media_response.status_code, 200)
+        self.assertContains(media_response, "1200 × 1200 px (1:1)")
+
     def test_product_create_edit_archive_and_delete_flows(self):
         response = self.client.post(reverse("backoffice:product_add"), self.product_post_data())
         self.assertEqual(response.status_code, 302)
