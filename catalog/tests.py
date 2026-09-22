@@ -395,11 +395,13 @@ class CatalogViewTests(TestCase):
         category_response = self.client.get(reverse("backoffice:categories"))
         self.assertEqual(category_response.status_code, 200)
         self.assertContains(category_response, "catalog-list-thumb category-thumb")
+        self.assertContains(category_response, 'width="50" height="50"')
         self.assertContains(category_response, "/static/store/images/category-test.webp")
 
         brand_response = self.client.get(reverse("backoffice:brands"))
         self.assertEqual(brand_response.status_code, 200)
         self.assertContains(brand_response, "catalog-list-thumb brand-thumb")
+        self.assertContains(brand_response, 'width="50" height="50"')
         self.assertContains(brand_response, "/static/store/images/brand-test.webp")
 
     def test_category_and_brand_used_by_product_are_protected_from_delete(self):
