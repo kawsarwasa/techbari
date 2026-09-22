@@ -386,6 +386,22 @@ class CatalogViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Product.objects.filter(pk=product.pk).exists())
 
+    def test_category_and_brand_lists_show_configured_images(self):
+        self.category.static_image_path = "store/images/category-test.webp"
+        self.category.save(update_fields=["static_image_path"])
+        self.brand.static_image_path = "store/images/brand-test.webp"
+        self.brand.save(update_fields=["static_image_path"])
+
+        category_response = self.client.get(reverse("backoffice:categories"))
+        self.assertEqual(category_response.status_code, 200)
+        self.assertContains(category_response, "catalog-list-thumb category-thumb")
+        self.assertContains(category_response, "/static/store/images/category-test.webp")
+
+        brand_response = self.client.get(reverse("backoffice:brands"))
+        self.assertEqual(brand_response.status_code, 200)
+        self.assertContains(brand_response, "catalog-list-thumb brand-thumb")
+        self.assertContains(brand_response, "/static/store/images/brand-test.webp")
+
     def test_category_and_brand_used_by_product_are_protected_from_delete(self):
         product = self.create_product()
         response = self.client.post(
