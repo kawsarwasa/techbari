@@ -32,6 +32,17 @@ class StoreSettingsCMSTests(TestCase):
         self.assertTrue(ContentPage.objects.filter(slug="privacy-policy", is_published=True).exists())
         self.assertTrue(ContentPage.objects.filter(slug="return-refund-policy", is_published=True).exists())
 
+    def test_store_settings_social_fields_use_brand_icons_inside_inputs(self):
+        response = self.client.get(reverse("backoffice:settings"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "social-brand-icon facebook")
+        self.assertContains(response, "social-brand-icon instagram")
+        self.assertContains(response, "social-brand-icon youtube")
+        self.assertContains(response, "social-brand-icon tiktok")
+        self.assertContains(response, "social-brand-icon whatsapp")
+        self.assertNotContains(response, 'class="social-badge">FB</i>')
+        self.assertNotContains(response, 'class="social-badge">IG</i>')
+
     def test_store_settings_dashboard_updates_real_database(self):
         store = StoreSettings.get_solo()
         data = self.settings_post_data(store)
