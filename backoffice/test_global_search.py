@@ -63,7 +63,10 @@ class GlobalSearchTests(TestCase):
 
         product_response = self.client.get(url, {"q": "AD20"})
         self.assertEqual(product_response.status_code, 200)
-        self.assertTrue(any(row["type"] == "Product" and row["title"] == self.product.name for row in product_response.json()["results"]))
+        product_results = product_response.json()["results"]
+        self.assertTrue(any(row["type"] == "Product" and row["title"] == self.product.name for row in product_results))
+        product_row = next(row for row in product_results if row["type"] == "Product")
+        self.assertEqual(product_row["url"], reverse("backoffice:product_detail", args=[self.product.pk]))
 
         order_response = self.client.get(url, {"q": "SEARCH-001"})
         self.assertTrue(any(row["type"] == "Order" and row["title"] == self.order.order_number for row in order_response.json()["results"]))
