@@ -105,7 +105,7 @@ def _apply_home_collections(context):
         key: [product["id"] for product in products]
         for key, products in collections.items()
     }
-    context["featured_products"] = collections["best-selling"]
+    context["featured_products"] = collections["featured"] or collections["best-selling"]
 
 
 def _apply_category_filter(context, selected_names):
