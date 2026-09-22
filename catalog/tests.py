@@ -361,6 +361,15 @@ class CatalogViewTests(TestCase):
         self.assertEqual(media_response.status_code, 200)
         self.assertContains(media_response, "1200 × 1200 px (1:1)")
 
+    def test_product_detail_page_is_read_only_and_available(self):
+        product = self.create_product()
+        response = self.client.get(reverse("backoffice:product_detail", args=[product.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, product.name)
+        self.assertContains(response, "PRODUCT DETAILS")
+        self.assertContains(response, "Edit Product")
+        self.assertContains(response, product.variants.get(is_default=True).sku)
+
     def test_product_create_edit_archive_and_delete_flows(self):
         response = self.client.post(reverse("backoffice:product_add"), self.product_post_data())
         self.assertEqual(response.status_code, 302)
