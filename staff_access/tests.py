@@ -221,6 +221,15 @@ class StaffAccessTests(TestCase):
         )
         self.assertRedirects(login_response, target, fetch_redirect_response=False)
 
+    def test_password_change_page_uses_polished_security_ui(self):
+        user = self.make_user("passwordui", "Manager")
+        self.client.force_login(user)
+        response = self.client.get(reverse("backoffice:password_change"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "password-change-layout")
+        self.assertContains(response, "Password requirements")
+        self.assertContains(response, "data-password-toggle")
+
     def test_password_reset_flow_sends_email_for_active_staff(self):
         user = self.make_user("resetme", "Sales Staff")
         response = self.client.post(reverse("backoffice:password_reset"), {"email": user.email})
