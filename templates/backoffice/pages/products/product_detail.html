@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static demo %}
 {% block title %}{{ product.name }} | Product Details | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-detail-v1.css' %}?v=1.0.0">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-detail-v1.css' %}?v=1.0.1">{% endblock %}
 {% block content %}
 <section class="page product-detail-page">
   <div class="page-head product-detail-head">
@@ -14,6 +14,7 @@
       <a class="btn" href="{% url 'backoffice:products' %}">← Products</a>
       <a class="btn" href="{% url 'backoffice:catalog_media' %}?product={{ product_obj.id }}">Media</a>
       <a class="btn" href="{% url 'backoffice:catalog_variant_builder' %}?product={{ product_obj.id }}">Variants</a>
+      {% if storefront_visible %}<a class="btn" href="{% url 'storefront:product_detail' slug=product_obj.slug %}" target="_blank" rel="noopener">View Storefront ↗</a>{% endif %}
       {% if perms.staff_access.manage_catalog or request.user.is_superuser %}
       <a class="btn btn-primary" href="{% url 'backoffice:product_edit' %}?id={{ product_obj.id }}">Edit Product</a>
       {% endif %}
@@ -44,6 +45,24 @@
         <div><span>Total Stock</span><strong>{{ product.stock }}</strong></div>
         <div><span>Variants</span><strong>{{ product.variants|length }}</strong></div>
       </div>
+    </div>
+  </div>
+
+  <div class="product-visibility-strip">
+    <div class="product-visibility-item {% if storefront_visible %}ready{% else %}blocked{% endif %}">
+      <span class="product-visibility-dot"></span>
+      <div><small>STOREFRONT</small><strong>{% if storefront_visible %}Visible{% else %}Hidden{% endif %}</strong></div>
+      {% if not storefront_visible %}<p>{{ storefront_reasons|join:" " }}</p>{% endif %}
+    </div>
+    <div class="product-visibility-item {% if homepage_visible %}ready{% else %}blocked{% endif %}">
+      <span class="product-visibility-dot"></span>
+      <div><small>HOMEPAGE FEATURED</small><strong>{% if homepage_visible %}Visible{% else %}Hidden{% endif %}</strong></div>
+      {% if not homepage_visible %}<p>{{ homepage_reasons|join:" " }}</p>{% endif %}
+    </div>
+    <div class="product-visibility-item {% if active_variant_count %}ready{% else %}blocked{% endif %}">
+      <span class="product-visibility-dot"></span>
+      <div><small>ACTIVE VARIANTS</small><strong>{{ active_variant_count }}</strong></div>
+      {% if not active_variant_count %}<p>Activate at least one variant for selling workflows.</p>{% endif %}
     </div>
   </div>
 
