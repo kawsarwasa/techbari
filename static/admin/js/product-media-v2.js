@@ -185,7 +185,15 @@
 
   bulkDelete?.addEventListener('click', async () => {
     const selected = selectedCards();
-    if (!selected.length || !window.confirm(`Delete ${selected.length} selected image${selected.length === 1 ? '' : 's'}? This cannot be undone.`)) return;
+    if (!selected.length) return;
+    const confirmed = await window.TechBariDeleteConfirm.ask({
+      kind: selected.length === 1 ? 'Product Image' : 'Product Images',
+      name: `${selected.length} selected image${selected.length === 1 ? '' : 's'}`,
+      question: `Delete ${selected.length} selected image${selected.length === 1 ? '' : 's'}?`,
+      confirmLabel: 'Delete Selected',
+      warning: 'Selected product images will be permanently removed from the gallery.'
+    });
+    if (!confirmed) return;
     bulkDelete.disabled = true;
     for (const card of selected) {
       const data = new FormData();
