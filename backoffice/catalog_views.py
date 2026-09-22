@@ -29,6 +29,7 @@ NOTICE_TEXT = {
     "updated": "Product updated successfully.",
     "deleted": "Product deleted successfully.",
     "archived": "Product archived successfully.",
+    "archived-history": "This product has sales or purchase history, so it was archived instead of deleted.",
     "category-saved": "Category saved successfully.",
     "category-deleted": "Category deleted successfully.",
     "brand-saved": "Brand saved successfully.",
@@ -89,6 +90,17 @@ def _replace_stat_values(stats, rows):
     return result
 
 
+def _delete_or_archive_product(product):
+    """Delete unused catalog products; archive products that have protected business history."""
+    try:
+        product.delete()
+        return "deleted"
+    except ProtectedError:
+        product.status = Product.Status.ARCHIVED
+        product.save(update_fields=["status", "updated_at"])
+        return "archived-history"
+
+
 def _product_statistics(context):
     stock_qs = Product.objects.annotate(
         total_stock=Coalesce(Sum("variants__stock_quantity"), Value(0), output_field=IntegerField())
@@ -110,15 +122,20 @@ def products(request):
         if action in {"delete", "archive"} and product_id:
             product = get_object_or_404(Product, pk=product_id)
             if action == "delete":
-                product.delete()
-                return redirect(reverse("backoffice:products") + "?notice=deleted")
+                outcome = _delete_or_archive_product(product)
+                return redirect(reverse("backoffice:products") + f"?notice={outcome}")
             product.status = Product.Status.ARCHIVED
             product.save(update_fields=["status", "updated_at"])
             return redirect(reverse("backoffice:products") + "?notice=archived")
         if action.startswith("bulk_") and ids:
             qs = Product.objects.filter(pk__in=ids)
             if action == "bulk_delete":
-                qs.delete()
+                had_archived_history = False
+                for product in qs.order_by("pk"):
+                    outcome = _delete_or_archive_product(product)
+                    had_archived_history = had_archived_history or outcome == "archived-history"
+                if had_archived_history:
+                    return redirect(reverse("backoffice:products") + "?notice=archived-history")
             elif action == "bulk_archive":
                 qs.update(status=Product.Status.ARCHIVED)
             elif action == "bulk_activate":
