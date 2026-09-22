@@ -1,0 +1,122 @@
+{% extends "backoffice/base.html" %}
+{% load static demo %}
+{% block title %}{{ product.name }} | Product Details | TechBari Admin{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-detail-v1.css' %}?v=1.0.0">{% endblock %}
+{% block content %}
+<section class="page product-detail-page">
+  <div class="page-head product-detail-head">
+    <div>
+      <div class="product-detail-kicker">PRODUCT DETAILS</div>
+      <h1>{{ product.name }}</h1>
+      <p>Read-only catalog overview. Use Edit Product when you need to change product information.</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn" href="{% url 'backoffice:products' %}">← Products</a>
+      <a class="btn" href="{% url 'backoffice:catalog_media' %}?product={{ product_obj.id }}">Media</a>
+      <a class="btn" href="{% url 'backoffice:catalog_variant_builder' %}?product={{ product_obj.id }}">Variants</a>
+      {% if perms.staff_access.manage_catalog or request.user.is_superuser %}
+      <a class="btn btn-primary" href="{% url 'backoffice:product_edit' %}?id={{ product_obj.id }}">Edit Product</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="product-detail-hero card">
+    <div class="product-detail-main-image">
+      <img src="{{ product.image }}" alt="{{ product.name }}">
+    </div>
+    <div class="product-detail-summary">
+      <div class="product-detail-badges">
+        <span class="status {% if product.status == 'Active' %}green{% elif product.status == 'Draft' %}yellow{% else %}gray{% endif %}">{{ product.status }}</span>
+        {% if product.is_featured %}<span class="status blue">Featured</span>{% endif %}
+        {% if product.is_new_arrival %}<span class="status blue">New Arrival</span>{% endif %}
+      </div>
+      <h2>{{ product.name }}</h2>
+      {% if product.subtitle %}<p class="product-detail-subtitle">{{ product.subtitle }}</p>{% endif %}
+      <div class="product-detail-meta-grid">
+        <div><span>Category</span><strong>{{ product.category }}</strong></div>
+        <div><span>Brand</span><strong>{{ product.brand }}</strong></div>
+        <div><span>SKU</span><strong>{{ product.sku|default:"—" }}</strong></div>
+        <div><span>Barcode</span><strong>{{ product.barcode|default:"—" }}</strong></div>
+      </div>
+      <div class="product-detail-price-row">
+        <div><span>Selling Price</span><strong>{{ product.price|money }}</strong></div>
+        <div><span>Regular Price</span><strong>{{ product.regular_price|money }}</strong></div>
+        <div><span>Total Stock</span><strong>{{ product.stock }}</strong></div>
+        <div><span>Variants</span><strong>{{ product.variants|length }}</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="product-detail-grid">
+    <section class="card product-detail-card">
+      <div class="section-head"><h3>Product Information</h3></div>
+      <div class="product-detail-info-list">
+        <div><span>Public ID</span><strong>{{ product.id }}</strong></div>
+        <div><span>Slug</span><strong>{{ product.slug }}</strong></div>
+        <div><span>Shipping Class</span><strong>{{ product_obj.shipping_class|default:"—" }}</strong></div>
+        <div><span>Weight</span><strong>{% if product_obj.weight %}{{ product_obj.weight }} kg{% else %}—{% endif %}</strong></div>
+        <div><span>Warranty</span><strong>{{ product_obj.warranty|default:"—" }}</strong></div>
+        <div><span>Last Updated</span><strong>{{ product.updated_at|date:"M d, Y · g:i A" }}</strong></div>
+      </div>
+    </section>
+
+    <section class="card product-detail-card">
+      <div class="section-head"><h3>Summary</h3></div>
+      <div class="product-detail-copy">
+        {% if product.short_description %}
+          <p>{{ product.short_description }}</p>
+        {% else %}
+          <div class="empty-state">No short description added.</div>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  <section class="card product-detail-card">
+    <div class="section-head"><h3>Variants / SKUs</h3><span>{{ product.variants|length }} variant{{ product.variants|length|pluralize }}</span></div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th>Variant</th><th>SKU</th><th>Barcode</th><th>Price</th><th>Regular</th><th>Stock</th><th>Default</th></tr></thead>
+        <tbody>
+          {% for variant in product.variants %}
+          <tr>
+            <td><strong>{{ variant.name }}</strong></td>
+            <td>{{ variant.sku|default:"—" }}</td>
+            <td>{{ variant.barcode|default:"—" }}</td>
+            <td>{{ variant.price|money }}</td>
+            <td>{{ variant.regular_price|money }}</td>
+            <td><strong>{{ variant.stock }}</strong></td>
+            <td>{% if variant.is_default %}<span class="status green">Default</span>{% else %}—{% endif %}</td>
+          </tr>
+          {% empty %}<tr><td colspan="7"><div class="empty-state">No active variants found.</div></td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="product-detail-grid">
+    <section class="card product-detail-card">
+      <div class="section-head"><h3>Product Gallery</h3><span>{{ product.images|length }} image{{ product.images|length|pluralize }}</span></div>
+      <div class="product-detail-gallery">
+        {% for image in product.images %}<a href="{{ image }}" target="_blank" rel="noopener"><img src="{{ image }}" alt="{{ product.name }} image {{ forloop.counter }}"></a>{% empty %}<div class="empty-state">No product images.</div>{% endfor %}
+      </div>
+    </section>
+
+    <section class="card product-detail-card">
+      <div class="section-head"><h3>Specifications</h3></div>
+      <div class="product-detail-specs">
+        {% for spec in product.specifications %}
+          <div><span>{{ spec.name }}</span><strong>{{ spec.value }}</strong></div>
+        {% empty %}<div class="empty-state">No specifications added.</div>{% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <section class="card product-detail-card">
+    <div class="section-head"><h3>Description</h3></div>
+    <div class="product-detail-description">
+      {% if product.description_html %}{{ product.description_html|safe }}{% else %}<div class="empty-state">No description added.</div>{% endif %}
+    </div>
+  </section>
+</section>
+{% endblock %}
