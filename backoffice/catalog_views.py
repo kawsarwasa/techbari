@@ -60,6 +60,28 @@ def _catalog_management_context(request, notice_map=None, error_map=None):
     return context
 
 
+def _category_list_image_url(category):
+    if category.image:
+        try:
+            return category.image.url
+        except ValueError:
+            pass
+    if category.static_image_path:
+        return static(category.static_image_path)
+    return ""
+
+
+def _brand_list_image_url(brand):
+    if brand.logo:
+        try:
+            return brand.logo.url
+        except ValueError:
+            pass
+    if brand.static_image_path:
+        return static(brand.static_image_path)
+    return ""
+
+
 def _replace_stat_values(stats, rows):
     result = deepcopy(stats)
     for stat, data in zip(result, rows):
@@ -211,6 +233,7 @@ def categories(request):
         {
             "id": row.pk,
             "name": row.name,
+            "image": _category_list_image_url(row),
             "slug": row.slug,
             "parent": row.parent.name if row.parent else "—",
             "products": row.product_count,
@@ -259,6 +282,7 @@ def brands(request):
         {
             "id": row.pk,
             "name": row.name,
+            "image": _brand_list_image_url(row),
             "slug": row.slug,
             "products": row.product_count,
             "featured": "Yes" if row.is_featured else "No",
