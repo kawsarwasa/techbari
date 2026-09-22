@@ -128,3 +128,26 @@
 .catalog-theme .catalog-list-thumb{display:block!important;object-fit:contain!important;padding:4px!important}
 .catalog-theme .catalog-list-thumb.brand-thumb{padding:5px 4px!important}
 .catalog-theme .catalog-list-placeholder{display:grid;place-items:center;color:#1677ff;background:#eef6ff;font-size:18px;font-weight:900}
+
+.catalog-delete-overlay[hidden]{display:none}
+.catalog-delete-overlay{position:fixed;inset:0;z-index:1100;display:grid;place-items:center;padding:20px;background:rgba(7,27,57,.58)}
+.catalog-delete-modal{position:relative;width:min(500px,100%);padding:22px;border-radius:16px;background:#fff;box-shadow:0 30px 80px rgba(5,26,55,.28)}
+.catalog-delete-close{position:absolute;right:18px;top:14px;border:0;background:transparent;color:#16375e;font-size:28px;line-height:1}
+.catalog-delete-title-row{display:flex;align-items:center;gap:15px;padding-right:30px}
+.catalog-delete-icon{width:58px;height:58px;flex:0 0 58px;border-radius:50%;display:grid;place-items:center;background:#ffe4e8;color:#ff2439}
+.catalog-delete-icon .svg{width:28px;height:28px}
+.catalog-delete-title-row h2{margin:0 0 4px;color:#0d1f3e;font-size:22px}
+.catalog-delete-title-row p,.catalog-delete-danger p{margin:0;color:#637a98;font-size:13px;line-height:1.5}
+.catalog-delete-preview{margin:18px 0 16px;padding:12px;border:1px solid #d6e2ef;border-radius:10px;display:grid;grid-template-columns:58px 1fr;align-items:center;gap:12px}
+.catalog-delete-preview img,.catalog-delete-preview .catalog-delete-preview-fallback{width:58px!important;height:58px!important;max-width:58px!important;max-height:58px!important;border:1px solid #dfe8f2;border-radius:9px;background:#f8fbff}
+.catalog-delete-preview img{display:block;object-fit:contain;padding:4px}
+.catalog-delete-preview .catalog-delete-preview-fallback{display:grid;place-items:center;color:#1677ff;background:#eef6ff;font-size:20px;font-weight:900}
+.catalog-delete-preview strong{display:block;color:#10213d;font-size:16px}
+.catalog-delete-preview span{display:block;margin-top:3px;color:#657d9b;font-size:13px}
+.catalog-delete-danger{display:flex;gap:10px;padding:13px;border-radius:10px;background:#fff0f2;color:#f12035}
+.catalog-delete-danger .svg{width:26px;height:26px;flex:none}
+.catalog-delete-danger strong{font-size:14px}
+.catalog-delete-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.catalog-delete-actions .btn{min-height:42px}
+.catalog-delete-confirm-btn{background:#fb2438!important;border-color:#fb2438!important;color:#fff!important}
+@media(max-width:560px){.catalog-delete-actions{flex-direction:column}.catalog-delete-actions .btn{width:100%}}
