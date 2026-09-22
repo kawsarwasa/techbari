@@ -19,6 +19,8 @@ from .forms import (
     validate_product_images,
 )
 from .models import Brand, Category, Product, ProductImage, ProductSpecification, ProductVariant
+from inventory.models import Warehouse
+from sales.models import SalesOrder, SalesOrderItem
 from .presentation import catalog_queryset, serialize_product
 from .richtext import sanitize_rich_html
 
@@ -385,6 +387,41 @@ class CatalogViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Product.objects.filter(pk=product.pk).exists())
+
+    def test_product_with_sales_history_is_archived_instead_of_deleted(self):
+        product = self.create_product()
+        variant = product.variants.get(is_default=True)
+        warehouse = Warehouse.objects.create(
+            name="Catalog History Warehouse",
+            code="CAT-HIST",
+            is_default=True,
+            is_active=True,
+        )
+        order = SalesOrder.objects.create(
+            warehouse=warehouse,
+            status=SalesOrder.Status.DRAFT,
+            channel=SalesOrder.Channel.MANUAL,
+        )
+        SalesOrderItem.objects.create(
+            order=order,
+            variant=variant,
+            product_snapshot=product.name,
+            variant_snapshot=variant.name,
+            sku_snapshot=variant.sku,
+            quantity=1,
+            unit_price=Decimal("1000.00"),
+        )
+
+        response = self.client.post(
+            reverse("backoffice:products"),
+            {"action": "delete", "product_id": product.pk},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("notice=archived-history", response["Location"])
+        product.refresh_from_db()
+        self.assertEqual(product.status, Product.Status.ARCHIVED)
+        self.assertTrue(SalesOrderItem.objects.filter(order=order, variant=variant).exists())
 
     def test_category_and_brand_lists_show_configured_images(self):
         self.category.static_image_path = "store/images/category-test.webp"
