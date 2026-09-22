@@ -37,7 +37,7 @@
     const submitAction=(action,productId='')=>{ const form=$('#productActionForm'); if(!form)return; $('#productAction').value=action; $('#productActionId').value=productId; $('#bulkProductIds').replaceChildren(); if(action.startsWith('bulk_')) selected.forEach((id)=>{ const input=document.createElement('input'); input.type='hidden'; input.name='product_ids'; input.value=id; $('#bulkProductIds').appendChild(input); }); form.submit(); };
     $('#confirmProductDelete')?.addEventListener('click',()=>actionProductId&&submitAction('delete',actionProductId));
     $('#archiveProductBtn')?.addEventListener('click',()=>actionProductId&&submitAction('archive',actionProductId));
-    $('#productBulkAction')?.addEventListener('change',(event)=>{ const action=event.target.value; if(!action)return; if(!selected.size){toast('Select at least one product first');event.target.value='';return;} if(action==='bulk_delete'&&!window.confirm(`Delete ${selected.size} selected product(s)?`)){event.target.value='';return;} submitAction(action); });
+    $('#productBulkAction')?.addEventListener('change',async(event)=>{ const action=event.target.value; if(!action)return; if(!selected.size){toast('Select at least one product first');event.target.value='';return;} if(action==='bulk_delete'){ const ok=await window.TechBariDeleteConfirm.ask({kind:'Products',name:`${selected.size} selected product${selected.size===1?'':'s'}`,question:`Delete ${selected.size} selected product${selected.size===1?'':'s'}?`,confirmLabel:'Delete Selected',warning:'Unused products will be deleted. Products with protected sales or purchase history will be archived instead.'}); if(!ok){event.target.value='';return;} } submitAction(action); });
     applyFilters();
   }
 
