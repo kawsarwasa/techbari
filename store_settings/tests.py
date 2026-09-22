@@ -32,6 +32,10 @@ class StoreSettingsCMSTests(TestCase):
         self.assertTrue(ContentPage.objects.filter(slug="privacy-policy", is_published=True).exists())
         self.assertTrue(ContentPage.objects.filter(slug="return-refund-policy", is_published=True).exists())
 
+    def test_featured_home_section_is_enabled_by_default(self):
+        section = HomeSection.objects.get(key=HomeSection.Key.FEATURED)
+        self.assertTrue(section.is_enabled)
+
     def test_store_settings_social_fields_use_brand_icons_inside_inputs(self):
         response = self.client.get(reverse("backoffice:settings"))
         self.assertEqual(response.status_code, 200)
