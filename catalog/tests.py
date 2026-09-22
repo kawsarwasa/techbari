@@ -361,6 +361,13 @@ class CatalogViewTests(TestCase):
         self.assertEqual(media_response.status_code, 200)
         self.assertContains(media_response, "1200 × 1200 px (1:1)")
 
+    def test_product_detail_shows_homepage_visibility_status(self):
+        product = self.create_product(is_featured=True)
+        response = self.client.get(reverse("backoffice:product_detail", args=[product.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "HOMEPAGE FEATURED")
+        self.assertContains(response, "View Storefront")
+
     def test_product_detail_page_is_read_only_and_available(self):
         product = self.create_product()
         response = self.client.get(reverse("backoffice:product_detail", args=[product.pk]))
