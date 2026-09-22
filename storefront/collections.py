@@ -4,6 +4,7 @@ from sales.models import SalesOrder, SalesOrderItem
 
 
 COLLECTION_LABELS = {
+    "featured": "Featured",
     "best-selling": "Best Selling",
     "new-arrivals": "New Arrivals",
     "special-offers": "Special Offers",
@@ -44,6 +45,8 @@ def _best_selling_products(catalog):
 def collection_products(catalog, collection):
     key = normalize_collection(collection)
     rows = list(catalog)
+    if key == "featured":
+        return [product for product in rows if product.get("is_featured")]
     if key == "best-selling":
         return _best_selling_products(rows)
     if key == "new-arrivals":
