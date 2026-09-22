@@ -1,5 +1,3 @@
-from urllib.parse import urlencode
-
 from django.db.models import Q
 from django.http import JsonResponse
 from django.urls import reverse
@@ -27,7 +25,6 @@ def global_search(request):
     lowered = query.casefold()
 
     can_view_catalog = _can(request.user, "staff_access.view_catalog", "staff_access.manage_catalog")
-    can_manage_catalog = _can(request.user, "staff_access.manage_catalog")
     if can_view_catalog:
         products = (
             Product.objects.select_related("category", "brand")
@@ -56,10 +53,7 @@ def global_search(request):
             variant = matched or next((row for row in variants if row.is_default), variants[0] if variants else None)
             sku = variant.sku if variant else "No SKU"
             meta = f"{sku} · {product.brand.name} · {product.category.name}"
-            if can_manage_catalog:
-                url = reverse("backoffice:product_edit") + "?" + urlencode({"id": product.pk})
-            else:
-                url = reverse("backoffice:products") + "?" + urlencode({"q": product.name})
+            url = reverse("backoffice:product_detail", args=[product.pk])
             results.append(
                 {
                     "type": "Product",
