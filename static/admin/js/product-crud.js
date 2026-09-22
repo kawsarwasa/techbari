@@ -28,6 +28,8 @@
       if ($('#productRange')) $('#productRange').textContent = visible ? `1–${visible}` : '0–0';
       if ($('#selectedProductCount')) $('#selectedProductCount').textContent = String(selected.size);
     };
+    const initialQuery = new URLSearchParams(window.location.search).get('q');
+    if (initialQuery && $('#productSearch')) $('#productSearch').value = initialQuery;
     ['productSearch','productCategoryFilter','productStockFilter','productSort'].forEach((id) => document.getElementById(id)?.addEventListener(id === 'productSearch' ? 'input' : 'change', applyFilters));
     document.addEventListener('change', (event) => { if (!event.target.matches('[data-product-select]')) return; const id=String(event.target.dataset.productSelect); event.target.checked ? selected.add(id) : selected.delete(id); applyFilters(); });
     const setAll=(checked)=>{ visibleRows().forEach((row)=>{ const id=String(row.dataset.id); const box=row.querySelector('[data-product-select]'); if(box) box.checked=checked; checked ? selected.add(id) : selected.delete(id); }); applyFilters(); };
