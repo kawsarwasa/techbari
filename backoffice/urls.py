@@ -3,12 +3,13 @@ from django.urls import path, reverse_lazy
 from django.views.generic import RedirectView
 
 from staff_access import views as staff_views
-from . import accounting_views, catalog_views, customer_views, expense_views, inventory_views, payment_views, pos_views, purchase_views, report_views, return_views, sales_views, shipping_views, store_settings_views, variant_builder_views, variant_views, views
+from . import accounting_views, catalog_views, customer_views, expense_views, inventory_views, payment_views, pos_views, purchase_views, report_views, return_views, sales_views, search_views, shipping_views, store_settings_views, variant_builder_views, variant_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
 
 auth_patterns = [
+    path("search/", search_views.global_search, name="global_search"),
     path("login/", staff_views.login_view, name="login"),
     path("logout/", staff_views.logout_view, name="logout"),
     path("password-reset/", auth_views.PasswordResetView.as_view(template_name="backoffice/auth/password_reset.html", email_template_name="backoffice/auth/password_reset_email.txt", subject_template_name="backoffice/auth/password_reset_subject.txt", success_url=reverse_lazy("backoffice:password_reset_done")), name="password_reset"),
