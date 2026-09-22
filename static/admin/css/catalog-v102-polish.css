@@ -14,3 +14,60 @@
 .catalog-theme .filters-card,.catalog-theme .product-filterbar{backdrop-filter:blur(4px)}
 .catalog-theme .page-head .btn-primary{min-width:132px}
 @media (max-width:760px){.catalog-theme .form-grid .field:has(input[type=file]){min-height:132px}}
+
+/* Compact category / brand image upload fields */
+.catalog-theme .form-grid .field.catalog-image-field:has(input[type=file]){
+  min-height:0!important;
+  padding:14px 16px!important;
+  justify-content:flex-start!important;
+  align-items:stretch!important;
+  text-align:left!important;
+  gap:8px!important;
+  border:1px solid #dbe6f3!important;
+  border-radius:10px!important;
+  background:#fbfdff!important;
+}
+.catalog-theme .form-grid .field.catalog-image-field>span{
+  font-size:13px!important;
+  font-weight:800!important;
+  color:#173d6a!important;
+}
+.catalog-theme .catalog-image-upload-control{
+  width:100%;
+  padding:10px 12px;
+  border:1px dashed #bfd3e8;
+  border-radius:9px;
+  background:#fff;
+  color:#5f7895;
+  font-size:12px;
+  line-height:1.55;
+  overflow-wrap:anywhere;
+}
+.catalog-theme .catalog-image-upload-control a{
+  color:#1677ff;
+  font-weight:700;
+  text-decoration:none;
+}
+.catalog-theme .catalog-image-upload-control input[type=file]{
+  display:inline-block;
+  max-width:100%;
+  margin-top:6px;
+}
+.catalog-theme .catalog-image-upload-control input[type=checkbox]{
+  width:15px;
+  height:15px;
+  vertical-align:-2px;
+  margin:0 4px;
+}
+.catalog-theme .catalog-image-field small{
+  max-width:none!important;
+  margin:0!important;
+  color:#7b8eaa!important;
+  font-size:12px!important;
+  line-height:1.45!important;
+}
+@media (max-width:760px){
+  .catalog-theme .form-grid .field.catalog-image-field:has(input[type=file]){
+    padding:12px!important;
+  }
+}
