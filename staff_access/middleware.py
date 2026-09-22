@@ -12,7 +12,7 @@ from .services import record_audit
 PUBLIC_ROUTES = {"login", "password_reset", "password_reset_done", "password_reset_confirm", "password_reset_complete"}
 MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
-CATALOG_LIST = {"products", "categories", "brands", "catalog_variants", "catalog_media", "catalog_specifications"}
+CATALOG_LIST = {"products", "product_detail", "categories", "brands", "catalog_variants", "catalog_media", "catalog_specifications"}
 CATALOG_MANAGE = {"product_add", "product_edit", "category_add", "brand_add", "catalog_variant_form", "catalog_media_form", "catalog_specification_form"}
 INVENTORY_LIST = {"inventory", "warehouses", "inventory_movements", "inventory_low_stock"}
 INVENTORY_MANAGE = {"warehouse_add"}
