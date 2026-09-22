@@ -1,75 +1,83 @@
 {% extends "backoffice/base.html" %}
 {% load static demo %}
 {% block title %}{{ product.name }} | Product Details | TechBari Admin{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-detail-v1.css' %}?v=1.0.1">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/product-detail-v1.css' %}?v=1.1.0">{% endblock %}
 {% block content %}
 <section class="page product-detail-page">
-  <div class="page-head product-detail-head">
-    <div>
+  <div class="product-detail-head">
+    <div class="product-detail-head-copy">
       <div class="product-detail-kicker">PRODUCT DETAILS</div>
       <h1>{{ product.name }}</h1>
-      <p>Read-only catalog overview. Use Edit Product when you need to change product information.</p>
+      <p>Catalog, storefront visibility, inventory and media in one place.</p>
     </div>
-    <div class="head-actions">
+    <div class="product-detail-actions">
       <a class="btn" href="{% url 'backoffice:products' %}">← Products</a>
+      {% if storefront_visible %}
+      <a class="btn" href="{% url 'storefront:product_detail' slug=product_obj.slug %}" target="_blank" rel="noopener">View Storefront ↗</a>
+      {% endif %}
       <a class="btn" href="{% url 'backoffice:catalog_media' %}?product={{ product_obj.id }}">Media</a>
       <a class="btn" href="{% url 'backoffice:catalog_variant_builder' %}?product={{ product_obj.id }}">Variants</a>
-      {% if storefront_visible %}<a class="btn" href="{% url 'storefront:product_detail' slug=product_obj.slug %}" target="_blank" rel="noopener">View Storefront ↗</a>{% endif %}
       {% if perms.staff_access.manage_catalog or request.user.is_superuser %}
       <a class="btn btn-primary" href="{% url 'backoffice:product_edit' %}?id={{ product_obj.id }}">Edit Product</a>
       {% endif %}
     </div>
   </div>
 
-  <div class="product-detail-hero card">
+  <article class="card product-detail-hero">
     <div class="product-detail-main-image">
       <img src="{{ product.image }}" alt="{{ product.name }}">
     </div>
+
     <div class="product-detail-summary">
       <div class="product-detail-badges">
-        <span class="status {% if product.status == 'Active' %}green{% elif product.status == 'Draft' %}yellow{% else %}gray{% endif %}">{{ product.status }}</span>
+        <span class="status {% if product.status == 'Active' %}green{% elif product.status == 'Draft' %}orange{% else %}gray{% endif %}">{{ product.status }}</span>
         {% if product.is_featured %}<span class="status blue">Featured</span>{% endif %}
         {% if product.is_new_arrival %}<span class="status blue">New Arrival</span>{% endif %}
       </div>
+
       <h2>{{ product.name }}</h2>
       {% if product.subtitle %}<p class="product-detail-subtitle">{{ product.subtitle }}</p>{% endif %}
-      <div class="product-detail-meta-grid">
+
+      <div class="product-detail-metrics">
+        <div class="metric primary"><span>Selling Price</span><strong>{{ product.price|money }}</strong></div>
+        <div class="metric"><span>Regular Price</span><strong>{{ product.regular_price|money }}</strong></div>
+        <div class="metric"><span>Available Stock</span><strong>{{ product.stock }}</strong></div>
+        <div class="metric"><span>Variants</span><strong>{{ product.variants|length }}</strong></div>
+      </div>
+
+      <div class="product-detail-meta">
         <div><span>Category</span><strong>{{ product.category }}</strong></div>
         <div><span>Brand</span><strong>{{ product.brand }}</strong></div>
         <div><span>SKU</span><strong>{{ product.sku|default:"—" }}</strong></div>
         <div><span>Barcode</span><strong>{{ product.barcode|default:"—" }}</strong></div>
       </div>
-      <div class="product-detail-price-row">
-        <div><span>Selling Price</span><strong>{{ product.price|money }}</strong></div>
-        <div><span>Regular Price</span><strong>{{ product.regular_price|money }}</strong></div>
-        <div><span>Total Stock</span><strong>{{ product.stock }}</strong></div>
-        <div><span>Variants</span><strong>{{ product.variants|length }}</strong></div>
-      </div>
     </div>
-  </div>
+  </article>
 
-  <div class="product-visibility-strip">
-    <div class="product-visibility-item {% if storefront_visible %}ready{% else %}blocked{% endif %}">
-      <span class="product-visibility-dot"></span>
+  <div class="product-publish-bar">
+    <div class="publish-item {% if storefront_visible %}ready{% else %}blocked{% endif %}">
+      <span class="publish-dot"></span>
       <div><small>STOREFRONT</small><strong>{% if storefront_visible %}Visible{% else %}Hidden{% endif %}</strong></div>
       {% if not storefront_visible %}<p>{{ storefront_reasons|join:" " }}</p>{% endif %}
     </div>
-    <div class="product-visibility-item {% if homepage_visible %}ready{% else %}blocked{% endif %}">
-      <span class="product-visibility-dot"></span>
-      <div><small>HOMEPAGE FEATURED</small><strong>{% if homepage_visible %}Visible{% else %}Hidden{% endif %}</strong></div>
+    <div class="publish-item {% if homepage_visible %}ready{% else %}blocked{% endif %}">
+      <span class="publish-dot"></span>
+      <div><small>HOMEPAGE</small><strong>{% if homepage_visible %}Featured & visible{% else %}Not visible{% endif %}</strong></div>
       {% if not homepage_visible %}<p>{{ homepage_reasons|join:" " }}</p>{% endif %}
     </div>
-    <div class="product-visibility-item {% if active_variant_count %}ready{% else %}blocked{% endif %}">
-      <span class="product-visibility-dot"></span>
+    <div class="publish-item {% if active_variant_count %}ready{% else %}blocked{% endif %}">
+      <span class="publish-dot"></span>
       <div><small>ACTIVE VARIANTS</small><strong>{{ active_variant_count }}</strong></div>
-      {% if not active_variant_count %}<p>Activate at least one variant for selling workflows.</p>{% endif %}
+      {% if not active_variant_count %}<p>Activate at least one variant.</p>{% endif %}
     </div>
   </div>
 
-  <div class="product-detail-grid">
+  <div class="product-overview-grid{% if not product.short_description %} single{% endif %}">
     <section class="card product-detail-card">
-      <div class="section-head"><h3>Product Information</h3></div>
-      <div class="product-detail-info-list">
+      <div class="product-card-head">
+        <div><h3>Product Information</h3><p>Core catalog information</p></div>
+      </div>
+      <div class="product-info-grid">
         <div><span>Public ID</span><strong>{{ product.id }}</strong></div>
         <div><span>Slug</span><strong>{{ product.slug }}</strong></div>
         <div><span>Shipping Class</span><strong>{{ product_obj.shipping_class|default:"—" }}</strong></div>
@@ -79,20 +87,21 @@
       </div>
     </section>
 
+    {% if product.short_description %}
     <section class="card product-detail-card">
-      <div class="section-head"><h3>Summary</h3></div>
-      <div class="product-detail-copy">
-        {% if product.short_description %}
-          <p>{{ product.short_description }}</p>
-        {% else %}
-          <div class="empty-state">No short description added.</div>
-        {% endif %}
+      <div class="product-card-head">
+        <div><h3>Summary</h3><p>Short storefront description</p></div>
       </div>
+      <div class="product-summary-copy">{{ product.short_description }}</div>
     </section>
+    {% endif %}
   </div>
 
-  <section class="card product-detail-card">
-    <div class="section-head"><h3>Variants / SKUs</h3><span>{{ product.variants|length }} variant{{ product.variants|length|pluralize }}</span></div>
+  <section class="card product-detail-card variants-card">
+    <div class="product-card-head split">
+      <div><h3>Variants / SKUs</h3><p>Sellable product options</p></div>
+      <span>{{ product.variants|length }} variant{{ product.variants|length|pluralize }}</span>
+    </div>
     <div class="table-scroll">
       <table class="data-table">
         <thead><tr><th>Variant</th><th>SKU</th><th>Barcode</th><th>Price</th><th>Regular</th><th>Stock</th><th>Default</th></tr></thead>
@@ -107,35 +116,48 @@
             <td><strong>{{ variant.stock }}</strong></td>
             <td>{% if variant.is_default %}<span class="status green">Default</span>{% else %}—{% endif %}</td>
           </tr>
-          {% empty %}<tr><td colspan="7"><div class="empty-state">No active variants found.</div></td></tr>{% endfor %}
+          {% empty %}
+          <tr><td colspan="7"><div class="product-inline-empty">No active variants found.</div></td></tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>
   </section>
 
-  <div class="product-detail-grid">
+  <div class="product-content-grid{% if not product.specifications %} single{% endif %}">
     <section class="card product-detail-card">
-      <div class="section-head"><h3>Product Gallery</h3><span>{{ product.images|length }} image{{ product.images|length|pluralize }}</span></div>
+      <div class="product-card-head split">
+        <div><h3>Product Gallery</h3><p>Current catalog images</p></div>
+        <span>{{ product.images|length }} image{{ product.images|length|pluralize }}</span>
+      </div>
       <div class="product-detail-gallery">
-        {% for image in product.images %}<a href="{{ image }}" target="_blank" rel="noopener"><img src="{{ image }}" alt="{{ product.name }} image {{ forloop.counter }}"></a>{% empty %}<div class="empty-state">No product images.</div>{% endfor %}
+        {% for image in product.images %}
+        <a href="{{ image }}" target="_blank" rel="noopener"><img src="{{ image }}" alt="{{ product.name }} image {{ forloop.counter }}"></a>
+        {% endfor %}
       </div>
     </section>
 
+    {% if product.specifications %}
     <section class="card product-detail-card">
-      <div class="section-head"><h3>Specifications</h3></div>
+      <div class="product-card-head">
+        <div><h3>Specifications</h3><p>Technical product details</p></div>
+      </div>
       <div class="product-detail-specs">
         {% for spec in product.specifications %}
-          <div><span>{{ spec.name }}</span><strong>{{ spec.value }}</strong></div>
-        {% empty %}<div class="empty-state">No specifications added.</div>{% endfor %}
+        <div><span>{{ spec.name }}</span><strong>{{ spec.value }}</strong></div>
+        {% endfor %}
       </div>
     </section>
+    {% endif %}
   </div>
 
-  <section class="card product-detail-card">
-    <div class="section-head"><h3>Description</h3></div>
-    <div class="product-detail-description">
-      {% if product.description_html %}{{ product.description_html|safe }}{% else %}<div class="empty-state">No description added.</div>{% endif %}
+  {% if product.description_html %}
+  <section class="card product-detail-card description-card">
+    <div class="product-card-head">
+      <div><h3>Description</h3><p>Full storefront description</p></div>
     </div>
+    <div class="product-detail-description">{{ product.description_html|safe }}</div>
   </section>
+  {% endif %}
 </section>
 {% endblock %}
