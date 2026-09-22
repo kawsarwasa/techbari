@@ -51,6 +51,7 @@ INTEGRATION_ROUTES = {"integration_settings", "integration_retry", "integration_
 def _permission(route_name, method):
     write = method in MUTATING_METHODS
     if route_name == "dashboard": return "staff_access.view_dashboard"
+    if route_name == "global_search": return None
     if route_name in NOTIFICATION_ROUTES: return "staff_access.view_notifications"
     if route_name in INTEGRATION_ROUTES: return "staff_access.manage_integrations"
     if route_name in CATALOG_MANAGE or (route_name in CATALOG_LIST and write): return "staff_access.manage_catalog"
