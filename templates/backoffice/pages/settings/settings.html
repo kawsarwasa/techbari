@@ -1,7 +1,7 @@
 {% extends "backoffice/base.html" %}
 {% load static %}
 {% block title %}CMS / Store Settings | TechBari Admin{% endblock %}
-{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-store-settings.css' %}?v=3.0.1">{% endblock %}
+{% block page_theme_css %}<link rel="stylesheet" href="{% static 'admin/css/cms-store-settings.css' %}?v=3.0.2">{% endblock %}
 {% block content %}
 <section class="page cms-settings-page">
   <div class="cms-breadcrumbs"><a href="{% url 'backoffice:dashboard' %}">Home</a><span>›</span><span>CMS / Store Settings</span></div>
@@ -52,11 +52,11 @@
         <article class="cms-card" id="social">
           <div class="cms-card-head"><svg viewBox="0 0 24 24" class="svg" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.6 6.8-4.2M8.6 13.4l6.8 4.2"/></svg><div><h2>Social Links</h2><p>Add your social media links to display on your site and customer communications.</p></div></div>
           <div class="cms-card-body"><div class="cms-social-grid">
-            <label class="cms-field"><span>Facebook</span><span class="cms-input-icon"><i class="social-badge">FB</i>{{ settings_form.facebook_url }}</span></label>
-            <label class="cms-field"><span>Instagram</span><span class="cms-input-icon"><i class="social-badge">IG</i>{{ settings_form.instagram_url }}</span></label>
-            <label class="cms-field"><span>YouTube</span><span class="cms-input-icon"><i class="social-badge">YT</i>{{ settings_form.youtube_url }}</span></label>
-            <label class="cms-field"><span>TikTok</span><span class="cms-input-icon"><i class="social-badge">TT</i>{{ settings_form.tiktok_url }}</span></label>
-            <label class="cms-field full"><span>WhatsApp Number</span><span class="cms-input-icon"><i class="social-badge">WA</i>{{ settings_form.whatsapp_number }}</span></label>
+            <label class="cms-field"><span>Facebook</span><span class="cms-input-icon"><i class="social-brand-icon facebook" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13.7 21v-8h2.7l.4-3.1h-3.1V8c0-.9.3-1.5 1.6-1.5H17V3.7c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2H7.5V13h2.8v8h3.4Z"/></svg></i>{{ settings_form.facebook_url }}</span></label>
+            <label class="cms-field"><span>Instagram</span><span class="cms-input-icon"><i class="social-brand-icon instagram" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4.2" y="4.2" width="15.6" height="15.6" rx="4.2"/><circle cx="12" cy="12" r="3.7"/><circle cx="17.4" cy="6.8" r="1"/></svg></i>{{ settings_form.instagram_url }}</span></label>
+            <label class="cms-field"><span>YouTube</span><span class="cms-input-icon"><i class="social-brand-icon youtube" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 8.2a2.8 2.8 0 0 0-2-2C17.2 5.7 12 5.7 12 5.7s-5.2 0-7 .5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 2.5 12 29 29 0 0 0 3 15.8a2.8 2.8 0 0 0 2 2c1.8.5 7 .5 7 .5s5.2 0 7-.5a2.8 2.8 0 0 0 2-2 29 29 0 0 0 .5-3.8 29 29 0 0 0-.5-3.8Z"/><path class="youtube-play" d="m10 15.2 5-3.2-5-3.2v6.4Z"/></svg></i>{{ settings_form.youtube_url }}</span></label>
+            <label class="cms-field"><span>TikTok</span><span class="cms-input-icon"><i class="social-brand-icon tiktok" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.2 3.4h3a5.3 5.3 0 0 0 3.3 3.3v3a8.3 8.3 0 0 1-3.3-1.1v6.1a6 6 0 1 1-5.2-5.9v3.1a3 3 0 1 0 2.2 2.9V3.4Z"/></svg></i>{{ settings_form.tiktok_url }}</span></label>
+            <label class="cms-field full"><span>WhatsApp Number</span><span class="cms-input-icon"><i class="social-brand-icon whatsapp" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.4 11.8a8.3 8.3 0 0 1-12.3 7.3L4 20.2l1.1-4a8.3 8.3 0 1 1 15.3-4.4Z"/><path class="whatsapp-phone" d="M8.3 7.6c.2-.4.5-.4.8-.4h.5c.2 0 .4 0 .5.4l.8 1.9c.1.3 0 .5-.2.7l-.6.7c-.2.2-.3.4-.1.7.5.9 1.2 1.7 2.1 2.2.3.2.5.2.7 0l.9-1c.2-.2.4-.3.7-.2l1.9.9c.3.1.5.3.5.5 0 .3-.2 1.5-1 2.1-.7.6-1.6.8-2.7.5-1.1-.3-3.3-1.2-5.5-3.2-1.8-1.7-2.8-3.7-3.1-4.8-.3-1 .1-1.7.7-2.3l.1-.1Z"/></svg></i>{{ settings_form.whatsapp_number }}</span></label>
             <label class="cms-field full"><span>Footer About</span>{{ settings_form.footer_about }}</label>
             <label class="cms-field full"><span>Copyright</span>{{ settings_form.copyright_text }}</label>
           </div></div>
