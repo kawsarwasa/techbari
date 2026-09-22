@@ -228,6 +228,15 @@ class CheckoutBackendTests(TestCase):
         denied = self.client.get(reverse("storefront:checkout_success", args=[order.order_number]))
         self.assertEqual(denied.status_code, 404)
 
+    def test_featured_product_is_default_homepage_collection(self):
+        self.product.is_featured = True
+        self.product.save(update_fields=["is_featured"])
+        response = self.client.get(reverse("storefront:home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["featured_products"][0]["pk"], self.product.pk)
+        self.assertIn(self.product.public_id, response.context["home_featured_collection_ids"]["featured"])
+        self.assertContains(response, 'data-home-featured-tab="featured"')
+
     def test_storefront_available_stock_follows_default_warehouse_reservations(self):
         self.client.post(reverse("storefront:checkout"), self.payload(quantity=2))
         response = self.client.get(reverse("storefront:products"))
