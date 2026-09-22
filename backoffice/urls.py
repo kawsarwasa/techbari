@@ -29,6 +29,7 @@ auth_patterns = [
 ]
 
 catalog_patterns = [
+    path("products/<int:product_id>/", catalog_views.product_detail, name="product_detail"),
     path("variants/", variant_views.variants, name="catalog_variants"),
     path("variants/form/", variant_views.variant_form, name="catalog_variant_form"),
     path("variants/builder/", variant_builder_views.variant_builder, name="catalog_variant_builder"),
