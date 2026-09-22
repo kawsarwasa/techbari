@@ -1,4 +1,5 @@
 import time
+from urllib.parse import parse_qs, urlparse
 
 from django.contrib.auth.models import Group, Permission, User
 from django.core import mail
@@ -187,10 +188,38 @@ class StaffAccessTests(TestCase):
         session = self.client.session
         session["staff_last_activity"] = int(time.time()) - 10
         session.save()
-        response = self.client.get(reverse("backoffice:dashboard"))
+        target = reverse("backoffice:dashboard")
+        response = self.client.get(target)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("expired=1", response.url)
+        query = parse_qs(urlparse(response.url).query)
+        self.assertEqual(query.get("expired"), ["1"])
+        self.assertEqual(query.get("next"), [target])
         self.assertTrue(AuditLog.objects.filter(user=user, action=AuditLog.Action.LOGOUT).exists())
+
+    @override_settings(STAFF_IDLE_TIMEOUT=1)
+    def test_login_after_idle_expiry_returns_to_previous_dashboard_page(self):
+        user = self.make_user("idleaccountant", "Accountant")
+        self.client.force_login(user)
+        session = self.client.session
+        session["staff_last_activity"] = int(time.time()) - 10
+        session.save()
+
+        target = reverse("backoffice:accounts") + "?view=summary"
+        expired = self.client.get(target)
+        self.assertEqual(expired.status_code, 302)
+        query = parse_qs(urlparse(expired.url).query)
+        self.assertEqual(query.get("expired"), ["1"])
+        self.assertEqual(query.get("next"), [target])
+
+        login_response = self.client.post(
+            expired.url,
+            {
+                "username": user.username,
+                "password": self.password,
+                "next": target,
+            },
+        )
+        self.assertRedirects(login_response, target, fetch_redirect_response=False)
 
     def test_password_reset_flow_sends_email_for_active_staff(self):
         user = self.make_user("resetme", "Sales Staff")
