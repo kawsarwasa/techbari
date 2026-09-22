@@ -117,8 +117,10 @@ class StaffAccessMiddleware:
         previous = request.session.get("staff_last_activity")
         if idle_timeout > 0 and previous and now - int(previous) > idle_timeout:
             record_audit(request, AuditLog.Action.LOGOUT, summary="Session expired after inactivity")
+            return_to = request.get_full_path()
             logout(request)
-            return redirect(reverse("backoffice:login") + "?expired=1")
+            login_url = reverse("backoffice:login")
+            return redirect(f"{login_url}?expired=1&next={quote(return_to)}")
         request.session["staff_last_activity"] = now
 
         permission = _permission(route_name, request.method)
