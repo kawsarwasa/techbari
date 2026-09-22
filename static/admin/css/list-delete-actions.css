@@ -1,1 +1,29 @@
 .list-delete-action{width:34px!important;height:34px!important;min-width:34px!important;padding:0!important;display:inline-grid!important;place-items:center!important;border:1px solid #fecaca!important;border-radius:9px!important;background:#fef2f2!important;color:#dc2626!important;line-height:1!important;cursor:pointer!important;box-shadow:none!important;transition:background-color .18s ease,border-color .18s ease,color .18s ease,transform .18s ease!important}.list-delete-action:hover,.list-delete-action:focus-visible{background:#fee2e2!important;border-color:#fca5a5!important;color:#b91c1c!important;transform:translateY(-1px);outline:none!important}.list-delete-action:active{transform:translateY(0)}.list-delete-action svg{width:17px!important;height:17px!important;display:block!important;fill:none!important;stroke:currentColor!important;stroke-width:2!important;stroke-linecap:round!important;stroke-linejoin:round!important;pointer-events:none}.list-delete-action>*:not(svg){display:none!important}
+
+/* Shared delete confirmation modal */
+.tb-delete-overlay[hidden]{display:none!important}
+.tb-delete-overlay{position:fixed;inset:0;z-index:1300;display:grid;place-items:center;padding:20px;background:rgba(7,27,57,.58);backdrop-filter:blur(2px)}
+.tb-delete-modal{position:relative;width:min(520px,100%);padding:22px;border:1px solid #e6edf5;border-radius:16px;background:#fff;box-shadow:0 30px 80px rgba(5,26,55,.28)}
+.tb-delete-close{position:absolute;right:18px;top:14px;width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:#16375e;font-size:28px;line-height:1;display:grid;place-items:center}
+.tb-delete-close:hover{background:#f5f8fc}
+.tb-delete-title-row{display:flex;gap:15px;align-items:center;padding-right:36px}
+.tb-delete-icon{width:58px;height:58px;flex:0 0 58px;border-radius:50%;display:grid;place-items:center;background:#ffe4e8;color:#ff2439}
+.tb-delete-icon svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tb-delete-title-row h2{margin:0 0 4px;color:#0d1f3e;font-size:22px}
+.tb-delete-title-row p{margin:0;color:#637a98;font-size:13px;line-height:1.5}
+.tb-delete-preview{margin:18px 0 16px;padding:12px;border:1px solid #d6e2ef;border-radius:10px;display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;gap:12px;background:#fff}
+.tb-delete-preview[hidden]{display:none!important}
+.tb-delete-preview img,.tb-delete-preview-fallback{width:58px!important;height:58px!important;min-width:58px!important;max-width:58px!important;min-height:58px!important;max-height:58px!important;border:1px solid #dfe8f2;border-radius:9px;background:#f8fbff}
+.tb-delete-preview img{display:block;object-fit:contain;padding:4px}
+.tb-delete-preview-fallback{display:grid;place-items:center;color:#1677ff;background:#eef6ff;font-size:20px;font-weight:900}
+.tb-delete-preview strong{display:block;color:#10213d;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-delete-preview span{display:block;margin-top:3px;color:#657d9b;font-size:13px;line-height:1.4}
+.tb-delete-danger{display:flex;gap:10px;padding:13px;border-radius:10px;background:#fff0f2;color:#f12035}
+.tb-delete-danger svg{width:26px;height:26px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tb-delete-danger strong{display:block;font-size:14px}
+.tb-delete-danger p{margin:3px 0 0;color:#7d5360;font-size:13px;line-height:1.5}
+.tb-delete-info{margin-top:12px;padding:11px 12px;border-radius:9px;background:#f1f7ff;color:#4c6e98;font-size:12px;line-height:1.45}
+.tb-delete-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.tb-delete-actions .btn{min-height:42px}
+.tb-delete-confirm{background:#fb2438!important;border-color:#fb2438!important;color:#fff!important}
+@media(max-width:560px){.tb-delete-modal{padding:18px}.tb-delete-actions{flex-direction:column}.tb-delete-actions .btn{width:100%}}
