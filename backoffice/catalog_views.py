@@ -21,6 +21,7 @@ from catalog.forms import (
 from catalog.models import Brand, Category, Product, ProductImage, ProductSpecification
 from catalog.presentation import catalog_queryset, serialize_admin_product, serialize_product
 from catalog.services import save_product_bundle
+from store_settings.models import HomeSection
 from .context import page_context
 
 DEFAULT_SPECS = []
@@ -154,10 +155,35 @@ def products(request):
 
 def product_detail(request, product_id):
     product = get_object_or_404(catalog_queryset(include_inactive=True), pk=product_id)
+    serialized = serialize_product(product)
+
+    storefront_reasons = []
+    if product.status != Product.Status.ACTIVE:
+        storefront_reasons.append("Product status is not Active.")
+    if not product.category.is_active:
+        storefront_reasons.append("Category is inactive.")
+    if not product.brand.is_active:
+        storefront_reasons.append("Brand is inactive.")
+
+    storefront_visible = not storefront_reasons
+    featured_section = HomeSection.objects.filter(key=HomeSection.Key.FEATURED).first()
+    homepage_reasons = list(storefront_reasons)
+    if not product.is_featured:
+        homepage_reasons.append("Product is not marked Featured.")
+    if featured_section is None:
+        homepage_reasons.append("Featured Products homepage section is not configured.")
+    elif not featured_section.is_enabled:
+        homepage_reasons.append("Featured Products homepage section is disabled.")
+
     context = _base_context("products", request)
     context.update(
         product_obj=product,
-        product=serialize_product(product),
+        product=serialized,
+        storefront_visible=storefront_visible,
+        storefront_reasons=storefront_reasons,
+        homepage_visible=not homepage_reasons,
+        homepage_reasons=homepage_reasons,
+        active_variant_count=product.variants.filter(is_active=True).count(),
     )
     return render(request, "backoffice/pages/products/product_detail.html", context)
 
