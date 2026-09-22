@@ -441,6 +441,19 @@ class CatalogViewTests(TestCase):
         self.assertContains(brand_response, 'width="50" height="50"')
         self.assertContains(brand_response, "/static/store/images/brand-test.webp")
 
+    def test_category_and_brand_delete_use_styled_confirmation_modal(self):
+        category_response = self.client.get(reverse("backoffice:categories"))
+        self.assertEqual(category_response.status_code, 200)
+        self.assertContains(category_response, "catalogDeleteOverlay")
+        self.assertContains(category_response, 'data-delete-kind="Category"')
+        self.assertNotContains(category_response, "confirm('Delete this category?')")
+
+        brand_response = self.client.get(reverse("backoffice:brands"))
+        self.assertEqual(brand_response.status_code, 200)
+        self.assertContains(brand_response, "catalogDeleteOverlay")
+        self.assertContains(brand_response, 'data-delete-kind="Brand"')
+        self.assertNotContains(brand_response, "confirm('Delete this brand?')")
+
     def test_category_and_brand_used_by_product_are_protected_from_delete(self):
         product = self.create_product()
         response = self.client.post(
