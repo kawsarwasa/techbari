@@ -152,6 +152,16 @@ def products(request):
     return render(request, "backoffice/pages/products/products.html", context)
 
 
+def product_detail(request, product_id):
+    product = get_object_or_404(catalog_queryset(include_inactive=True), pk=product_id)
+    context = _base_context("products", request)
+    context.update(
+        product_obj=product,
+        product=serialize_product(product),
+    )
+    return render(request, "backoffice/pages/products/product_detail.html", context)
+
+
 def _posted_specs(request, fallback):
     if request.method != "POST":
         return fallback
