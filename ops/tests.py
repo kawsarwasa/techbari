@@ -21,6 +21,11 @@ from .management.commands.reset_manual_data import Command as ResetManualDataCom
 
 
 class HealthAndHeadersTests(TestCase):
+    def test_root_favicon_redirects_to_static_fallback(self):
+        response = self.client.get("/favicon.ico")
+        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response["Location"], "/static/store/images/techbari-favicon.svg")
+
     def test_health_endpoint_checks_database_without_exposing_details(self):
         response = self.client.get(reverse("health"))
         self.assertEqual(response.status_code, 200)
