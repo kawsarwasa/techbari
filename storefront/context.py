@@ -1,4 +1,5 @@
 """Storefront presentation context backed by catalog, inventory, promotions, CMS and public integration settings."""
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils import timezone
 
@@ -56,6 +57,30 @@ def _category_menu(image_urls=None):
     return roots
 
 
+
+def _home_categories():
+    """Nine fixed homepage category cards with consistent black-product artwork."""
+    rows = (
+        ("TWS Earbuds", "TWS Earbuds", "black-earbuds.svg"),
+        ("Over-Ear Headphones", "Headphones", "black-headphones.svg"),
+        ("Neckband Earphones", "Neckband", "black-neckband.svg"),
+        ("Smartwatches", "Smartwatches", "black-smartwatch.svg"),
+        ("Bluetooth Speakers", "Speakers", "black-speaker.svg"),
+        ("Power Banks", "Power Banks", "black-powerbank.svg"),
+        ("Wall Chargers", "Chargers", "black-charger.svg"),
+        ("Cables", "Cables", "black-cable.svg"),
+        ("Phone Accessories", "Phone Accessories", "black-phone-stand.svg"),
+    )
+    return [
+        {
+            "name": name,
+            "filter_name": filter_name,
+            "image_url": static(f"store/images/categories/{image_name}"),
+        }
+        for name, filter_name, image_name in rows
+    ]
+
+
 def _coupon_product_ids(coupon):
     if coupon.scope == Coupon.Scope.ALL:
         return []
@@ -97,6 +122,7 @@ def catalog_context():
         "hero": hero_slides[0] if hero_slides else None,
         "cart_summary": {"count": 0, "subtotal": 0, "total": 0},
         "categories": categories,
+        "home_categories": _home_categories(),
         "category_menu": _category_menu(category_images),
         "brands": brand_filters(),
         "tracking": mock_data.TRACKING_ORDER,
