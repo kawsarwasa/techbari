@@ -7,7 +7,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
+from accounting.models import Account
 from integrations.forms import IntegrationSettingsForm
+from payments.models import PaymentMethodConfig
 from integrations.security import UnsafeOutboundURL, validate_outbound_url
 from staff_access.models import AuthThrottle
 from staff_access.security import clear_auth_throttle, register_auth_failure, throttle_seconds_remaining
@@ -15,6 +17,7 @@ from staff_access.services import get_client_ip
 from store_settings.forms import validate_cms_image
 
 from .checks import production_security_checks
+from .management.commands.reset_manual_data import Command as ResetManualDataCommand
 
 
 class HealthAndHeadersTests(TestCase):
@@ -131,3 +134,53 @@ class ProductionCheckTests(TestCase):
     def test_project_production_checks_have_no_errors_for_safe_settings(self):
         issues = production_security_checks(None)
         self.assertFalse([issue for issue in issues if issue.id.startswith("techbari.E")])
+
+
+class ResetManualDataPreservationTests(TestCase):
+    def test_payment_method_configuration_is_snapshotted_and_restored(self):
+        user_model = get_user_model()
+        user_model.objects.get_or_create(
+            username="reset-preserve-user",
+            defaults={"email": "reset-preserve@example.com"},
+        )
+        Account.objects.get_or_create(
+            code="TST-RESET",
+            defaults={
+                "name": "Reset Preservation Account",
+                "account_type": Account.Type.ASSET,
+                "normal_balance": Account.NormalBalance.DEBIT,
+                "is_system": True,
+                "allow_manual_entries": False,
+                "is_active": True,
+            },
+        )
+        config, _ = PaymentMethodConfig.objects.update_or_create(
+            method=PaymentMethodConfig.Method.BKASH,
+            defaults={
+                "display_name": "bKash Merchant",
+                "provider_code": "manual_bkash",
+                "merchant_label": "TechBari bKash",
+                "is_active": True,
+                "allow_dashboard": True,
+                "allow_pos": False,
+                "allow_storefront": True,
+                "is_test_mode": False,
+                "instructions": "Use the configured merchant account.",
+            },
+        )
+
+        command = ResetManualDataCommand()
+        snapshot = command._snapshot_preserved_data("default")
+        saved = next(row for row in snapshot["payment_methods"] if row["method"] == config.method)
+
+        PaymentMethodConfig.objects.filter(method=config.method).delete()
+        command._restore_preserved_data("default", snapshot)
+
+        restored = PaymentMethodConfig.objects.get(method=config.method)
+        self.assertEqual(restored.display_name, saved["display_name"])
+        self.assertEqual(restored.provider_code, saved["provider_code"])
+        self.assertEqual(restored.merchant_label, saved["merchant_label"])
+        self.assertTrue(restored.allow_storefront)
+        self.assertFalse(restored.allow_pos)
+        self.assertFalse(restored.is_test_mode)
+        self.assertEqual(restored.instructions, saved["instructions"])
