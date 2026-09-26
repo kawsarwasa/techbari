@@ -237,6 +237,15 @@ class CheckoutBackendTests(TestCase):
         self.assertIn(self.product.public_id, response.context["home_featured_collection_ids"]["featured"])
         self.assertContains(response, 'data-home-featured-tab="featured"')
 
+    def test_homepage_featured_does_not_fallback_to_non_featured_products(self):
+        self.product.is_featured = False
+        self.product.save(update_fields=["is_featured"])
+        response = self.client.get(reverse("storefront:home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["featured_products"], [])
+        self.assertEqual(response.context["home_featured_collection_ids"]["featured"], [])
+        self.assertContains(response, "No products in this collection yet.")
+
     def test_storefront_available_stock_follows_default_warehouse_reservations(self):
         self.client.post(reverse("storefront:checkout"), self.payload(quantity=2))
         response = self.client.get(reverse("storefront:products"))
