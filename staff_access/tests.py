@@ -6,6 +6,7 @@ from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from .middleware import _permission
 from .models import AuditLog
 from .permissions import PERMISSION_CODES, SYSTEM_ROLE_NAMES, sync_system_roles
 
@@ -255,6 +256,43 @@ class StaffAccessTests(TestCase):
         self.client.force_login(user)
         self.assertEqual(self.client.get(reverse("backoffice:accounts")).status_code, 200)
         self.assertEqual(self.client.get(reverse("backoffice:user_add")).status_code, 200)
+
+    def test_builtin_roles_enforce_major_dashboard_module_boundaries(self):
+        route_names = {
+            "dashboard", "products", "inventory", "serials", "purchases", "customers",
+            "orders", "pos", "payments", "shipping", "returns", "accounts",
+            "expenses", "income_expense", "reports", "marketing", "users",
+            "audit_log", "settings",
+        }
+        allowed_by_role = {
+            "Manager": route_names,
+            "Cashier": {
+                "dashboard", "products", "customers", "orders", "pos", "payments", "returns",
+            },
+            "Inventory Manager": {
+                "dashboard", "products", "inventory", "serials", "purchases", "returns", "reports",
+            },
+            "Accountant": {
+                "dashboard", "purchases", "customers", "orders", "payments", "accounts",
+                "expenses", "income_expense", "reports", "audit_log",
+            },
+            "Sales Staff": {
+                "dashboard", "products", "customers", "orders", "payments", "shipping", "returns",
+            },
+        }
+
+        for index, (role, allowed_routes) in enumerate(allowed_by_role.items(), start=1):
+            user = self.make_user(f"matrix{index}", role)
+            self.client.force_login(user)
+            for route in sorted(route_names):
+                with self.subTest(role=role, route=route):
+                    response = self.client.get(reverse(f"backoffice:{route}"))
+                    expected = 200 if route in allowed_routes else 403
+                    self.assertEqual(response.status_code, expected, f"{role}: {route}")
+
+    def test_permission_router_fails_closed_for_unclassified_dashboard_route(self):
+        self.assertEqual(_permission("future_unclassified_route", "GET"), "__deny__")
+        self.assertEqual(_permission("future_unclassified_route", "POST"), "__deny__")
 
     def test_admin_role_can_open_every_major_dashboard_module(self):
         user = self.make_user("adminroutes", "Admin")
