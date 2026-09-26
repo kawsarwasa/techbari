@@ -21,38 +21,67 @@ def register_customer_account(*, name, phone, email, password, previous_order_nu
 
     customer = Customer.objects.select_for_update().filter(phone=phone).first()
     if customer:
+        if not customer.is_active:
+            raise ValidationError("We couldn't securely verify this existing customer record. Please contact TechBari support to activate your online account.")
+
+        # Existing CRM identities may expose order history, warranty and balances.
+        # A phone number alone is not enough to claim that record. Require a valid
+        # previous order, and when any trusted email is already on file require an
+        # exact email match as a second knowledge check.
         if customer.email and customer.email.casefold() != (email or "").casefold():
-            raise ValidationError("For security, use the email already linked with this mobile number.")
-        historical_orders = customer.sales_orders.exclude(status__in=[SalesOrder.Status.DRAFT, SalesOrder.Status.CANCELLED])
-        if historical_orders.exists():
-            if not previous_order_number:
-                raise ValidationError("For security, enter one previous TechBari order number to link your existing purchase history.")
-            if not historical_orders.filter(order_number__iexact=previous_order_number).exists():
-                raise ValidationError("The previous order number could not be verified for this mobile number.")
-        elif customer.opening_due and customer.opening_due > 0:
-            # A pre-existing CRM balance is sensitive business history. Without a prior
-            # SalesOrder challenge or a verified OTP channel, do not let self-registration
-            # claim that record merely by knowing its phone number.
-            raise ValidationError("This existing customer record has a balance. Contact TechBari support to activate online account access securely.")
+            raise ValidationError("For security, use an email already linked with this customer or a previous TechBari order.")
+
+        historical_orders = customer.sales_orders.exclude(
+            status__in=[SalesOrder.Status.DRAFT, SalesOrder.Status.CANCELLED]
+        )
+        if not historical_orders.exists():
+            raise ValidationError("We couldn't securely verify this existing customer record. Please contact TechBari support to activate your online account.")
+        if not previous_order_number:
+            raise ValidationError("For security, enter one previous TechBari order number to link your existing purchase history.")
+
+        matched_order = historical_orders.filter(order_number__iexact=previous_order_number).first()
+        if matched_order is None:
+            raise ValidationError("The previous order number could not be verified for this mobile number.")
+
+        known_emails = set()
+        if customer.email:
+            known_emails.add(customer.email.strip().casefold())
+        for historical_email in historical_orders.exclude(shipping_email="").values_list("shipping_email", flat=True):
+            normalized = (historical_email or "").strip().casefold()
+            if normalized:
+                known_emails.add(normalized)
+
+        normalized_email = (email or "").strip().casefold()
+        if known_emails and normalized_email not in known_emails:
+            raise ValidationError("For security, use an email already linked with this customer or a previous TechBari order.")
+
+        # Do not rewrite the existing CRM name/source/status during account claiming.
+        # If the CRM had no email at all, a supplied email may be attached only after
+        # the previous-order challenge has succeeded.
+        if email and not customer.email:
+            if Customer.objects.select_for_update().filter(email__iexact=email).exclude(pk=customer.pk).exists():
+                raise ValidationError("This email is already linked to another customer record.")
+            customer.email = email
+            customer.save(update_fields=["email", "updated_at"])
+
+        account_name = customer.name
+        account_email = customer.email or email
     else:
         if email and Customer.objects.select_for_update().filter(email__iexact=email).exclude(phone=phone).exists():
             raise ValidationError("This email is already linked to another customer record.")
         group = CustomerGroup.objects.filter(code="RETAIL", is_active=True).first()
         customer = Customer.objects.create(name=name, phone=phone, email=email, group=group, source=Customer.Source.ONLINE, is_active=True)
+        account_name = customer.name
+        account_email = customer.email
 
-    changed = []
-    for field, value in {"name": name, "source": Customer.Source.ONLINE, "is_active": True}.items():
-        if getattr(customer, field) != value:
-            setattr(customer, field, value)
-            changed.append(field)
-    if email and customer.email != email:
-        customer.email = email
-        changed.append("email")
-    if changed:
-        changed.append("updated_at")
-        customer.save(update_fields=changed)
-
-    user = User.objects.create_user(username=phone, email=email, password=password, first_name=name[:150], is_staff=False, is_active=True)
+    user = User.objects.create_user(
+        username=phone,
+        email=account_email,
+        password=password,
+        first_name=account_name[:150],
+        is_staff=False,
+        is_active=True,
+    )
     return CustomerAccount.objects.create(user=user, customer=customer, is_active=True, link_verified_at=timezone.now())
 
 

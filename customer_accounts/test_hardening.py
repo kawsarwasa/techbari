@@ -47,7 +47,7 @@ class CustomerAccountHardeningTests(TestCase):
             defaults={"on_hand": 5, "reserved_quantity": 0, "low_stock_threshold": 1},
         )
 
-    def test_existing_crm_opening_balance_cannot_be_self_claimed_without_verification(self):
+    def test_existing_crm_record_without_order_cannot_be_self_claimed_without_verification(self):
         customer = Customer.objects.create(
             name="Legacy Due Customer",
             phone="01730000001",

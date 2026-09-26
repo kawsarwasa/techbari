@@ -53,17 +53,89 @@ class CustomerAccountPhaseTests(TestCase):
         self.assertEqual(Customer.objects.filter(phone="01720000001").count(), 1)
         self.assertEqual(int(self.client.session["_auth_user_id"]), account.user_id)
 
-    def test_existing_buyer_requires_matching_previous_order_and_is_not_duplicated(self):
-        customer = Customer.objects.create(name="Existing Buyer", phone="01720000002", email="existing@example.com", group=self.group, source=Customer.Source.ONLINE)
+    def test_existing_buyer_requires_matching_previous_order_and_preserves_crm_identity(self):
+        customer = Customer.objects.create(name="Existing Buyer", phone="01720000002", email="existing@example.com", group=self.group, source=Customer.Source.POS)
         self.make_order(customer, "TB-260908-EXIST1", status=SalesOrder.Status.COMPLETED)
         missing = self.client.post(reverse("storefront:register"), self.registration_payload(phone=customer.phone, email=customer.email))
         self.assertEqual(missing.status_code, 200)
         self.assertContains(missing, "previous TechBari order number")
-        ok = self.client.post(reverse("storefront:register"), self.registration_payload(phone=customer.phone, email=customer.email, previous_order_number="TB-260908-EXIST1"))
+
+        ok = self.client.post(
+            reverse("storefront:register"),
+            self.registration_payload(
+                name="Different Submitted Name",
+                phone=customer.phone,
+                email=customer.email,
+                previous_order_number="TB-260908-EXIST1",
+            ),
+        )
         self.assertEqual(ok.status_code, 302)
-        account = CustomerAccount.objects.get(customer=customer)
+
+        customer.refresh_from_db()
+        account = CustomerAccount.objects.select_related("user").get(customer=customer)
         self.assertEqual(account.customer_id, customer.pk)
         self.assertEqual(Customer.objects.filter(phone=customer.phone).count(), 1)
+        self.assertEqual(customer.name, "Existing Buyer")
+        self.assertEqual(customer.source, Customer.Source.POS)
+        self.assertEqual(customer.email, "existing@example.com")
+        self.assertEqual(account.user.first_name, "Existing Buyer")
+
+    def test_existing_customer_without_purchase_history_cannot_be_claimed_by_phone_and_email(self):
+        customer = Customer.objects.create(
+            name="CRM Only Customer",
+            phone="01720000020",
+            email="crm-only@example.com",
+            group=self.group,
+            source=Customer.Source.POS,
+        )
+        response = self.client.post(
+            reverse("storefront:register"),
+            self.registration_payload(
+                phone=customer.phone,
+                email=customer.email,
+                previous_order_number="",
+            ),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "contact TechBari support")
+        self.assertFalse(CustomerAccount.objects.filter(customer=customer).exists())
+
+    def test_existing_customer_with_order_email_requires_matching_stored_email(self):
+        customer = Customer.objects.create(
+            name="Order Email Buyer",
+            phone="01720000021",
+            email="",
+            group=self.group,
+            source=Customer.Source.POS,
+        )
+        order = self.make_order(customer, "TB-260908-MAIL21", status=SalesOrder.Status.COMPLETED)
+        order.shipping_email = "history@example.com"
+        order.save(update_fields=["shipping_email"])
+
+        wrong = self.client.post(
+            reverse("storefront:register"),
+            self.registration_payload(
+                phone=customer.phone,
+                email="attacker@example.com",
+                previous_order_number=order.order_number,
+            ),
+        )
+        self.assertEqual(wrong.status_code, 200)
+        self.assertContains(wrong, "email already linked")
+        self.assertFalse(CustomerAccount.objects.filter(customer=customer).exists())
+
+        ok = self.client.post(
+            reverse("storefront:register"),
+            self.registration_payload(
+                phone=customer.phone,
+                email="history@example.com",
+                previous_order_number=order.order_number,
+            ),
+        )
+        self.assertEqual(ok.status_code, 302)
+        customer.refresh_from_db()
+        self.assertEqual(customer.email, "history@example.com")
+        self.assertTrue(CustomerAccount.objects.filter(customer=customer).exists())
 
     def test_existing_buyer_rejects_wrong_order_challenge(self):
         customer = Customer.objects.create(name="Existing Buyer", phone="01720000003", email="three@example.com", group=self.group)
