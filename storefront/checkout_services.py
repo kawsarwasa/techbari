@@ -107,15 +107,10 @@ def _customer_for_checkout(data, customer_account=None):
         if email_owner:
             raise CheckoutError("This email is already linked to another customer account. Use the phone number linked to that account or leave email blank.")
     if customer:
-        changed = []
-        updates = {"name": data["full_name"], "email": email, "source": Customer.Source.ONLINE, "address": latest_address, "city": data.get("upazila") or "", "district": data.get("district") or "", "is_active": True}
-        for field, value in updates.items():
-            if getattr(customer, field) != value:
-                setattr(customer, field, value)
-                changed.append(field)
-        if changed:
-            changed.append("updated_at")
-            customer.save(update_fields=changed)
+        # Guest checkout proves only that someone can submit this phone number; it does not
+        # verify ownership of the existing CRM profile. Reuse the stable customer identity
+        # for order history, but keep every guest-supplied identity/address field on the
+        # SalesOrder shipping snapshot instead of mutating the CRM record.
         return customer
     group = CustomerGroup.objects.filter(code="RETAIL", is_active=True).first()
     return Customer.objects.create(name=data["full_name"], phone=phone, email=email, group=group, source=Customer.Source.ONLINE, address=latest_address, city=data.get("upazila") or "", district=data.get("district") or "", is_active=True)

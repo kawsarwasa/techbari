@@ -188,14 +188,48 @@ class CheckoutBackendTests(TestCase):
         balance = InventoryBalance.objects.get(warehouse=self.warehouse, variant=self.variant)
         self.assertEqual(balance.reserved_quantity, 2)
 
-    def test_existing_phone_updates_and_reuses_customer(self):
-        customer = Customer.objects.create(name="Old Name", phone="01712345678", email="")
-        response = self.client.post(reverse("storefront:checkout"), self.payload(full_name="New Name"))
+    def test_guest_checkout_existing_phone_reuses_customer_without_mutating_crm_profile(self):
+        customer = Customer.objects.create(
+            name="CRM Customer",
+            phone="01712345678",
+            email="crm@example.com",
+            source=Customer.Source.POS,
+            address="Permanent CRM Address",
+            city="CRM City",
+            district="CRM District",
+            is_active=True,
+        )
+        response = self.client.post(
+            reverse("storefront:checkout"),
+            self.payload(
+                full_name="Guest Recipient",
+                email="guest@example.com",
+                address="Temporary Delivery Address",
+                landmark="Near Guest Market",
+                upazila="Dhanmondi",
+                district="Dhaka",
+            ),
+        )
         self.assertEqual(response.status_code, 302)
+
         customer.refresh_from_db()
         self.assertEqual(Customer.objects.filter(phone="01712345678").count(), 1)
-        self.assertEqual(customer.name, "New Name")
-        self.assertEqual(SalesOrder.objects.get().customer, customer)
+        self.assertEqual(customer.name, "CRM Customer")
+        self.assertEqual(customer.email, "crm@example.com")
+        self.assertEqual(customer.source, Customer.Source.POS)
+        self.assertEqual(customer.address, "Permanent CRM Address")
+        self.assertEqual(customer.city, "CRM City")
+        self.assertEqual(customer.district, "CRM District")
+        self.assertTrue(customer.is_active)
+
+        order = SalesOrder.objects.get()
+        self.assertEqual(order.customer, customer)
+        self.assertEqual(order.shipping_name, "Guest Recipient")
+        self.assertEqual(order.shipping_phone, "01712345678")
+        self.assertEqual(order.shipping_email, "guest@example.com")
+        self.assertEqual(order.shipping_address, "Temporary Delivery Address (Landmark: Near Guest Market)")
+        self.assertEqual(order.shipping_city, "Dhanmondi")
+        self.assertEqual(order.shipping_district, "Dhaka")
 
     def test_non_cod_payment_is_rejected_until_payment_phase(self):
         response = self.client.post(reverse("storefront:checkout"), self.payload(payment_method="bkash"))
