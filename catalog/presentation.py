@@ -57,7 +57,7 @@ def _category_image_url(category):
             pass
     if category.static_image_path:
         return static(category.static_image_path)
-    return static("store/images/cat-earbuds.webp")
+    return static("store/images/category-placeholder.svg")
 
 
 def _brand_image_url(brand):
@@ -184,7 +184,7 @@ def serialize_product(product):
         else product.current_price
     )
     stock = sum(variant.stock_quantity for variant in active_variants)
-    image_url = _image_url(primary_image) or static("store/images/baseus-e16.webp")
+    image_url = _image_url(primary_image) or static("store/images/product-placeholder.svg")
     detail_image_url = _image_url(detail_image) or image_url
 
     gallery_urls = []
