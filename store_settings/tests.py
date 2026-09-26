@@ -1,6 +1,8 @@
+from io import StringIO
 from decimal import Decimal
 
 from django.contrib.auth.models import Group, User
+from django.core.management import call_command
 from django.forms.models import model_to_dict
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -31,6 +33,30 @@ class StoreSettingsCMSTests(TestCase):
         self.assertGreaterEqual(HeroBanner.objects.count(), 3)
         self.assertTrue(ContentPage.objects.filter(slug="privacy-policy", is_published=True).exists())
         self.assertTrue(ContentPage.objects.filter(slug="return-refund-policy", is_published=True).exists())
+
+    def test_restore_homepage_defaults_recreates_missing_rows_without_overwriting_existing_section(self):
+        featured = HomeSection.objects.get(key=HomeSection.Key.FEATURED)
+        featured.title = "My Featured"
+        featured.sort_order = 77
+        featured.is_enabled = False
+        featured.save()
+
+        HomeSection.objects.exclude(key=HomeSection.Key.FEATURED).delete()
+        HeroBanner.objects.all().delete()
+
+        output = StringIO()
+        call_command("restore_homepage_defaults", stdout=output)
+
+        self.assertEqual(HomeSection.objects.count(), 4)
+        self.assertEqual(HeroBanner.objects.count(), 3)
+        featured.refresh_from_db()
+        self.assertEqual(featured.title, "My Featured")
+        self.assertEqual(featured.sort_order, 77)
+        self.assertFalse(featured.is_enabled)
+        self.assertTrue(
+            HomeSection.objects.get(key=HomeSection.Key.HERO).is_enabled
+        )
+        self.assertIn("Existing CMS rows were preserved", output.getvalue())
 
     def test_featured_home_section_is_enabled_by_default(self):
         section = HomeSection.objects.get(key=HomeSection.Key.FEATURED)
