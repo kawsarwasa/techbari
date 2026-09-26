@@ -7,6 +7,7 @@ from django.db.models.deletion import ProtectedError
 from django.db.models.functions import Coalesce
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.templatetags.static import static
 from django.urls import reverse
 
 from catalog.forms import (
