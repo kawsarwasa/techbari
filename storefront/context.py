@@ -86,7 +86,7 @@ def catalog_context():
 
     browser_products = [{**product, "img": product["image_url"], "old": product["regular_price"], "badgeClass": product["badge_class"]} for product in catalog]
     routes = {name: reverse("storefront:" + name) for name in ("home", "products", "cart", "checkout", "wishlist", "track_order", "login", "register", "contact")}
-    featured = [product for product in catalog if product.get("is_featured")][:6] or catalog[:6]
+    featured = [product for product in catalog if product.get("is_featured")][:6]
     cms = storefront_cms_context()
     hero_slides = cms["hero_slides"]
     categories = category_filters()
