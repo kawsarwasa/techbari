@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000" role="img" aria-label="Product image placeholder">
+  <rect width="1000" height="1000" rx="56" fill="#f5f7fb"/>
+  <rect x="235" y="240" width="530" height="520" rx="42" fill="#ffffff" stroke="#d8dee9" stroke-width="18"/>
+  <path d="M330 400l170-92 170 92-170 92-170-92Z" fill="#e9eef6" stroke="#aeb8c7" stroke-width="16" stroke-linejoin="round"/>
+  <path d="M330 400v210l170 92V492L330 400Zm340 0v210l-170 92V492l170-92Z" fill="#f6f8fb" stroke="#aeb8c7" stroke-width="16" stroke-linejoin="round"/>
+  <circle cx="708" cy="300" r="46" fill="#eef2f7" stroke="#c3ccd9" stroke-width="14"/>
+  <path d="M680 300h56M708 272v56" stroke="#8e9aaa" stroke-width="14" stroke-linecap="round"/>
+</svg>
