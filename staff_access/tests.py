@@ -107,7 +107,12 @@ class StaffAccessTests(TestCase):
         self.assertEqual(self.client.get(reverse("backoffice:income_expense")).status_code, 200)
         self.assertEqual(self.client.get(reverse("backoffice:income_expense_add")).status_code, 200)
         accounting = self.client.get(reverse("backoffice:accounts"))
-        self.assertNotContains(accounting, reverse("backoffice:income_expense"))
+        self.assertEqual(accounting.status_code, 200)
+        html = accounting.content.decode()
+        subnav_start = html.index('<div class="accounting-subnav">')
+        subnav_end = html.index("</div>", subnav_start)
+        self.assertNotIn(reverse("backoffice:income_expense"), html[subnav_start:subnav_end])
+        self.assertContains(accounting, reverse("backoffice:income_expense"))
 
     def test_legacy_expenses_root_redirects_to_income_expense(self):
         user = self.make_user("expense-alias", "Accountant")
