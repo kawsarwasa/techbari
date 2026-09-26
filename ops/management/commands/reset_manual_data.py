@@ -9,6 +9,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import DEFAULT_DB_ALIAS, transaction
 
 from accounting.models import Account
+from payments.models import PaymentMethodConfig
 from staff_access.models import StaffProfile
 
 
@@ -18,7 +19,7 @@ CONFIRM_PHRASE = "RESET-TECHBARI-DATA"
 class Command(BaseCommand):
     help = (
         "Reset TechBari business/demo data for a fresh manual setup while preserving "
-        "auth users, groups/permissions, staff profiles, and mandatory system GL accounts."
+        "auth users, groups/permissions, staff profiles, payment method configuration, and mandatory system GL accounts."
     )
 
     def add_arguments(self, parser):
@@ -64,6 +65,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  groups preserved: {len(snapshot['groups'])}")
         self.stdout.write(f"  staff profiles preserved: {len(snapshot['staff_profiles'])}")
         self.stdout.write(f"  system GL accounts preserved: {len(snapshot['system_accounts'])}")
+        self.stdout.write(f"  payment methods preserved: {len(snapshot['payment_methods'])}")
         self.stdout.write(f"  uploaded media files found: {media_file_count}")
         self.stdout.write(
             "  business/demo data: WILL BE CLEARED (catalog, inventory, serials, purchases, customers, "
@@ -101,6 +103,7 @@ class Command(BaseCommand):
                 "Reset complete: business/demo data cleared; "
                 f"users={len(snapshot['users'])}, groups={len(snapshot['groups'])}, "
                 f"staff_profiles={len(snapshot['staff_profiles'])}, "
+                f"payment_methods={len(snapshot['payment_methods'])}, "
                 f"system_gl_accounts={len(snapshot['system_accounts'])} restored; "
                 f"media_files_deleted={deleted_media}."
             )
@@ -170,6 +173,23 @@ class Command(BaseCommand):
             )
         )
 
+        payment_methods = list(
+            PaymentMethodConfig.objects.using(database)
+            .order_by("id")
+            .values(
+                "method",
+                "display_name",
+                "provider_code",
+                "merchant_label",
+                "is_active",
+                "allow_dashboard",
+                "allow_pos",
+                "allow_storefront",
+                "is_test_mode",
+                "instructions",
+            )
+        )
+
         if not users:
             raise CommandError("No auth users were found. Aborting so you do not accidentally lose login access.")
 
@@ -183,6 +203,7 @@ class Command(BaseCommand):
             "groups": groups,
             "staff_profiles": staff_profiles,
             "system_accounts": system_accounts,
+            "payment_methods": payment_methods,
         }
 
     def _restore_preserved_data(self, database, snapshot):
@@ -239,6 +260,24 @@ class Command(BaseCommand):
                 }
                 StaffProfile.objects.using(database).update_or_create(
                     user_id=user_id,
+                    defaults=defaults,
+                )
+
+            for row in snapshot["payment_methods"]:
+                method = row["method"]
+                defaults = {
+                    "display_name": row["display_name"],
+                    "provider_code": row["provider_code"],
+                    "merchant_label": row["merchant_label"],
+                    "is_active": row["is_active"],
+                    "allow_dashboard": row["allow_dashboard"],
+                    "allow_pos": row["allow_pos"],
+                    "allow_storefront": row["allow_storefront"],
+                    "is_test_mode": row["is_test_mode"],
+                    "instructions": row["instructions"],
+                }
+                PaymentMethodConfig.objects.using(database).update_or_create(
+                    method=method,
                     defaults=defaults,
                 )
 
