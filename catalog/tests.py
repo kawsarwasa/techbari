@@ -21,7 +21,7 @@ from .forms import (
 from .models import Brand, Category, Product, ProductImage, ProductSpecification, ProductVariant
 from inventory.models import Warehouse
 from sales.models import SalesOrder, SalesOrderItem
-from .presentation import catalog_queryset, serialize_product
+from .presentation import catalog_queryset, category_filters, serialize_product
 from .richtext import sanitize_rich_html
 
 
@@ -270,6 +270,24 @@ class CatalogModelTests(TestCase):
         self.assertEqual(data["regular_price"], 1200)
         self.assertIn("<h2>Heading</h2>", str(data["description_html"]))
         self.assertEqual(data["variants"][1]["available"], False)
+
+    def test_missing_product_image_uses_neutral_placeholder(self):
+        product = self.make_product()
+        ProductVariant.objects.create(
+            product=product,
+            name="Default",
+            sku="PLACEHOLDER-1",
+            is_default=True,
+        )
+        data = serialize_product(product)
+        self.assertEqual(data["image_url"], "/static/store/images/product-placeholder.svg")
+        self.assertEqual(data["detail_image_url"], "/static/store/images/product-placeholder.svg")
+        self.assertEqual(data["images"], ["/static/store/images/product-placeholder.svg"])
+
+    def test_missing_category_image_uses_neutral_placeholder(self):
+        rows = category_filters()
+        row = next(item for item in rows if item["id"] == self.category.pk)
+        self.assertEqual(row["image_url"], "/static/store/images/category-placeholder.svg")
 
     def test_inactive_category_or_brand_hides_product_from_storefront_queryset(self):
         product = self.make_product()
