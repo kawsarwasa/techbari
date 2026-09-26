@@ -68,7 +68,7 @@ class CustomerAccountHardeningTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Contact TechBari support")
+        self.assertContains(response, "contact TechBari support")
         self.assertFalse(CustomerAccount.objects.filter(customer=customer).exists())
 
     def test_saved_destination_prefill_keeps_linked_account_identity(self):
