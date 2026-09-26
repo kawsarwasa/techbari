@@ -366,7 +366,7 @@ class CatalogViewTests(TestCase):
         response = self.client.get(reverse("backoffice:product_detail", args=[product.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "HOMEPAGE")
-        self.assertContains(response, "Featured &amp; visible")
+        self.assertContains(response, "Featured & visible")
         self.assertContains(response, "View Storefront")
 
     def test_product_detail_page_is_read_only_and_available(self):
