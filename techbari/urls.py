@@ -8,6 +8,7 @@ handler404 = "techbari.views.not_found"
 handler500 = "techbari.views.server_error"
 
 urlpatterns = [
+    path("favicon.ico", views.favicon, name="favicon"),
     path("health/", views.health, name="health"),
     path("dashboard/integrations/", include("integrations.dashboard_urls")),
     path("dashboard/", include("backoffice.urls")),
