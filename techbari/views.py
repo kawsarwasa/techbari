@@ -1,10 +1,17 @@
 from django.db import connection
-from django.http import JsonResponse
+from django.http import HttpResponsePermanentRedirect, JsonResponse
 from django.shortcuts import render
+from django.templatetags.static import static
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 from storefront.context import catalog_context
+
+
+@require_GET
+def favicon(request):
+    """Provide a stable root favicon target for browsers that request /favicon.ico directly."""
+    return HttpResponsePermanentRedirect(static("store/images/techbari-favicon.svg"))
 
 
 @never_cache
