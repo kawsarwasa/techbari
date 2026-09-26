@@ -365,7 +365,8 @@ class CatalogViewTests(TestCase):
         product = self.create_product(is_featured=True)
         response = self.client.get(reverse("backoffice:product_detail", args=[product.pk]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "HOMEPAGE FEATURED")
+        self.assertContains(response, "HOMEPAGE")
+        self.assertContains(response, "Featured &amp; visible")
         self.assertContains(response, "View Storefront")
 
     def test_product_detail_page_is_read_only_and_available(self):
@@ -374,7 +375,7 @@ class CatalogViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, product.name)
         self.assertContains(response, "PRODUCT DETAILS")
-        self.assertContains(response, "Edit Product")
+        self.assertContains(response, "Product Information")
         self.assertContains(response, product.variants.get(is_default=True).sku)
 
     def test_product_create_edit_archive_and_delete_flows(self):
