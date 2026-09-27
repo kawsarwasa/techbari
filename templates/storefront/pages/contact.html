@@ -29,6 +29,7 @@
       <form method="post" action="{% url 'storefront:contact' %}" class="form-grid" novalidate>
         {% csrf_token %}
         {{ contact_form.website }}
+        {% for error in contact_form.website.errors %}<div class="soft-note full" style="color:#c42b2b">{{ error }}</div>{% endfor %}
         <div class="field">
           <label for="{{ contact_form.name.id_for_label }}">Your Name *</label>
           {{ contact_form.name }}
