@@ -1,18 +1,21 @@
+import json
 from django.core.paginator import Paginator
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_POST
 from django.urls import reverse
 
 from catalog.models import Product
 from catalog.presentation import catalog_queryset, serialize_product
 from customer_accounts.models import CustomerAccount
-from promotions.services import campaign_attribution_for_request
+from promotions.services import PromotionError, campaign_attribution_for_request, coupon_discount_for_rows
 from sales.models import SalesOrder
 from store_settings.content import render_content_page_body
 from store_settings.models import ContentPage
 
 from .bd_locations import BD_LOCATIONS
-from .checkout_services import CheckoutError, checkout_success_url, create_checkout_token, place_checkout_order, verify_success_token
+from .checkout_services import CheckoutError, _resolve_order_lines, checkout_success_url, create_checkout_token, place_checkout_order, verify_success_token
 from .collections import COLLECTION_LABELS, collection_label, collection_products, normalize_collection
 from .context import catalog_context
 from .forms import CheckoutForm
@@ -176,6 +179,7 @@ def _apply_product_pagination(context, request):
     _sync_listing_products(context)
 
 
+@ensure_csrf_cookie
 def page(request, page_name="home"):
     if page_name not in PAGE_TEMPLATES:
         raise Http404("Page not found")
@@ -202,6 +206,51 @@ def content_page(request, slug):
     )
     return render(request, "storefront/pages/content_page.html", context)
 
+
+
+@require_POST
+def coupon_preview(request):
+    """Validate one customer-supplied coupon without exposing the coupon catalog."""
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return JsonResponse({"valid": False, "discount": 0, "reason": "Invalid coupon request."}, status=400)
+
+    code = str(payload.get("code") or "").strip().upper()
+    cart_payload = payload.get("cart") or []
+    if not code:
+        return JsonResponse({"valid": False, "discount": 0, "reason": "Enter a coupon code."})
+    if not isinstance(cart_payload, list) or not cart_payload or len(cart_payload) > 100:
+        return JsonResponse({"valid": False, "discount": 0, "reason": "Your cart is empty or invalid."}, status=400)
+
+    normalized = []
+    for row in cart_payload:
+        if not isinstance(row, dict):
+            return JsonResponse({"valid": False, "discount": 0, "reason": "Your cart is invalid."}, status=400)
+        try:
+            variant_id = int(row.get("variant_id"))
+            quantity = int(row.get("qty"))
+        except (TypeError, ValueError):
+            return JsonResponse({"valid": False, "discount": 0, "reason": "Your cart is invalid."}, status=400)
+        if variant_id <= 0 or quantity <= 0 or quantity > 999:
+            return JsonResponse({"valid": False, "discount": 0, "reason": "Your cart is invalid."}, status=400)
+        normalized.append({"variant_id": variant_id, "qty": quantity})
+
+    try:
+        rows = _resolve_order_lines(normalized)
+        _coupon, discount = coupon_discount_for_rows(code, rows)
+    except (CheckoutError, PromotionError) as exc:
+        reason = " ".join(str(value) for value in getattr(exc, "messages", [str(exc)]))
+        return JsonResponse({"valid": False, "discount": 0, "reason": reason})
+
+    subtotal = sum((row["unit_price"] * int(row["quantity"]) for row in rows), 0)
+    return JsonResponse({
+        "valid": True,
+        "code": code,
+        "discount": float(discount),
+        "subtotal": float(subtotal),
+        "reason": "",
+    })
 
 def checkout(request):
     context = catalog_context()

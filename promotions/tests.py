@@ -3,6 +3,7 @@ from decimal import Decimal
 from datetime import timedelta
 
 from django.test import Client, TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from catalog.models import Brand, Category, Product, ProductVariant
@@ -105,14 +106,71 @@ class PromotionMarketingTests(TestCase):
         _, discount = coupon_discount_for_rows(category_coupon.code, self.rows())
         self.assertEqual(discount, Decimal("90.00"))
 
-    def test_browser_coupon_preview_contains_scope_and_minimum_rules(self):
-        coupon = self.make_coupon(code="SCOPED", scope=Coupon.Scope.CATEGORIES, minimum_order_amount=Decimal("1500.00"))
-        coupon.categories.add(self.category)
+    def test_storefront_does_not_embed_live_coupon_catalog_in_browser_data(self):
+        coupon = self.make_coupon(code="PRIVATE10")
         response = Client().get("/cart/")
-        preview = response.context["store_data"]["coupons"][coupon.code]
-        self.assertEqual(preview["scope"], Coupon.Scope.CATEGORIES)
-        self.assertEqual(preview["minimum"], 1500.0)
-        self.assertEqual(preview["product_ids"], [self.product.public_id])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["store_data"]["coupons"], {})
+        self.assertNotContains(response, coupon.code)
+
+    def test_coupon_preview_validates_only_customer_supplied_code_server_side(self):
+        coupon = self.make_coupon(code="SERVER10")
+        response = Client().post(
+            reverse("storefront:coupon_preview"),
+            data=json.dumps({
+                "code": coupon.code,
+                "cart": [{"variant_id": self.variant.pk, "qty": 2}],
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["valid"])
+        self.assertEqual(payload["code"], coupon.code)
+        self.assertEqual(payload["discount"], 180.0)
+        self.assertNotIn("coupons", payload)
+
+    def test_coupon_preview_enforces_scope_and_minimum_without_listing_other_codes(self):
+        hidden = self.make_coupon(code="HIDDEN50")
+        scoped = self.make_coupon(
+            code="SCOPED",
+            scope=Coupon.Scope.CATEGORIES,
+            minimum_order_amount=Decimal("1500.00"),
+        )
+        scoped.categories.add(self.category)
+
+        too_small = Client().post(
+            reverse("storefront:coupon_preview"),
+            data=json.dumps({
+                "code": scoped.code,
+                "cart": [{"variant_id": self.variant.pk, "qty": 1}],
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(too_small.status_code, 200)
+        self.assertFalse(too_small.json()["valid"])
+        self.assertIn("Minimum order", too_small.json()["reason"])
+        self.assertNotContains(too_small, hidden.code)
+
+        valid = Client().post(
+            reverse("storefront:coupon_preview"),
+            data=json.dumps({
+                "code": scoped.code,
+                "cart": [{"variant_id": self.variant.pk, "qty": 2}],
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(valid.status_code, 200)
+        self.assertTrue(valid.json()["valid"])
+
+    def test_coupon_preview_rejects_invalid_cart_payload(self):
+        response = Client().post(
+            reverse("storefront:coupon_preview"),
+            data=json.dumps({"code": "ANY", "cart": [{"variant_id": 0, "qty": 1}]}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(response.json()["valid"])
 
     def test_flash_sale_uses_best_price_without_bad_stacking(self):
         weak = FlashSale.objects.create(name="5% Flash", discount_type=FlashSale.DiscountType.PERCENTAGE, value=Decimal("5.00"), starts_at=self.now - timedelta(hours=1), ends_at=self.now + timedelta(hours=1))
