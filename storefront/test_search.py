@@ -131,14 +131,15 @@ class StorefrontSearchTests(TestCase):
         response = self.search("Soundcore IPX5")
         self.assertEqual(self.result_ids(response), [self.earbud.public_id])
 
-    def test_search_keeps_full_browser_catalog_but_limits_listing_products(self):
+    def test_search_scopes_browser_catalog_to_visible_results(self):
         response = self.search("20000mAh")
         self.assertEqual(self.result_ids(response), [self.power_bank.public_id])
         listing_ids = [product["id"] for product in response.context["store_data"]["listing_products"]]
-        all_browser_ids = [product["id"] for product in response.context["store_data"]["products"]]
+        browser_ids = [product["id"] for product in response.context["store_data"]["products"]]
         self.assertEqual(listing_ids, [self.power_bank.public_id])
-        self.assertIn(self.charger.public_id, all_browser_ids)
-        self.assertIn(self.earbud.public_id, all_browser_ids)
+        self.assertEqual(browser_ids, [self.power_bank.public_id])
+        self.assertNotIn(self.charger.public_id, browser_ids)
+        self.assertNotIn(self.earbud.public_id, browser_ids)
 
     def test_category_filter_limits_visible_and_browser_listing_products(self):
         response = self.client.get(reverse("storefront:products"), {"category": self.earbuds.name})

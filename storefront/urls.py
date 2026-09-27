@@ -9,6 +9,7 @@ urlpatterns = [
     path("products/", views.page, {"page_name": "products"}, name="products"),
     path("categories/", views.page, {"page_name": "categories"}, name="categories"),
     path("brands/", views.page, {"page_name": "brands"}, name="brands"),
+    path("catalog/bootstrap/", views.product_bootstrap, name="product_bootstrap"),
     path("product/<slug:slug>/", views.product_detail, name="product_detail"),
     path("product/id/<slug:product_id>/", views.product_detail, name="product_by_id"),
     path("coupon/preview/", views.coupon_preview, name="coupon_preview"),

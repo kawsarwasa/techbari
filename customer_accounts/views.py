@@ -12,6 +12,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from catalog.models import Product
+from catalog.presentation import catalog_queryset
 from sales.models import SalesOrder
 from serial_tracking.models import SerializedUnit
 from staff_access.security import clear_auth_throttle, register_auth_failure, throttle_seconds_remaining
@@ -246,7 +247,9 @@ def warranty_lookup(request):
 def wishlist_view(request):
     account = request.customer_account
     ids = list(account.wishlist_items.values_list("product_id", flat=True))
-    context = catalog_context()
+    wishlist_products = list(catalog_queryset().filter(pk__in=ids))
+    recommended = list(catalog_queryset().exclude(pk__in=ids)[:6])
+    context = catalog_context([*wishlist_products, *recommended])
     product_map = {row["pk"]: row for row in context["catalog"]}
     context.update(
         account=account,
