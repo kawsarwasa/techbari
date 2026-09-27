@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.test import TestCase
 from django.urls import reverse
@@ -136,6 +137,9 @@ class IncomeExpenseServiceTests(TestCase):
 
 
 class IncomeExpenseDashboardTests(TestCase):
+    def setUp(self):
+        login_test_superuser(self)
+
     def test_entry_form_has_no_blank_type_choice_and_defaults_to_expense(self):
         from expenses.forms import CashbookEntryForm
 

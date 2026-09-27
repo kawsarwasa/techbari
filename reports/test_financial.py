@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.test import TestCase
 from django.urls import reverse
@@ -15,6 +16,7 @@ ZERO = Decimal("0.00")
 
 class FinancialStatementReportTests(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.today = timezone.localdate()
         self.start = self.today.replace(day=1)
         self.opening_date = self.start - timedelta(days=1)

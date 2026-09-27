@@ -1,4 +1,5 @@
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.test import TestCase
 from django.urls import reverse
@@ -59,6 +60,7 @@ class CustomerModelTests(TestCase):
 
 class CustomerDashboardTests(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.group = CustomerGroup.objects.get(code="RETAIL")
         self.customer = Customer.objects.create(name="Dashboard Customer", phone="01811111111", group=self.group)
 

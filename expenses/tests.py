@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -25,6 +26,7 @@ from .services import (
 
 class ExpenseBase(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.category = ExpenseCategory.objects.get(code="OFFICE")
         self.cash_account = Account.objects.get(code="1000")
         self.bank_account = Account.objects.get(code="1010")

@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
@@ -26,6 +27,7 @@ from .services import (
 
 class ReturnsBase(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.warehouse = Warehouse.objects.create(name="Returns Warehouse", code="RET-MAIN", is_default=True, is_active=True)
         self.category = Category.objects.create(name="Return Phones", slug="return-phones")
         self.brand = Brand.objects.create(name="Return Brand", slug="return-brand")

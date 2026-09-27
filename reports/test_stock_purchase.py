@@ -1,4 +1,5 @@
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.test import TestCase
 from django.urls import reverse
@@ -24,6 +25,7 @@ from .stock_purchase import build_stock_purchase_report
 
 class StockPurchaseReportTests(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.today = timezone.localdate()
         self.warehouse = Warehouse.objects.create(name="Report Warehouse", code="RPT-WH", is_default=True)
         self.other_warehouse = Warehouse.objects.create(name="Other Warehouse", code="RPT-OTHER")

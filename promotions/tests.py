@@ -1,6 +1,7 @@
 import json
 from decimal import Decimal
 from datetime import timedelta
+from techbari.test_utils import login_test_superuser
 
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -18,6 +19,7 @@ from .services import PromotionError, apply_flash_sale_prices, coupon_discount_f
 
 class PromotionMarketingTests(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.now = timezone.now()
         self.category = Category.objects.create(name="Promo Audio QA", slug="promo-audio-qa")
         self.other_category = Category.objects.create(name="Promo Power QA", slug="promo-power-qa")

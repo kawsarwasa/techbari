@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.test import TestCase
 from django.urls import reverse
@@ -20,6 +21,7 @@ from .after_sales import build_after_sales_report
 
 class AfterSalesReportTests(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.today = timezone.localdate()
         self.warehouse = Warehouse.objects.create(name="After Sales WH", code="AS-WH", is_default=True)
         self.other_warehouse = Warehouse.objects.create(name="After Sales Other", code="AS-OTHER")

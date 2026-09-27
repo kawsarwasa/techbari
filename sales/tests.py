@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.test import TestCase
 from django.urls import reverse
@@ -20,6 +21,7 @@ from .services import (
 
 class SalesBase(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.warehouse = Warehouse.objects.create(name="Main Sales Warehouse", code="SALE-MAIN", is_default=True, is_active=True)
         self.category = Category.objects.create(name="Sales Phones", slug="sales-phones")
         self.brand = Brand.objects.create(name="Sales Brand", slug="sales-brand")

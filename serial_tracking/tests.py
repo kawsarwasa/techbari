@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from techbari.test_utils import login_test_superuser
 
 from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
@@ -21,6 +22,7 @@ from .services import (
 
 class SerialTrackingBase(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.category = Category.objects.create(name="Phones", slug="phones")
         self.brand = Brand.objects.create(name="Test Brand", slug="test-brand")
         self.product = Product.objects.create(

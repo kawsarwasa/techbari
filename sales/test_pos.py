@@ -1,4 +1,5 @@
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.test import TestCase
 from django.urls import reverse
@@ -12,6 +13,7 @@ from .pos_services import POSError, complete_pos_sale, hold_pos_order
 
 class POSSystemTests(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         Warehouse.objects.filter(is_default=True).update(is_default=False)
         self.warehouse = Warehouse.objects.create(name="POS Shop", code="POS-SHOP", is_active=True, is_default=True)
         self.category = Category.objects.create(name="POS Audio", slug="pos-audio")

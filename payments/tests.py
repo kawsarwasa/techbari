@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
@@ -22,6 +23,7 @@ from .services import (
 
 class PaymentBase(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.warehouse = Warehouse.objects.create(name="Payment Warehouse", code="PAY-WH", is_default=True, is_active=True)
         self.order = SalesOrder.objects.create(
             order_number="TB-PAY-001",

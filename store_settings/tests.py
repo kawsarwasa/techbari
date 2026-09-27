@@ -1,5 +1,6 @@
 from io import StringIO
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.contrib.auth.models import Group, User
 from django.core.management import call_command
@@ -14,6 +15,9 @@ from .services import serialize_hero_banner, shipping_charge_for_subtotal
 
 
 class StoreSettingsCMSTests(TestCase):
+    def setUp(self):
+        login_test_superuser(self)
+
     def settings_post_data(self, store):
         data = model_to_dict(store, fields=StoreSettingsForm.Meta.fields)
         data.pop("logo", None)

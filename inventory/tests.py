@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
+from techbari.test_utils import login_test_superuser
 
 from catalog.models import Brand, Category, Product, ProductVariant
 from .models import InventoryBalance, StockAdjustment, StockMovement, StockTransfer, Warehouse
@@ -180,6 +181,7 @@ class InventoryServiceTests(TestCase):
 
 class InventoryDashboardTests(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         category = Category.objects.create(name="Phones", slug="phones")
         brand = Brand.objects.create(name="Phone Brand", slug="phone-brand")
         product = Product.objects.create(

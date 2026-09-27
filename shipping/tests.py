@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
@@ -18,6 +19,7 @@ from .services import ShippingError, change_shipment_status, create_shipment, po
 
 class ShippingBase(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.warehouse = Warehouse.objects.create(name="Shipping Warehouse", code="SHIP-WH", is_default=True, is_active=True)
         self.category = Category.objects.create(name="Shipping Phones", slug="shipping-phones")
         self.brand = Brand.objects.create(name="Shipping Brand", slug="shipping-brand")

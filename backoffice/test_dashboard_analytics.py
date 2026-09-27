@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+from techbari.test_utils import login_test_superuser
 
 from django.test import Client, TestCase
 from django.utils import timezone
@@ -16,6 +17,7 @@ from .dashboard_analytics import build_dashboard_context, parse_dashboard_period
 
 class DashboardAnalyticsTests(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.today = timezone.localdate()
         self.category = Category.objects.create(name="Analytics Audio", slug="analytics-audio")
         self.brand = Brand.objects.create(name="Analytics Brand", slug="analytics-brand")

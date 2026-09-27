@@ -2,6 +2,7 @@ from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from techbari.test_utils import login_test_superuser
 
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -300,6 +301,7 @@ class CatalogModelTests(TestCase):
 
 class CatalogViewTests(TestCase):
     def setUp(self):
+        login_test_superuser(self)
         self.category = Category.objects.create(name="Accessories", slug="accessories")
         self.brand = Brand.objects.create(name="QA Brand", slug="qa-brand")
 
