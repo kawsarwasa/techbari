@@ -1,0 +1,31 @@
+{% extends "backoffice/base.html" %}
+{% block title %}Contact Message | TechBari Admin{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head">
+    <div><h1>{{ contact_message.subject }}</h1><p>Received {{ contact_message.created_at|date:"d M Y, g:i A" }}</p></div>
+    <div class="head-actions"><a class="btn" href="{% url 'backoffice:contact_messages' %}">← Contact Inbox</a></div>
+  </div>
+  <div class="card" style="padding:20px">
+    <div class="filter-row" style="margin-bottom:16px">
+      <div><strong>{{ contact_message.name }}</strong><br><span class="muted">{{ contact_message.email }}{% if contact_message.phone %} · {{ contact_message.phone }}{% endif %}</span></div>
+      <span class="status {% if contact_message.status == 'replied' %}green{% elif contact_message.status == 'new' %}red{% endif %}">{{ contact_message.get_status_display }}</span>
+    </div>
+    <div style="white-space:normal;line-height:1.7">{{ contact_message.message|linebreaksbr }}</div>
+  </div>
+  <div class="card" style="padding:20px;margin-top:16px">
+    <h2 style="margin-top:0">Update Status</h2>
+    <form method="post" action="{% url 'backoffice:contact_message_status' contact_message.id %}" class="head-actions">
+      {% csrf_token %}
+      <button class="btn" type="submit" name="status" value="new">Mark New</button>
+      <button class="btn" type="submit" name="status" value="read">Mark Read</button>
+      <button class="btn btn-primary" type="submit" name="status" value="replied">Mark Replied</button>
+    </form>
+    <p class="muted" style="margin-bottom:0;margin-top:12px">
+      {% if contact_message.handled_by %}Last handled by {{ contact_message.handled_by.get_full_name|default:contact_message.handled_by.username }}.{% endif %}
+      {% if contact_message.first_read_at %} First marked read {{ contact_message.first_read_at|date:"d M Y, g:i A" }}.{% endif %}
+      {% if contact_message.replied_at %} Marked replied {{ contact_message.replied_at|date:"d M Y, g:i A" }}.{% endif %}
+    </p>
+  </div>
+</section>
+{% endblock %}

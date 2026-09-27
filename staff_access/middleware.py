@@ -23,6 +23,8 @@ PURCHASE_LIST = {"suppliers", "purchases", "purchase_detail"}
 PURCHASE_MANAGE = {"supplier_add", "supplier_delete", "purchase_add", "purchase_receive", "purchase_payment", "purchase_return", "purchase_cancel", "purchase_delete"}
 CUSTOMER_LIST = {"customers", "customer_detail", "customer_detail_id", "customer_groups"}
 CUSTOMER_MANAGE = {"customer_add", "customer_delete", "customer_group_delete"}
+CONTACT_VIEW = {"contact_messages", "contact_message_detail"}
+CONTACT_MANAGE = {"contact_message_status"}
 SALES_LIST = {"orders", "order_detail", "order_detail_id"}
 SALES_MANAGE = {"order_add", "order_confirm", "order_process", "order_complete", "order_cancel", "order_payment", "order_delete"}
 PAYMENT_LIST = {"payments", "payment_detail", "payment_methods"}
@@ -65,6 +67,8 @@ def _permission(route_name, method):
     if route_name in PURCHASE_LIST: return "staff_access.view_purchasing"
     if route_name in CUSTOMER_MANAGE or (route_name in CUSTOMER_LIST and write): return "staff_access.manage_customers"
     if route_name in CUSTOMER_LIST: return "staff_access.view_customers"
+    if route_name in CONTACT_MANAGE: return "staff_access.manage_customers"
+    if route_name in CONTACT_VIEW: return "staff_access.view_customers"
     if route_name in SALES_MANAGE or (route_name in SALES_LIST and write): return "staff_access.manage_sales"
     if route_name in SALES_LIST: return "staff_access.view_sales"
     if route_name in {"pos", "pos_action", "pos_hold_detail", "pos_receipt"}: return "staff_access.use_pos"

@@ -18,6 +18,69 @@ def normalize_bd_phone(value):
     return digits
 
 
+class ContactForm(forms.Form):
+    SUBJECT_CHOICES = (
+        ("", "Select a subject"),
+        ("Order Support", "Order Support"),
+        ("Return & Refund", "Return & Refund"),
+        ("Product Question", "Product Question"),
+        ("Payment Support", "Payment Support"),
+        ("Website / Technical Issue", "Website / Technical Issue"),
+        ("Other", "Other"),
+    )
+
+    name = forms.CharField(
+        max_length=180,
+        widget=forms.TextInput(attrs={"placeholder": "Enter your full name", "autocomplete": "name"}),
+    )
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={"placeholder": "Enter your email address", "autocomplete": "email"}),
+    )
+    phone = forms.CharField(
+        max_length=40,
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": "01XXXXXXXXX (optional)", "autocomplete": "tel", "inputmode": "tel"}),
+    )
+    subject = forms.ChoiceField(choices=SUBJECT_CHOICES)
+    message = forms.CharField(
+        max_length=3000,
+        widget=forms.Textarea(attrs={"placeholder": "Type your message here...", "rows": 6}),
+    )
+    website = forms.CharField(required=False, widget=forms.HiddenInput(attrs={"autocomplete": "off", "tabindex": "-1"}))
+
+    def clean_name(self):
+        value = " ".join((self.cleaned_data.get("name") or "").split())
+        if len(value) < 2:
+            raise forms.ValidationError("Enter your name.")
+        return value
+
+    def clean_email(self):
+        return (self.cleaned_data.get("email") or "").strip().lower()
+
+    def clean_phone(self):
+        value = (self.cleaned_data.get("phone") or "").strip()
+        if not value:
+            return ""
+        if not re.fullmatch(r"[+()\-\s\d]{7,40}", value):
+            raise forms.ValidationError("Enter a valid phone number.")
+        digits = re.sub(r"\D", "", value)
+        if not 7 <= len(digits) <= 15:
+            raise forms.ValidationError("Enter a valid phone number.")
+        return value
+
+    def clean_message(self):
+        value = " ".join((self.cleaned_data.get("message") or "").split())
+        if len(value) < 10:
+            raise forms.ValidationError("Please write at least 10 characters.")
+        return value
+
+    def clean_website(self):
+        value = (self.cleaned_data.get("website") or "").strip()
+        if value:
+            raise forms.ValidationError("Submission could not be accepted.")
+        return ""
+
+
 class CheckoutForm(forms.Form):
     full_name = forms.CharField(max_length=180, widget=forms.TextInput(attrs={"placeholder": "Enter your full name", "autocomplete": "name"}))
     phone = forms.CharField(max_length=40, widget=forms.TextInput(attrs={"placeholder": "01XXXXXXXXX", "autocomplete": "tel", "inputmode": "tel"}))

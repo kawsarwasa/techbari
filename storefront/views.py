@@ -1,3 +1,5 @@
+from datetime import timedelta
+import ipaddress
 import json
 from django.core.paginator import Paginator
 from django.http import Http404, JsonResponse
@@ -5,10 +7,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 from django.urls import reverse
+from django.utils import timezone
 
 from catalog.models import Product
 from catalog.presentation import catalog_queryset, serialize_product
 from customer_accounts.models import CustomerAccount
+from integrations.services import enqueue_contact_message_notification
 from promotions.services import PromotionError, campaign_attribution_for_request, coupon_discount_for_rows
 from sales.models import SalesOrder
 from store_settings.content import render_content_page_body
@@ -18,7 +22,8 @@ from .bd_locations import BD_LOCATIONS
 from .checkout_services import CheckoutError, _resolve_order_lines, checkout_success_url, create_checkout_token, place_checkout_order, verify_success_token
 from .collections import COLLECTION_LABELS, collection_label, collection_products, normalize_collection
 from .context import catalog_context
-from .forms import CheckoutForm
+from .forms import CheckoutForm, ContactForm
+from .models import ContactMessage
 from .search import matching_product_ids, product_search_rank
 
 PAGE_TEMPLATES = {"home": "home", "products": "products", "categories": "categories", "brands": "brands", "cart": "cart", "contact": "contact"}
@@ -194,6 +199,52 @@ def page(request, page_name="home"):
         _apply_product_pagination(context, request)
     return render(request, f"storefront/pages/{PAGE_TEMPLATES[page_name]}.html", context)
 
+
+
+def _contact_source_ip(request):
+    raw = str(request.META.get("REMOTE_ADDR") or "").strip()
+    if not raw:
+        return None
+    try:
+        return str(ipaddress.ip_address(raw))
+    except ValueError:
+        return None
+
+
+@ensure_csrf_cookie
+def contact(request):
+    context = catalog_context()
+    source_ip = _contact_source_ip(request)
+    if request.method == "POST":
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            recent = 0
+            if source_ip:
+                recent = ContactMessage.objects.filter(
+                    source_ip=source_ip,
+                    created_at__gte=timezone.now() - timedelta(minutes=10),
+                ).count()
+            if recent >= 5:
+                form.add_error(None, "Too many messages were sent recently. Please wait a few minutes and try again.")
+            else:
+                contact_message = ContactMessage.objects.create(
+                    name=form.cleaned_data["name"],
+                    email=form.cleaned_data["email"],
+                    phone=form.cleaned_data["phone"],
+                    subject=form.cleaned_data["subject"],
+                    message=form.cleaned_data["message"],
+                    source_ip=source_ip,
+                )
+                enqueue_contact_message_notification(contact_message)
+                return redirect(reverse("storefront:contact") + "?sent=1")
+    else:
+        form = ContactForm()
+
+    context.update(
+        contact_form=form,
+        contact_sent=request.GET.get("sent") == "1",
+    )
+    return render(request, "storefront/pages/contact.html", context)
 
 def content_page(request, slug):
     page_obj = get_object_or_404(ContentPage, slug=slug, is_published=True)

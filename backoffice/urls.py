@@ -3,7 +3,7 @@ from django.urls import path, reverse_lazy
 from django.views.generic import RedirectView
 
 from staff_access import views as staff_views
-from . import accounting_views, catalog_views, customer_views, expense_views, inventory_views, payment_views, pos_views, purchase_views, report_views, return_views, sales_views, search_views, shipping_views, store_settings_views, variant_builder_views, variant_views, views
+from . import accounting_views, catalog_views, contact_views, customer_views, expense_views, inventory_views, payment_views, pos_views, purchase_views, report_views, return_views, sales_views, search_views, shipping_views, store_settings_views, variant_builder_views, variant_views, views
 from .page_registry import PAGES
 
 app_name = "backoffice"
@@ -47,6 +47,11 @@ purchase_patterns = [
     path("purchases/<int:purchase_id>/return/", purchase_views.purchase_return, name="purchase_return"), path("purchases/<int:purchase_id>/cancel/", purchase_views.purchase_cancel, name="purchase_cancel"), path("purchases/<int:purchase_id>/delete/", purchase_views.purchase_delete, name="purchase_delete"),
 ]
 customer_patterns = [path("customers/groups/", customer_views.customer_groups, name="customer_groups"), path("customers/groups/<int:group_id>/delete/", customer_views.customer_group_delete, name="customer_group_delete"), path("customers/<int:customer_id>/", customer_views.customer_detail, name="customer_detail_id"), path("customers/<int:customer_id>/delete/", customer_views.customer_delete, name="customer_delete")]
+contact_patterns = [
+    path("contact-messages/", contact_views.contact_messages, name="contact_messages"),
+    path("contact-messages/<int:message_id>/", contact_views.contact_message_detail, name="contact_message_detail"),
+    path("contact-messages/<int:message_id>/status/", contact_views.contact_message_status, name="contact_message_status"),
+]
 sales_patterns = [path("orders/<int:order_id>/", sales_views.order_detail, name="order_detail_id"), path("orders/<int:order_id>/confirm/", sales_views.order_confirm, name="order_confirm"), path("orders/<int:order_id>/process/", sales_views.order_process, name="order_process"), path("orders/<int:order_id>/complete/", sales_views.order_complete, name="order_complete"), path("orders/<int:order_id>/cancel/", sales_views.order_cancel, name="order_cancel"), path("orders/<int:order_id>/payment/", sales_views.order_payment, name="order_payment"), path("orders/<int:order_id>/delete/", sales_views.order_delete, name="order_delete")]
 pos_patterns = [path("pos/", pos_views.pos, name="pos"), path("pos/action/", pos_views.pos_action, name="pos_action"), path("pos/held/<int:order_id>/", pos_views.pos_hold_detail, name="pos_hold_detail"), path("pos/receipt/<int:order_id>/", pos_views.pos_receipt, name="pos_receipt")]
 payment_patterns = [path("payments/", payment_views.payments, name="payments"), path("payments/add/", payment_views.payment_add, name="payment_add"), path("payments/methods/", payment_views.payment_methods, name="payment_methods"), path("payments/<int:payment_id>/", payment_views.payment_detail, name="payment_detail"), path("payments/<int:payment_id>/refund/", payment_views.payment_refund, name="payment_refund"), path("payments/<int:payment_id>/reverse/", payment_views.payment_reverse, name="payment_reverse"), path("payments/<int:payment_id>/reconcile/", payment_views.payment_reconcile, name="payment_reconcile")]
@@ -70,5 +75,5 @@ store_settings_patterns = [
 ]
 
 RESERVED = {"accounts", "expenses", "expense_add", "pos", "payments", "payment_add", "shipping", "shipment_add", "returns", "return_add", "reports", "users", "user_add", "audit_log", "settings"}
-urlpatterns = auth_patterns + catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + return_patterns + accounting_patterns + cashbook_patterns + expense_patterns + report_patterns + store_settings_patterns + [path(info["path"], views.page, {"page_name": name}, name=name) for name, info in PAGES.items() if name not in RESERVED]
+urlpatterns = auth_patterns + catalog_patterns + inventory_patterns + purchase_patterns + customer_patterns + contact_patterns + sales_patterns + pos_patterns + payment_patterns + shipping_patterns + return_patterns + accounting_patterns + cashbook_patterns + expense_patterns + report_patterns + store_settings_patterns + [path(info["path"], views.page, {"page_name": name}, name=name) for name, info in PAGES.items() if name not in RESERVED]
 urlpatterns += [path("<slug:page>.html", views.legacy_page, name="legacy_page")]

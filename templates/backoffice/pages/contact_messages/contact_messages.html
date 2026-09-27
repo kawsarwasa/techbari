@@ -1,0 +1,50 @@
+{% extends "backoffice/base.html" %}
+{% block title %}Contact Inbox | TechBari Admin{% endblock %}
+{% block content %}
+<section class="page">
+  <div class="page-head"><div><h1>Contact Inbox</h1><p>Messages submitted from the public Contact page.</p></div></div>
+  <div class="cards kpi-grid-4">
+    <div class="card"><div class="stat-value">{{ contact_counts.total }}</div><div class="muted">Total</div></div>
+    <div class="card"><div class="stat-value">{{ contact_counts.new }}</div><div class="muted">New</div></div>
+    <div class="card"><div class="stat-value">{{ contact_counts.read }}</div><div class="muted">Read</div></div>
+    <div class="card"><div class="stat-value">{{ contact_counts.replied }}</div><div class="muted">Replied</div></div>
+  </div>
+  <form class="filters-card" method="get">
+    <div class="filter-row">
+      <input class="control search" name="q" value="{{ contact_query }}" placeholder="Search name, email, phone, subject or message...">
+      <select class="control" name="status">
+        <option value="">All Status</option>
+        {% for value,label in contact_status_choices %}<option value="{{ value }}"{% if contact_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <button class="btn" type="submit">Filter</button>
+      <a class="btn" href="{% url 'backoffice:contact_messages' %}">Reset</a>
+    </div>
+  </form>
+  <div class="card orders-table-card">
+    <div class="table-scroll"><table class="data-table">
+      <thead><tr><th>From</th><th>Subject</th><th>Received</th><th>Status</th><th>Handled By</th><th>Action</th></tr></thead>
+      <tbody>
+      {% for row in contact_message_rows %}
+        <tr>
+          <td><strong>{{ row.name }}</strong><br><small>{{ row.email }}{% if row.phone %} · {{ row.phone }}{% endif %}</small></td>
+          <td>{{ row.subject }}<br><small>{{ row.message|truncatechars:90 }}</small></td>
+          <td>{{ row.created_at|date:"d M Y, g:i A" }}</td>
+          <td><span class="status {% if row.status == 'replied' %}green{% elif row.status == 'new' %}red{% endif %}">{{ row.get_status_display }}</span></td>
+          <td>{% if row.handled_by %}{{ row.handled_by.get_full_name|default:row.handled_by.username }}{% else %}—{% endif %}</td>
+          <td><a class="btn btn-sm" href="{% url 'backoffice:contact_message_detail' row.id %}">Open</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">No contact messages found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}<a class="btn btn-sm" href="?q={{ contact_query|urlencode }}&status={{ contact_status|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a class="btn btn-sm" href="?q={{ contact_query|urlencode }}&status={{ contact_status|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

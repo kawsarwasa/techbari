@@ -169,5 +169,18 @@ def enqueue_shipping_event(shipment, event_type="updated"):
         _outbound(channel=OutboundMessage.Channel.COURIER, event_type="create_shipment", idempotency_key=f"courier:create:{shipment.shipment_no}", recipient=api_base_url, payload=payload, reference_type="shipment", reference_id=shipment.shipment_no)
 
 
+
+def enqueue_contact_message_notification(contact_message):
+    _notification(
+        kind=Notification.Kind.INTEGRATION,
+        severity=Notification.Severity.INFO,
+        title="New contact message",
+        message=f"{contact_message.name} · {contact_message.subject}",
+        link=reverse("backoffice:contact_message_detail", args=[contact_message.pk]),
+        reference_type="contact_message",
+        reference_id=str(contact_message.pk),
+        dedupe_key=f"contact:{contact_message.pk}",
+    )
+
 def enqueue_integration_failure(message, error_text):
     _notification(kind=Notification.Kind.INTEGRATION, severity=Notification.Severity.DANGER, title=f"Integration delivery failed: {message.get_channel_display()}", message=str(error_text)[:500], link=reverse("integration_admin:integration_settings"), reference_type="outbound_message", reference_id=str(message.pk), dedupe_key=f"integration-failure:{message.pk}:{message.attempts}")

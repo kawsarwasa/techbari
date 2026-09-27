@@ -24,6 +24,7 @@ urlpatterns = [
     path("privacy-policy/", views.content_page, {"slug": "privacy-policy"}, name="privacy_policy"),
     path("return-refund-policy/", views.content_page, {"slug": "return-refund-policy"}, name="return_policy"),
     path("shipping-policy/", views.content_page, {"slug": "shipping-policy"}, name="shipping_policy"),
-    *[path(name.replace("_", "-") + "/", views.page, {"page_name": name}, name=name) for name in ("cart", "contact")],
+    path("cart/", views.page, {"page_name": "cart"}, name="cart"),
+    path("contact/", views.contact, name="contact"),
     path("<slug:page>.html", views.legacy_page, name="legacy_page"),
 ]
