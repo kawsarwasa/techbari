@@ -157,9 +157,8 @@ COURIER_WEBHOOK_MAX_SKEW_SECONDS = max(30, int(os.getenv("COURIER_WEBHOOK_MAX_SK
 COURIER_WEBHOOK_MAX_BYTES = max(1024, int(os.getenv("COURIER_WEBHOOK_MAX_BYTES", str(64 * 1024))))
 COURIER_WEBHOOK_RECEIPT_DAYS = max(1, int(os.getenv("COURIER_WEBHOOK_RECEIPT_DAYS", "7")))
 
-# Legacy module tests predate staff authentication. The custom runner keeps
-# those tests focused on business logic, while staff_access tests explicitly
-# re-enable authentication to validate the real security boundary.
+# Keep staff authentication enabled during the normal test suite so dashboard
+# permission regressions cannot be hidden by a global test-only bypass.
 TEST_RUNNER = "techbari.test_runner.TechBariTestRunner"
 
 LANGUAGE_CODE = "en-us"
