@@ -171,6 +171,9 @@ class StorefrontTrackingTests(IntegrationBase):
         config.meta_pixel_enabled, config.meta_pixel_id = True, "123"
         config.ga4_enabled, config.ga4_measurement_id = True, "G-TEST"
         config.save()
+        session = self.client.session
+        session["storefront_checkout_success_orders"] = [self.order.order_number]
+        session.save()
         response = self.client.get(checkout_success_url(self.order))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="purchase-tracking-data"')
