@@ -1,6 +1,4 @@
 from decimal import Decimal
-from urllib.parse import urlencode
-
 from django.core import signing
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -44,8 +42,10 @@ def verify_success_token(order_number, token):
 
 
 def checkout_success_url(order):
-    base = reverse("storefront:checkout_success", kwargs={"order_number": order.order_number})
-    return f"{base}?{urlencode({'token': success_token(order)})}"
+    # New checkout redirects use a clean URL. Authorization is granted in the
+    # shopper's session before redirect so signed access tokens never appear in
+    # browser history, analytics page URLs, referrers, or routine access logs.
+    return reverse("storefront:checkout_success", kwargs={"order_number": order.order_number})
 
 
 def _resolve_order_lines(cart_payload):

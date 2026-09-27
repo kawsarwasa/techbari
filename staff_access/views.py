@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.models import Group, User
 from django.core.paginator import Paginator
@@ -11,7 +12,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from backoffice.context import page_context
-from .forms import RoleCreateForm, RolePermissionForm, StaffUserForm
+from .forms import RoleCreateForm, RolePermissionForm, StaffPasswordResetForm, StaffUserForm
 from .models import AuditLog
 from .permissions import SYSTEM_ROLE_NAMES, staff_permissions_queryset, staff_role_groups_queryset, sync_system_roles
 from .security import clear_auth_throttle, register_auth_failure, throttle_seconds_remaining
@@ -21,6 +22,29 @@ from .services import ensure_profile, record_audit, user_role
 def _staff_users():
     return User.objects.filter(Q(is_staff=True) | Q(is_superuser=True) | Q(groups__name__in=SYSTEM_ROLE_NAMES)).distinct()
 
+
+
+class StaffPasswordResetView(auth_views.PasswordResetView):
+    form_class = StaffPasswordResetForm
+
+    def post(self, request, *args, **kwargs):
+        identity = str(request.POST.get("email") or "").strip().lower()
+        ip_limited = throttle_seconds_remaining("staff_password_reset_ip", request, "*")
+        identity_limited = throttle_seconds_remaining("staff_password_reset", request, identity)
+        if ip_limited or identity_limited:
+            record_audit(
+                request,
+                AuditLog.Action.LOGIN_FAILED,
+                summary="Staff password reset request rate limited",
+                status_code=429,
+            )
+            return redirect(self.get_success_url())
+
+        # Count reset requests regardless of whether an account exists so the
+        # endpoint never becomes an account-enumeration side channel.
+        register_auth_failure("staff_password_reset_ip", request, "*")
+        register_auth_failure("staff_password_reset", request, identity)
+        return super().post(request, *args, **kwargs)
 
 def login_view(request):
     if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
@@ -106,6 +130,16 @@ def users(request):
 
 def user_form(request, user_id=None):
     instance = get_object_or_404(_staff_users(), pk=user_id) if user_id else None
+    if instance and instance.is_superuser and not request.user.is_superuser:
+        record_audit(
+            request,
+            AuditLog.Action.DENIED,
+            status_code=403,
+            object_type="User",
+            object_id=instance.pk,
+            summary="Non-superuser denied editing a superuser account",
+        )
+        return HttpResponseForbidden("Only a superuser can edit another superuser account.")
     form = StaffUserForm(request.POST or None, instance=instance)
     if request.method == "POST" and form.is_valid():
         user = form.save()
@@ -120,6 +154,16 @@ def user_form(request, user_id=None):
 @require_POST
 def user_toggle(request, user_id):
     target = get_object_or_404(_staff_users(), pk=user_id)
+    if target.is_superuser and not request.user.is_superuser:
+        record_audit(
+            request,
+            AuditLog.Action.DENIED,
+            status_code=403,
+            object_type="User",
+            object_id=target.pk,
+            summary="Non-superuser denied toggling a superuser account",
+        )
+        return HttpResponseForbidden("Only a superuser can change another superuser account.")
     if target.pk == request.user.pk and target.is_active:
         messages.error(request, "You cannot deactivate your own account.")
         return redirect("backoffice:users")
@@ -198,6 +242,10 @@ def password_change(request):
     if request.method == "POST" and form.is_valid():
         user = form.save()
         update_session_auth_hash(request, user)
+        profile = ensure_profile(user)
+        if profile.force_password_change:
+            profile.force_password_change = False
+            profile.save(update_fields=["force_password_change", "updated_at"])
         record_audit(request, AuditLog.Action.PASSWORD, object_type="User", object_id=user.pk, summary="Password changed by user")
         messages.success(request, "Password changed successfully.")
         return redirect("backoffice:password_change_done")

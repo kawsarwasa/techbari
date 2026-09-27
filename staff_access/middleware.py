@@ -7,7 +7,7 @@ from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 
 from .models import AuditLog
-from .services import record_audit
+from .services import ensure_profile, record_audit
 
 PUBLIC_ROUTES = {"login", "password_reset", "password_reset_done", "password_reset_confirm", "password_reset_complete"}
 MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
@@ -127,6 +127,11 @@ class StaffAccessMiddleware:
             login_url = reverse("backoffice:login")
             return redirect(f"{login_url}?expired=1&next={quote(return_to)}")
         request.session["staff_last_activity"] = now
+
+        profile = ensure_profile(request.user)
+        if profile.force_password_change and route_name not in {"password_change", "password_change_done", "logout"}:
+            messages_url = reverse("backoffice:password_change")
+            return redirect(f"{messages_url}?required=1")
 
         permission = _permission(route_name, request.method)
         allowed = request.user.is_superuser or permission is None or (permission != "__deny__" and request.user.has_perm(permission))

@@ -2,7 +2,7 @@ import json
 from datetime import timedelta
 from decimal import Decimal
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -231,6 +231,34 @@ class CheckoutBackendTests(TestCase):
         self.assertEqual(order.shipping_city, "Dhanmondi")
         self.assertEqual(order.shipping_district, "Dhaka")
 
+    @override_settings(
+        CHECKOUT_RATE_LIMIT_PHONE=2,
+        CHECKOUT_RATE_LIMIT_IP=20,
+        CHECKOUT_RATE_WINDOW=900,
+        CHECKOUT_RATE_LOCKOUT_SECONDS=600,
+    )
+    def test_checkout_rate_limit_blocks_repeated_stock_reserving_orders(self):
+        first = self.client.post(
+            reverse("storefront:checkout"),
+            self.payload(quantity=1),
+            REMOTE_ADDR="203.0.113.77",
+        )
+        second = self.client.post(
+            reverse("storefront:checkout"),
+            self.payload(quantity=1),
+            REMOTE_ADDR="203.0.113.77",
+        )
+        third = self.client.post(
+            reverse("storefront:checkout"),
+            self.payload(quantity=1),
+            REMOTE_ADDR="203.0.113.77",
+        )
+        self.assertEqual(first.status_code, 302)
+        self.assertEqual(second.status_code, 302)
+        self.assertEqual(third.status_code, 200)
+        self.assertContains(third, "Too many orders were placed recently")
+        self.assertEqual(SalesOrder.objects.count(), 2)
+
     def test_non_cod_payment_is_rejected_until_payment_phase(self):
         response = self.client.post(reverse("storefront:checkout"), self.payload(payment_method="bkash"))
         self.assertEqual(response.status_code, 200)
@@ -251,15 +279,21 @@ class CheckoutBackendTests(TestCase):
         self.assertContains(response, "Your cart is empty")
         self.assertEqual(SalesOrder.objects.count(), 0)
 
-    def test_checkout_success_requires_signed_order_token(self):
+    def test_checkout_success_uses_session_grant_without_exposing_token_in_url(self):
         response = self.client.post(reverse("storefront:checkout"), self.payload())
         self.assertEqual(response.status_code, 302)
+        self.assertNotIn("token=", response["Location"])
+
         success = self.client.get(response["Location"])
         self.assertEqual(success.status_code, 200)
         self.assertContains(success, SalesOrder.objects.get().order_number)
+        self.assertEqual(success["Referrer-Policy"], "no-referrer")
+        self.assertIn("no-store", success["Cache-Control"])
+        self.assertNotContains(success, "<title>Order " + SalesOrder.objects.get().order_number)
 
         order = SalesOrder.objects.get()
-        denied = self.client.get(reverse("storefront:checkout_success", args=[order.order_number]))
+        other_client = self.client_class()
+        denied = other_client.get(reverse("storefront:checkout_success", args=[order.order_number]))
         self.assertEqual(denied.status_code, 404)
 
     def test_featured_product_is_default_homepage_collection(self):

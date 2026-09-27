@@ -25,7 +25,15 @@ def throttle_seconds_remaining(scope, request, identity):
 
 
 @transaction.atomic
-def register_auth_failure(scope, request, identity):
+def register_rate_event(
+    scope,
+    request,
+    identity,
+    *,
+    failure_limit,
+    window_seconds,
+    lockout_seconds,
+):
     now = timezone.now()
     key_hash = _key_hash(scope, request, identity)
     row, _ = AuthThrottle.objects.select_for_update().get_or_create(
@@ -33,20 +41,28 @@ def register_auth_failure(scope, request, identity):
         key_hash=key_hash,
         defaults={"window_started_at": now},
     )
-    window_seconds = int(getattr(settings, "AUTH_FAILURE_WINDOW", 900))
-    failure_limit = int(getattr(settings, "AUTH_FAILURE_LIMIT", 5))
-    lockout_seconds = int(getattr(settings, "AUTH_LOCKOUT_SECONDS", 900))
 
-    if (now - row.window_started_at).total_seconds() > window_seconds:
+    if (now - row.window_started_at).total_seconds() > int(window_seconds):
         row.failures = 0
         row.window_started_at = now
         row.locked_until = None
 
     row.failures += 1
-    if row.failures >= failure_limit:
-        row.locked_until = now + timedelta(seconds=lockout_seconds)
+    if row.failures >= int(failure_limit):
+        row.locked_until = now + timedelta(seconds=int(lockout_seconds))
     row.save(update_fields=["failures", "window_started_at", "locked_until", "updated_at"])
     return max(int((row.locked_until - now).total_seconds()), 0) if row.locked_until else 0
+
+
+def register_auth_failure(scope, request, identity):
+    return register_rate_event(
+        scope,
+        request,
+        identity,
+        failure_limit=int(getattr(settings, "AUTH_FAILURE_LIMIT", 5)),
+        window_seconds=int(getattr(settings, "AUTH_FAILURE_WINDOW", 900)),
+        lockout_seconds=int(getattr(settings, "AUTH_LOCKOUT_SECONDS", 900)),
+    )
 
 
 @transaction.atomic

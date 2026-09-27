@@ -243,6 +243,17 @@ class StaffAccessTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("TechBari staff password reset", mail.outbox[0].subject)
 
+    @override_settings(AUTH_FAILURE_LIMIT=2, AUTH_FAILURE_WINDOW=900, AUTH_LOCKOUT_SECONDS=600)
+    def test_password_reset_is_rate_limited_without_account_enumeration(self):
+        user = self.make_user("resetlimited", "Sales Staff")
+        url = reverse("backoffice:password_reset")
+        first = self.client.post(url, {"email": user.email}, REMOTE_ADDR="203.0.113.44")
+        second = self.client.post(url, {"email": user.email}, REMOTE_ADDR="203.0.113.44")
+        third = self.client.post(url, {"email": user.email}, REMOTE_ADDR="203.0.113.44")
+        for response in (first, second, third):
+            self.assertRedirects(response, reverse("backoffice:password_reset_done"), fetch_redirect_response=False)
+        self.assertEqual(len(mail.outbox), 2)
+
     def test_logout_is_post_only_and_audited(self):
         user = self.make_user("logoutuser", "Cashier")
         self.client.force_login(user)

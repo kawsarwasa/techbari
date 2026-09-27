@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
@@ -8,6 +8,7 @@ from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
 from accounting.models import Account
+from catalog.forms import validate_catalog_image
 from integrations.forms import IntegrationSettingsForm
 from payments.models import PaymentMethodConfig
 from integrations.security import UnsafeOutboundURL, validate_outbound_url
@@ -121,6 +122,19 @@ class CmsUploadSecurityTests(TestCase):
         upload = SimpleUploadedFile("banner.jpg", b"x" * (2 * 1024 * 1024 + 1), content_type="image/jpeg")
         with self.assertRaisesMessage(ValidationError, "2MB or smaller"):
             validate_cms_image(upload)
+
+    def test_decompression_bomb_dimensions_are_rejected_for_cms_and_catalog(self):
+        upload = SimpleUploadedFile("huge.png", b"fake-image", content_type="image/png")
+        fake_image = MagicMock()
+        fake_image.size = (10000, 10000)
+        with patch("store_settings.forms.Image.open", return_value=fake_image):
+            with self.assertRaisesMessage(ValidationError, "image dimensions are too large"):
+                validate_cms_image(upload)
+
+        upload = SimpleUploadedFile("huge.png", b"fake-image", content_type="image/png")
+        with patch("catalog.forms.Image.open", return_value=fake_image):
+            with self.assertRaisesMessage(ValidationError, "image dimensions are too large"):
+                validate_catalog_image(upload)
 
 
 class ProductionCheckTests(TestCase):

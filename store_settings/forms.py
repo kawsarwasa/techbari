@@ -10,6 +10,7 @@ from .models import ContentPage, HeroBanner, HomeSection, StoreSettings
 
 
 MAX_CMS_IMAGE_BYTES = 2 * 1024 * 1024
+MAX_CMS_IMAGE_PIXELS = 40_000_000
 CMS_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 CMS_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 FAVICON_EXTENSIONS = CMS_IMAGE_EXTENSIONS | {".ico"}
@@ -31,6 +32,9 @@ def validate_cms_image(upload, *, favicon=False):
     try:
         position = upload.tell()
         image = Image.open(upload)
+        width, height = image.size
+        if width <= 0 or height <= 0 or width * height > MAX_CMS_IMAGE_PIXELS:
+            raise ValidationError(f"{upload.name}: image dimensions are too large.")
         image.verify()
         upload.seek(position)
     except (UnidentifiedImageError, OSError, ValueError):

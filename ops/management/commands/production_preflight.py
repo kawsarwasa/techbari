@@ -33,6 +33,28 @@ class Command(BaseCommand):
             errors.append("DJANGO_DEBUG must be 0.")
         if not getattr(settings, "STAFF_AUTH_ENABLED", True):
             errors.append("STAFF_AUTH_ENABLED must be enabled.")
+        if not getattr(settings, "SECURE_SSL_REDIRECT", False):
+            errors.append("SECURE_SSL_REDIRECT must be enabled.")
+        if not getattr(settings, "SESSION_COOKIE_SECURE", False):
+            errors.append("SESSION_COOKIE_SECURE must be enabled.")
+        if not getattr(settings, "CSRF_COOKIE_SECURE", False):
+            errors.append("CSRF_COOKIE_SECURE must be enabled.")
+        if int(getattr(settings, "STAFF_IDLE_TIMEOUT", 0)) <= 0:
+            errors.append("STAFF_IDLE_TIMEOUT must be greater than 0 in production.")
+        if not getattr(settings, "INTEGRATION_REQUIRE_HTTPS", False):
+            errors.append("INTEGRATION_REQUIRE_HTTPS must be enabled.")
+        if not getattr(settings, "COURIER_WEBHOOK_REQUIRE_TIMESTAMP", False):
+            errors.append("COURIER_WEBHOOK_REQUIRE_TIMESTAMP must be enabled.")
+
+        email_backend = str(getattr(settings, "EMAIL_BACKEND", "") or "")
+        if email_backend.endswith("console.EmailBackend"):
+            errors.append("Production email backend cannot be the console backend; staff password reset email would not be delivered.")
+        if str(getattr(settings, "DEFAULT_FROM_EMAIL", "") or "").endswith("@techbari.local"):
+            warnings.append("DEFAULT_FROM_EMAIL still uses the local-development address.")
+        if int(getattr(settings, "SECURE_HSTS_SECONDS", 0)) <= 0:
+            warnings.append("SECURE_HSTS_SECONDS is 0. Enable HSTS after HTTPS is confirmed across the production domain.")
+        if str(settings.DATABASES.get("default", {}).get("USER", "")).strip().lower() == "root":
+            warnings.append("Production database is using the root account; use a least-privilege database user.")
 
         try:
             from integrations.models import IntegrationSettings

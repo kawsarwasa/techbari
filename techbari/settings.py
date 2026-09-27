@@ -110,6 +110,13 @@ AUTH_FAILURE_LIMIT = max(3, int(os.getenv("AUTH_FAILURE_LIMIT", "5")))
 AUTH_FAILURE_WINDOW = max(60, int(os.getenv("AUTH_FAILURE_WINDOW", "900")))
 AUTH_LOCKOUT_SECONDS = max(60, int(os.getenv("AUTH_LOCKOUT_SECONDS", "900")))
 
+# Basic public checkout abuse controls. These are not a DDoS substitute; they
+# cap successful stock-reserving orders per phone/IP in a short window.
+CHECKOUT_RATE_LIMIT_PHONE = max(2, int(os.getenv("CHECKOUT_RATE_LIMIT_PHONE", "5")))
+CHECKOUT_RATE_LIMIT_IP = max(5, int(os.getenv("CHECKOUT_RATE_LIMIT_IP", "20")))
+CHECKOUT_RATE_WINDOW = max(60, int(os.getenv("CHECKOUT_RATE_WINDOW", "900")))
+CHECKOUT_RATE_LOCKOUT_SECONDS = max(60, int(os.getenv("CHECKOUT_RATE_LOCKOUT_SECONDS", "900")))
+
 SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", "28800"))
 SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", "techbari_sessionid")
 SESSION_COOKIE_HTTPONLY = True

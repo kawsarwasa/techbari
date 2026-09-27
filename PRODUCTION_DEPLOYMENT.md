@@ -35,6 +35,7 @@ SESSION_COOKIE_SECURE=1
 CSRF_COOKIE_SECURE=1
 INTEGRATION_REQUIRE_HTTPS=1
 COURIER_WEBHOOK_REQUIRE_TIMESTAMP=1
+DJANGO_EMAIL_BACKEND=<real SMTP/provider backend>
 ```
 
 Do not use `*` for `DJANGO_ALLOWED_HOSTS`. Do not commit `.env`.
@@ -221,7 +222,21 @@ If a deployment fails:
 
 Do not blindly reverse a migration containing business-data changes. Prefer restoring the paired code/database backup when rollback safety is uncertain.
 
-## 13. Release gate
+## 13. Security controls outside the application
+
+Before public launch:
+
+- protect the GitHub `main` branch or add a repository ruleset that requires the Django CI check before merge;
+- enable MFA on GitHub/hosting/email accounts and use application-level MFA for TechBari superuser/Admin staff when that feature is available;
+- confirm the production database uses a least-privilege user, not the MySQL root account;
+- verify the reverse proxy sanitizes forwarded headers before enabling `TRUST_X_FORWARDED_PROTO` or `TRUST_X_FORWARDED_FOR`;
+- configure a real SMTP/provider backend and test a staff password-reset email end-to-end;
+- keep database + media backups off-server and perform a restore drill;
+- confirm the integration and security-cleanup cron jobs are actually running and monitored;
+- consider a CDN/WAF/CAPTCHA if fake registrations, coupon guessing or checkout abuse becomes significant. The built-in checkout throttle is only a first layer;
+- add application-level error monitoring/alerting so production 5xx and failed integration jobs are not visible only in console logs.
+
+## 14. Release gate
 
 A production release is not ready until all of these are green:
 

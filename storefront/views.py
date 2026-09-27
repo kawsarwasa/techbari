@@ -1,10 +1,12 @@
 from datetime import timedelta
 import ipaddress
 import json
+from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import F, Q, Sum
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 from django.urls import reverse
@@ -16,6 +18,7 @@ from customer_accounts.models import CustomerAccount
 from integrations.services import enqueue_contact_message_notification
 from promotions.services import PromotionError, campaign_attribution_for_request, coupon_discount_for_rows
 from sales.models import SalesOrder
+from staff_access.security import register_rate_event, throttle_seconds_remaining
 from store_settings.content import render_content_page_body
 from store_settings.models import ContentPage
 
@@ -466,11 +469,42 @@ def checkout(request):
     if request.method == "POST":
         form = CheckoutForm(request.POST)
         if form.is_valid():
-            try:
-                order, _created = place_checkout_order(form.cleaned_data, campaign_attribution=campaign_attribution, customer_account=account)
-                return redirect(checkout_success_url(order))
-            except CheckoutError as exc:
-                form.add_error(None, " ".join(str(value) for value in getattr(exc, "messages", [str(exc)])))
+            phone = form.cleaned_data["phone"]
+            ip_wait = throttle_seconds_remaining("checkout_ip", request, "*")
+            phone_wait = throttle_seconds_remaining("checkout_phone", request, phone)
+            if ip_wait or phone_wait:
+                form.add_error(
+                    None,
+                    "Too many orders were placed recently from this connection or phone number. Please wait a few minutes and try again.",
+                )
+            else:
+                try:
+                    order, created = place_checkout_order(
+                        form.cleaned_data,
+                        campaign_attribution=campaign_attribution,
+                        customer_account=account,
+                    )
+                    if created:
+                        register_rate_event(
+                            "checkout_ip",
+                            request,
+                            "*",
+                            failure_limit=settings.CHECKOUT_RATE_LIMIT_IP,
+                            window_seconds=settings.CHECKOUT_RATE_WINDOW,
+                            lockout_seconds=settings.CHECKOUT_RATE_LOCKOUT_SECONDS,
+                        )
+                        register_rate_event(
+                            "checkout_phone",
+                            request,
+                            phone,
+                            failure_limit=settings.CHECKOUT_RATE_LIMIT_PHONE,
+                            window_seconds=settings.CHECKOUT_RATE_WINDOW,
+                            lockout_seconds=settings.CHECKOUT_RATE_LOCKOUT_SECONDS,
+                        )
+                    _grant_checkout_success(request, order.order_number)
+                    return redirect(checkout_success_url(order))
+                except CheckoutError as exc:
+                    form.add_error(None, " ".join(str(value) for value in getattr(exc, "messages", [str(exc)])))
     else:
         initial = {"delivery_option": "inside", "payment_method": "cod", "checkout_token": create_checkout_token(), "cart_payload": "[]"}
         if account:
@@ -521,15 +555,61 @@ def _purchase_tracking_data(order):
     }
 
 
+CHECKOUT_SUCCESS_SESSION_KEY = "storefront_checkout_success_orders"
+
+
+def _grant_checkout_success(request, order_number):
+    grants = [
+        str(value)
+        for value in request.session.get(CHECKOUT_SUCCESS_SESSION_KEY, [])
+        if value
+    ]
+    if order_number not in grants:
+        grants.append(order_number)
+    request.session[CHECKOUT_SUCCESS_SESSION_KEY] = grants[-5:]
+
+
+def _has_checkout_success_grant(request, order_number):
+    return order_number in {
+        str(value)
+        for value in request.session.get(CHECKOUT_SUCCESS_SESSION_KEY, [])
+        if value
+    }
+
+
+@never_cache
 def checkout_success(request, order_number):
-    try:
-        verify_success_token(order_number, request.GET.get("token", ""))
-    except CheckoutError as exc:
-        raise Http404("Order confirmation not found") from exc
-    order = get_object_or_404(SalesOrder.objects.select_related("customer", "warehouse").prefetch_related("items__variant__product"), order_number=order_number, channel=SalesOrder.Channel.ONLINE)
+    legacy_token = str(request.GET.get("token") or "").strip()
+    if legacy_token:
+        try:
+            verify_success_token(order_number, legacy_token)
+        except CheckoutError as exc:
+            raise Http404("Order confirmation not found") from exc
+        _grant_checkout_success(request, order_number)
+        response = redirect(
+            reverse("storefront:checkout_success", kwargs={"order_number": order_number})
+        )
+        response["Referrer-Policy"] = "no-referrer"
+        return response
+
+    if not _has_checkout_success_grant(request, order_number):
+        raise Http404("Order confirmation not found")
+
+    order = get_object_or_404(
+        SalesOrder.objects.select_related("customer", "warehouse").prefetch_related("items__variant__product"),
+        order_number=order_number,
+        channel=SalesOrder.Channel.ONLINE,
+    )
     context = catalog_context()
-    context.update(order=order, checkout_complete=True, purchase_tracking_data=_purchase_tracking_data(order))
-    return render(request, "storefront/pages/checkout_success.html", context)
+    context.update(
+        order=order,
+        checkout_complete=True,
+        purchase_tracking_data=_purchase_tracking_data(order),
+    )
+    response = render(request, "storefront/pages/checkout_success.html", context)
+    response["Referrer-Policy"] = "no-referrer"
+    response["Cache-Control"] = "no-store, private"
+    return response
 
 
 def product_detail(request, slug=None, product_id=None):

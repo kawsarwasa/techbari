@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth import password_validation
+from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.models import Group, Permission, User
+from django.db.models import Q
 
 from .permissions import SYSTEM_ROLE_NAMES, staff_permissions_queryset, staff_role_groups_queryset
 from .services import assign_system_role, ensure_profile
@@ -66,6 +68,17 @@ def build_permission_groups(permissions, selected_ids=None):
     if other_items:
         groups.append({"key": "other", "name": "Other Access", "permissions": other_items})
     return groups
+
+
+class StaffPasswordResetForm(PasswordResetForm):
+    """Password reset is intentionally limited to active staff identities."""
+
+    def get_users(self, email):
+        users = User._default_manager.filter(
+            email__iexact=email,
+            is_active=True,
+        ).filter(Q(is_staff=True) | Q(is_superuser=True))
+        return (user for user in users if user.has_usable_password())
 
 
 class StaffUserForm(forms.ModelForm):
@@ -161,7 +174,11 @@ class StaffUserForm(forms.ModelForm):
             profile = ensure_profile(user)
             profile.branch = self.cleaned_data.get("branch", "") or "Main Branch"
             profile.phone = self.cleaned_data.get("phone", "")
-            profile.save(update_fields=["branch", "phone", "updated_at"])
+            if password:
+                profile.force_password_change = True
+                profile.save(update_fields=["branch", "phone", "force_password_change", "updated_at"])
+            else:
+                profile.save(update_fields=["branch", "phone", "updated_at"])
         return user
 
 

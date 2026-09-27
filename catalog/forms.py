@@ -9,6 +9,7 @@ from PIL import Image, UnidentifiedImageError
 from .models import Brand, Category, Product, ProductImage, ProductSpecification, ProductVariant, VariantAttributeValue
 
 MAX_PRODUCT_IMAGE_BYTES = 2 * 1024 * 1024
+MAX_PRODUCT_IMAGE_PIXELS = 40_000_000
 MAX_PRODUCT_IMAGES = 24
 ALLOWED_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
@@ -43,6 +44,9 @@ def validate_catalog_image(upload):
     try:
         position = upload.tell()
         image = Image.open(upload)
+        width, height = image.size
+        if width <= 0 or height <= 0 or width * height > MAX_PRODUCT_IMAGE_PIXELS:
+            raise ValidationError(f"{upload.name}: image dimensions are too large.")
         image.verify()
         upload.seek(position)
     except (UnidentifiedImageError, OSError, ValueError):
