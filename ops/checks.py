@@ -19,6 +19,10 @@ def production_security_checks(app_configs, **kwargs):
         issues.append(Error("INTEGRATION_REQUIRE_HTTPS must be enabled in production.", id="techbari.E006"))
     if not getattr(settings, "COURIER_WEBHOOK_REQUIRE_TIMESTAMP", False):
         issues.append(Error("Timestamped courier webhook signatures must be enabled in production.", id="techbari.E007"))
+    if not getattr(settings, "STAFF_MFA_REQUIRED", False):
+        issues.append(Error("STAFF_MFA_REQUIRED must be enabled in production.", id="techbari.E008"))
+    if not str(getattr(settings, "STAFF_MFA_ENCRYPTION_KEY", "") or "").strip():
+        issues.append(Error("STAFF_MFA_ENCRYPTION_KEY must be configured in production.", id="techbari.E009"))
     if not getattr(settings, "SECURE_HSTS_SECONDS", 0):
         issues.append(Warning("HSTS is disabled. Start with a tested value before increasing or enabling preload.", id="techbari.W001"))
     backend = str(getattr(settings, "EMAIL_BACKEND", ""))

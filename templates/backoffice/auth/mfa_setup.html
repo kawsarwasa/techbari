@@ -1,0 +1,44 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Two-Factor Authentication | TechBari{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/staff-mfa-v1.css' %}?v=1.0.0">{% endblock %}
+{% block content %}
+<section class="page mfa-page">
+  <div class="page-head"><div><span class="mfa-kicker">ACCOUNT SECURITY</span><h1>Two-Factor Authentication</h1><p>Protect staff access with a time-based authenticator code in addition to your password.</p></div></div>
+  {% if mfa_enabled %}
+    <div class="card mfa-status-card"><div class="mfa-status-ok">✓</div><div><h2>2FA is enabled</h2><p>This account will require an authenticator or recovery code after the password step.</p><p><strong>{{ recovery_codes_remaining }}</strong> recovery code{{ recovery_codes_remaining|pluralize }} remaining.</p>{% if mfa_required %}<p class="mfa-note">Your production policy requires staff MFA, so it cannot be disabled from the dashboard.</p>{% endif %}</div></div>
+  {% else %}
+    {% if mfa_required %}<div class="mfa-required">Two-factor authentication is required before you can use the staff dashboard.</div>{% endif %}
+    {% if not mfa_setup_authorized %}
+      <div class="card mfa-card mfa-recovery-card">
+        <h2>Confirm your password first</h2>
+        <p>For security, TechBari does not reveal a new authenticator secret until you re-enter your current staff password.</p>
+        <form method="post" class="mfa-form" novalidate>
+          {% csrf_token %}<input type="hidden" name="action" value="reauth">
+          <label><span>{{ start_form.password.label }}</span>{{ start_form.password }}{% for error in start_form.password.errors %}<small>{{ error }}</small>{% endfor %}</label>
+          <button class="btn btn-primary" type="submit">Continue to Authenticator Setup</button>
+        </form>
+      </div>
+    {% else %}
+      <div class="mfa-grid">
+        <div class="card mfa-card">
+          <h2>1. Add TechBari to your authenticator</h2>
+          <p>Scan this QR code with Google Authenticator, Microsoft Authenticator, 1Password, Authy, or another TOTP app.</p>
+          <div class="mfa-qr"><img src="{% url 'backoffice:mfa_qr' %}" alt="TechBari authenticator QR code"></div>
+          <p class="mfa-secret-label">Can’t scan? Enter this setup key manually:</p>
+          <code class="mfa-secret">{{ mfa_secret }}</code>
+        </div>
+        <div class="card mfa-card">
+          <h2>2. Confirm setup</h2>
+          <p>Enter the 6-digit code currently shown in your authenticator app.</p>
+          <form method="post" class="mfa-form" novalidate>
+            {% csrf_token %}<input type="hidden" name="action" value="enable">
+            <label><span>{{ confirm_form.code.label }}</span>{{ confirm_form.code }}{% for error in confirm_form.code.errors %}<small>{{ error }}</small>{% endfor %}</label>
+            <button class="btn btn-primary" type="submit">Enable Two-Factor Authentication</button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

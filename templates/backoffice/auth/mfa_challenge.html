@@ -1,0 +1,33 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Two-Factor Verification | TechBari</title>
+  <link rel="stylesheet" href="{% static 'admin/css/admin.css' %}">
+  <link rel="stylesheet" href="{% static 'admin/css/staff-login-v301.css' %}?v=3.0.1">
+</head>
+<body class="staff-login-page">
+  <main class="staff-login-wrap">
+    <section class="staff-login-shell" aria-label="TechBari two-factor verification">
+      <div class="staff-login-form-panel">
+        <div class="staff-login-brand"><div class="staff-login-brandmark">TB</div><div class="staff-login-brandcopy"><strong>TechBari</strong><span>Staff Portal</span></div></div>
+        <div class="staff-login-heading">
+          <span class="staff-login-kicker">Two-factor authentication</span>
+          <h1>Verify it’s you</h1>
+          <p>Enter the 6-digit code from your authenticator app for <strong>{{ staff_user.username }}</strong>. A one-time recovery code also works.</p>
+        </div>
+        {% if form.non_field_errors %}<div class="staff-login-alert error" role="alert">{% for error in form.non_field_errors %}<span>{{ error }}</span>{% endfor %}</div>{% endif %}
+        <form method="post" class="staff-login-form" novalidate>
+          {% csrf_token %}
+          <label class="staff-login-field"><span>{{ form.code.label }}</span>{{ form.code }}{% for error in form.code.errors %}<small>{{ error }}</small>{% endfor %}</label>
+          <button class="staff-login-submit" type="submit">Verify & Continue <span aria-hidden="true">→</span></button>
+        </form>
+        <div class="staff-login-foot"><a href="{% url 'backoffice:login' %}">Start over with another account</a></div>
+      </div>
+      <aside class="staff-login-side"><div class="staff-login-side-content"><span class="staff-login-side-kicker">Extra protection</span><h2>Password +<br>authenticator.</h2><p>This second step protects the dashboard even if a staff password is stolen.</p><ul class="staff-login-features"><li><span class="staff-login-feature-icon">✓</span><span><strong>Time-based codes</strong><small>Codes change every 30 seconds.</small></span></li><li><span class="staff-login-feature-icon">#</span><span><strong>One-time recovery</strong><small>Recovery codes work once and are removed after use.</small></span></li></ul></div></aside>
+    </section>
+  </main>
+</body>
+</html>

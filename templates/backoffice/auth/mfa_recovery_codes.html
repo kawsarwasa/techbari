@@ -1,0 +1,15 @@
+{% extends "backoffice/base.html" %}
+{% load static %}
+{% block title %}Save Recovery Codes | TechBari{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'admin/css/staff-mfa-v1.css' %}?v=1.0.0">{% endblock %}
+{% block content %}
+<section class="page mfa-page">
+  <div class="page-head"><div><span class="mfa-kicker">TWO-FACTOR AUTHENTICATION</span><h1>Save your recovery codes</h1><p>Each code can be used exactly once if your authenticator device is unavailable.</p></div></div>
+  <div class="card mfa-card mfa-recovery-card">
+    <div class="mfa-required">These codes will not be shown again. Store them in a password manager or another secure place.</div>
+    <div class="mfa-recovery-grid">{% for code in recovery_codes %}<code>{{ code }}</code>{% endfor %}</div>
+    <p>Do not keep the only copy on the same phone as your authenticator app.</p>
+    <a class="btn btn-primary" href="{% url 'backoffice:dashboard' %}">I saved these codes</a>
+  </div>
+</section>
+{% endblock %}

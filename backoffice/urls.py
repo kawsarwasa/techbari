@@ -11,6 +11,10 @@ app_name = "backoffice"
 auth_patterns = [
     path("search/", search_views.global_search, name="global_search"),
     path("login/", staff_views.login_view, name="login"),
+    path("mfa/", staff_views.mfa_challenge, name="mfa_challenge"),
+    path("mfa/setup/", staff_views.mfa_setup, name="mfa_setup"),
+    path("mfa/setup/qr/", staff_views.mfa_qr, name="mfa_qr"),
+    path("mfa/recovery-codes/", staff_views.mfa_recovery_codes, name="mfa_recovery_codes"),
     path("logout/", staff_views.logout_view, name="logout"),
     path("password-reset/", staff_views.StaffPasswordResetView.as_view(template_name="backoffice/auth/password_reset.html", email_template_name="backoffice/auth/password_reset_email.txt", subject_template_name="backoffice/auth/password_reset_subject.txt", success_url=reverse_lazy("backoffice:password_reset_done")), name="password_reset"),
     path("password-reset/done/", auth_views.PasswordResetDoneView.as_view(template_name="backoffice/auth/password_reset_done.html"), name="password_reset_done"),
@@ -22,6 +26,7 @@ auth_patterns = [
     path("users/add/", staff_views.user_form, name="user_add"),
     path("users/<int:user_id>/edit/", staff_views.user_form, name="user_edit"),
     path("users/<int:user_id>/toggle/", staff_views.user_toggle, name="user_toggle"),
+    path("users/<int:user_id>/mfa-reset/", staff_views.user_mfa_reset, name="user_mfa_reset"),
     path("users/roles/", staff_views.roles, name="roles"),
     path("users/roles/add/", staff_views.role_add, name="role_add"),
     path("users/roles/<int:role_id>/edit/", staff_views.role_edit, name="role_edit"),

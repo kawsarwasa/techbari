@@ -6,10 +6,10 @@ from django.contrib.auth import logout
 from django.shortcuts import redirect, render
 from django.urls import resolve, reverse
 
-from .models import AuditLog
+from .models import AuditLog, StaffMFADevice
 from .services import ensure_profile, record_audit
 
-PUBLIC_ROUTES = {"login", "password_reset", "password_reset_done", "password_reset_confirm", "password_reset_complete"}
+PUBLIC_ROUTES = {"login", "mfa_challenge", "password_reset", "password_reset_done", "password_reset_confirm", "password_reset_complete"}
 MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 CATALOG_LIST = {"products", "product_detail", "categories", "brands", "catalog_variants", "catalog_variant_builder", "catalog_variant_attributes", "catalog_variant_presets", "catalog_variant_options", "catalog_media", "catalog_specifications"}
@@ -45,7 +45,7 @@ MARKETING_VIEW = {"marketing", "coupons"}
 MARKETING_MANAGE = {"coupon_add"}
 STORE_SETTINGS_ROUTES = {"settings", "cms_banners", "cms_banner_add", "cms_banner_edit", "cms_banner_toggle", "cms_banner_delete", "cms_homepage_sections", "cms_homepage_section_update", "cms_content_pages", "cms_content_page_edit"}
 USER_VIEW = {"users", "roles"}
-USER_MANAGE = {"user_add", "user_edit", "user_toggle", "role_add", "role_edit"}
+USER_MANAGE = {"user_add", "user_edit", "user_toggle", "user_mfa_reset", "role_add", "role_edit"}
 NOTIFICATION_ROUTES = {"notifications", "notification_read", "notifications_read_all"}
 INTEGRATION_ROUTES = {"integration_settings", "integration_retry", "integration_process"}
 
@@ -93,7 +93,7 @@ def _permission(route_name, method):
     if route_name == "audit_log": return "staff_access.view_audit_log"
     if route_name in USER_MANAGE or (route_name in USER_VIEW and write): return "staff_access.manage_users"
     if route_name in USER_VIEW: return "staff_access.view_users"
-    if route_name in {"logout", "password_change", "password_change_done", "legacy_page"}: return None
+    if route_name in {"logout", "password_change", "password_change_done", "mfa_setup", "mfa_qr", "mfa_recovery_codes", "legacy_page"}: return None
     return "__deny__"
 
 
@@ -132,6 +132,27 @@ class StaffAccessMiddleware:
         if profile.force_password_change and route_name not in {"password_change", "password_change_done", "logout"}:
             messages_url = reverse("backoffice:password_change")
             return redirect(f"{messages_url}?required=1")
+
+        mfa_device = StaffMFADevice.objects.filter(user=request.user).first()
+        if mfa_device and mfa_device.is_enabled:
+            if request.session.get("staff_mfa_verified_user_id") != request.user.pk:
+                record_audit(
+                    request,
+                    AuditLog.Action.LOGOUT,
+                    summary="Staff session required MFA re-verification",
+                )
+                return_to = request.get_full_path()
+                logout(request)
+                login_url = reverse("backoffice:login")
+                return redirect(f"{login_url}?next={quote(return_to)}")
+        elif getattr(settings, "STAFF_MFA_REQUIRED", False) and route_name not in {
+            "mfa_setup",
+            "mfa_qr",
+            "logout",
+            "password_change",
+            "password_change_done",
+        }:
+            return redirect("backoffice:mfa_setup")
 
         permission = _permission(route_name, request.method)
         allowed = request.user.is_superuser or permission is None or (permission != "__deny__" and request.user.has_perm(permission))

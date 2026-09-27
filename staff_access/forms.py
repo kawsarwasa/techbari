@@ -277,3 +277,42 @@ class RolePermissionForm(forms.Form):
                 self.group.save(update_fields=["name"])
         self.group.permissions.set(self.cleaned_data["permissions"])
         return self.group
+
+
+
+class MFAChallengeForm(forms.Form):
+    code = forms.CharField(
+        max_length=32,
+        strip=True,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "one-time-code",
+                "placeholder": "6-digit code or recovery code",
+                "autofocus": True,
+            }
+        ),
+        label="Authenticator or recovery code",
+    )
+
+
+class MFASetupStartForm(forms.Form):
+    password = forms.CharField(
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+        label="Current password",
+    )
+
+
+class MFASetupConfirmForm(forms.Form):
+    code = forms.CharField(
+        max_length=16,
+        strip=True,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "one-time-code",
+                "inputmode": "numeric",
+                "placeholder": "6-digit code",
+            }
+        ),
+        label="Authenticator code",
+    )

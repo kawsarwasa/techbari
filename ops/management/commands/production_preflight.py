@@ -1,5 +1,6 @@
 import os
 
+from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.management import BaseCommand, CommandError, call_command
 from django.db import connection
@@ -45,6 +46,17 @@ class Command(BaseCommand):
             errors.append("INTEGRATION_REQUIRE_HTTPS must be enabled.")
         if not getattr(settings, "COURIER_WEBHOOK_REQUIRE_TIMESTAMP", False):
             errors.append("COURIER_WEBHOOK_REQUIRE_TIMESTAMP must be enabled.")
+        if not getattr(settings, "STAFF_MFA_REQUIRED", False):
+            errors.append("STAFF_MFA_REQUIRED must be enabled.")
+
+        mfa_key = str(getattr(settings, "STAFF_MFA_ENCRYPTION_KEY", "") or "").strip()
+        if not mfa_key:
+            errors.append("STAFF_MFA_ENCRYPTION_KEY must be configured.")
+        else:
+            try:
+                Fernet(mfa_key.encode("ascii"))
+            except (ValueError, TypeError):
+                errors.append("STAFF_MFA_ENCRYPTION_KEY is not a valid Fernet key.")
 
         email_backend = str(getattr(settings, "EMAIL_BACKEND", "") or "")
         if email_backend.endswith("console.EmailBackend"):
@@ -55,6 +67,24 @@ class Command(BaseCommand):
             warnings.append("SECURE_HSTS_SECONDS is 0. Enable HSTS after HTTPS is confirmed across the production domain.")
         if str(settings.DATABASES.get("default", {}).get("USER", "")).strip().lower() == "root":
             warnings.append("Production database is using the root account; use a least-privilege database user.")
+
+        try:
+            from django.contrib.auth import get_user_model
+            from django.db.models import Q
+            User = get_user_model()
+            missing_mfa = (
+                User.objects.filter(is_active=True)
+                .filter(Q(is_staff=True) | Q(is_superuser=True))
+                .exclude(staff_mfa__is_enabled=True)
+                .distinct()
+                .count()
+            )
+            if missing_mfa:
+                warnings.append(
+                    f"{missing_mfa} active staff account(s) have not enrolled MFA yet; they will be forced through setup before dashboard access."
+                )
+        except (OperationalError, ProgrammingError):
+            errors.append("Staff MFA tables are unavailable; run migrations first.")
 
         try:
             from integrations.models import IntegrationSettings

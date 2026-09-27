@@ -30,6 +30,8 @@ DJANGO_DEBUG=0
 DJANGO_SECRET_KEY=<unique long random secret>
 DJANGO_ALLOWED_HOSTS=example.com,www.example.com
 STAFF_AUTH_ENABLED=1
+STAFF_MFA_REQUIRED=1
+STAFF_MFA_ENCRYPTION_KEY=<dedicated Fernet key>
 SECURE_SSL_REDIRECT=1
 SESSION_COOKIE_SECURE=1
 CSRF_COOKIE_SECURE=1
@@ -41,6 +43,28 @@ DJANGO_EMAIL_BACKEND=<real SMTP/provider backend>
 Do not use `*` for `DJANGO_ALLOWED_HOSTS`. Do not commit `.env`.
 
 `TRUST_X_FORWARDED_PROTO=1` and `TRUST_X_FORWARDED_FOR=1` are safe only when the reverse proxy/web server overwrites or sanitizes those headers. Leave them disabled if you cannot confirm that behavior.
+
+### Staff MFA rollout
+
+Production requires TOTP two-factor authentication for staff dashboard access.
+
+Generate a dedicated encryption key once:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Store the result only in the production environment as `STAFF_MFA_ENCRYPTION_KEY`. Back it up with the other production secrets. Do not casually rotate or delete it after staff have enrolled; it encrypts the TOTP device secrets at rest.
+
+After the MFA migration is deployed, each existing active staff member signs in with their password and is forced through `/dashboard/mfa/setup/` before normal dashboard access. Setup requires the current password again, then a 6-digit authenticator code. The generated recovery codes are shown once and must be stored securely.
+
+If a staff member loses both the authenticator and recovery codes, a superuser can reset another staff member from Users. For an emergency self-recovery from the server console:
+
+```bash
+python manage.py reset_staff_mfa USERNAME --yes
+```
+
+The user must enroll again on the next dashboard sign-in when `STAFF_MFA_REQUIRED=1`.
 
 ### HSTS rollout
 
@@ -200,7 +224,7 @@ Verify at minimum:
 - customer register/login/logout
 - cart and checkout
 - one controlled test order
-- dashboard staff login
+- dashboard staff password + authenticator login
 - role/permission denial for a restricted staff account
 - inventory reservation and order status flow
 - payment capture/refund path where configured
@@ -227,7 +251,7 @@ Do not blindly reverse a migration containing business-data changes. Prefer rest
 Before public launch:
 
 - protect the GitHub `main` branch or add a repository ruleset that requires the Django CI check before merge;
-- enable MFA on GitHub/hosting/email accounts and use application-level MFA for TechBari superuser/Admin staff when that feature is available;
+- enable MFA on GitHub/hosting/email accounts and complete TechBari application-level MFA enrollment for every active staff account;
 - confirm the production database uses a least-privilege user, not the MySQL root account;
 - verify the reverse proxy sanitizes forwarded headers before enabling `TRUST_X_FORWARDED_PROTO` or `TRUST_X_FORWARDED_FOR`;
 - configure a real SMTP/provider backend and test a staff password-reset email end-to-end;

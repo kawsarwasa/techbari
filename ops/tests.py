@@ -146,6 +146,8 @@ class ProductionCheckTests(TestCase):
         CSRF_COOKIE_SECURE=True,
         INTEGRATION_REQUIRE_HTTPS=True,
         COURIER_WEBHOOK_REQUIRE_TIMESTAMP=True,
+        STAFF_MFA_REQUIRED=True,
+        STAFF_MFA_ENCRYPTION_KEY="MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=",
         SECURE_HSTS_SECONDS=3600,
         EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
         ALLOWED_HOSTS=["shop.example.com"],
@@ -153,6 +155,23 @@ class ProductionCheckTests(TestCase):
     def test_project_production_checks_have_no_errors_for_safe_settings(self):
         issues = production_security_checks(None)
         self.assertFalse([issue for issue in issues if issue.id.startswith("techbari.E")])
+
+    @override_settings(
+        DEBUG=False,
+        STAFF_AUTH_ENABLED=True,
+        SECURE_SSL_REDIRECT=True,
+        SESSION_COOKIE_SECURE=True,
+        CSRF_COOKIE_SECURE=True,
+        INTEGRATION_REQUIRE_HTTPS=True,
+        COURIER_WEBHOOK_REQUIRE_TIMESTAMP=True,
+        STAFF_MFA_REQUIRED=False,
+        STAFF_MFA_ENCRYPTION_KEY="",
+        ALLOWED_HOSTS=["shop.example.com"],
+    )
+    def test_project_production_checks_require_staff_mfa(self):
+        issue_ids = {issue.id for issue in production_security_checks(None)}
+        self.assertIn("techbari.E008", issue_ids)
+        self.assertIn("techbari.E009", issue_ids)
 
 
 class ResetManualDataPreservationTests(TestCase):

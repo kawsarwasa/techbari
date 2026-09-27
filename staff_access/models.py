@@ -22,6 +22,28 @@ class StaffProfile(models.Model):
         return self.user.get_full_name() or self.user.get_username()
 
 
+class StaffMFADevice(models.Model):
+    """Encrypted TOTP device and one-time recovery-code state for a staff user."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="staff_mfa",
+    )
+    encrypted_secret = models.TextField()
+    is_enabled = models.BooleanField(default=False)
+    last_counter = models.BigIntegerField(default=-1)
+    recovery_code_hashes = models.JSONField(default=list, blank=True)
+    enabled_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=("is_enabled",), name="staff_mfa_enabled_idx")]
+
+    def __str__(self):
+        return f"{self.user.get_username()} MFA ({'enabled' if self.is_enabled else 'pending'})"
+
+
 class AuditLog(models.Model):
     class Action(models.TextChoices):
         LOGIN = "login", "Login"

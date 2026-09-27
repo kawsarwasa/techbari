@@ -76,6 +76,8 @@ jobs:
           SECURE_HSTS_SECONDS: "3600"
           INTEGRATION_REQUIRE_HTTPS: "1"
           COURIER_WEBHOOK_REQUIRE_TIMESTAMP: "1"
+          STAFF_MFA_REQUIRED: "1"
+          STAFF_MFA_ENCRYPTION_KEY: "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="
         run: python manage.py check --deploy
 
       - name: Check migration drift

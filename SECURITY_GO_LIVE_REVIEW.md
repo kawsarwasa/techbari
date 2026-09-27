@@ -19,6 +19,7 @@ This review found several go-live security gaps. The code-level gaps below are b
 - **Checkout confirmation token removed from new URLs.** New orders use a session grant and a clean confirmation URL so an access token is not exposed to browser history, analytics page URLs/referrers, or routine access logs. Legacy signed links remain accepted and are immediately redirected to a clean URL.
 - **Checkout abuse throttle added.** Successful stock-reserving online orders are capped per phone and per source IP in a configurable time window.
 - **Upload decompression-bomb guard added.** Catalog and CMS images now have a pixel-count limit in addition to the existing 2 MB/type/extension/image-verification checks.
+- **Staff TOTP MFA implemented.** Staff can enroll using a QR/manual secret, TOTP secrets are encrypted at rest with a dedicated production Fernet key, login requires the second factor once enrolled, TOTP replay is blocked, recovery codes are one-time and hashed, MFA attempts are rate limited, existing authenticated sessions without MFA proof are invalidated, and production policy can force enrollment for every active staff account.
 
 ### Deployment gate
 
@@ -44,13 +45,13 @@ This review found several go-live security gaps. The code-level gaps below are b
 
 ## Remaining risks / manual go-live blockers
 
-### High — application-level MFA is not implemented
-
-TechBari staff authentication is password based. Superuser/Admin accounts should have TOTP/WebAuthn MFA before the dashboard is exposed broadly on the internet. Until that feature exists, use unique password-manager-generated passwords and protect the hosting/email/GitHub accounts with MFA.
-
 ### High — GitHub `main` is currently unprotected
 
 At review time the default branch reports `protected: false` and the repository has no rulesets. Direct pushes can bypass pull-request review and required CI. Configure a branch ruleset/branch protection requiring the Django CI workflow before merge.
+
+### Operational — active staff must complete MFA enrollment
+
+The application now supports and can require staff MFA, but each existing active staff user still has to enroll an authenticator after deployment. `production_preflight` warns while active staff accounts remain unenrolled.
 
 ### Medium — existing-customer self-linking is knowledge based
 

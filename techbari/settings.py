@@ -110,6 +110,13 @@ AUTH_FAILURE_LIMIT = max(3, int(os.getenv("AUTH_FAILURE_LIMIT", "5")))
 AUTH_FAILURE_WINDOW = max(60, int(os.getenv("AUTH_FAILURE_WINDOW", "900")))
 AUTH_LOCKOUT_SECONDS = max(60, int(os.getenv("AUTH_LOCKOUT_SECONDS", "900")))
 
+# Staff multi-factor authentication. Production requires MFA; development keeps
+# it opt-in unless explicitly enabled.
+STAFF_MFA_REQUIRED = env_bool("STAFF_MFA_REQUIRED", not DEBUG)
+STAFF_MFA_ISSUER = os.getenv("STAFF_MFA_ISSUER", "TechBari").strip() or "TechBari"
+STAFF_MFA_PREAUTH_TTL = max(60, int(os.getenv("STAFF_MFA_PREAUTH_TTL", "300")))
+STAFF_MFA_ENCRYPTION_KEY = os.getenv("STAFF_MFA_ENCRYPTION_KEY", "").strip()
+
 # Basic public checkout abuse controls. These are not a DDoS substitute; they
 # cap successful stock-reserving orders per phone/IP in a short window.
 CHECKOUT_RATE_LIMIT_PHONE = max(2, int(os.getenv("CHECKOUT_RATE_LIMIT_PHONE", "5")))
