@@ -233,7 +233,6 @@ class WarrantyServiceTests(SerialTrackingBase):
 class SerialDashboardTests(SerialTrackingBase):
     def setUp(self):
         super().setUp()
-        self.client = Client()
 
     def test_serial_and_warranty_pages_render(self):
         for route in ("backoffice:serials", "backoffice:serial_add", "backoffice:warranty", "backoffice:warranty_add"):

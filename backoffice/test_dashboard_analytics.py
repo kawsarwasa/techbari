@@ -76,7 +76,7 @@ class DashboardAnalyticsTests(TestCase):
 
     def test_dashboard_uses_real_sales_and_report_profit_semantics(self):
         self.make_sale("TB-DASH-ONLINE", amount="120.00")
-        response = Client().get("/dashboard/?period=today")
+        response = self.client.get("/dashboard/?period=today")
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["analytics_database"])
         self.assertEqual(response.context["dashboard_summary"]["net_sales"], Decimal("120.00"))
@@ -86,7 +86,7 @@ class DashboardAnalyticsTests(TestCase):
     def test_pos_online_top_product_and_category_are_real(self):
         self.make_sale("TB-DASH-ONLINE-2", channel=SalesOrder.Channel.ONLINE, amount="100.00")
         self.make_sale("TB-DASH-POS-2", channel=SalesOrder.Channel.POS, amount="200.00")
-        response = Client().get("/dashboard/?period=7d")
+        response = self.client.get("/dashboard/?period=7d")
         channels = {row["_key"]: row for row in response.context["channel_rows"]}
         self.assertEqual(channels[SalesOrder.Channel.ONLINE]["net_sales"], Decimal("100.00"))
         self.assertEqual(channels[SalesOrder.Channel.POS]["net_sales"], Decimal("200.00"))
@@ -117,7 +117,7 @@ class DashboardAnalyticsTests(TestCase):
             amount=Decimal("25.00"),
             payment_date=self.today,
         )
-        response = Client().get("/dashboard/")
+        response = self.client.get("/dashboard/")
         self.assertEqual(response.context["customer_due"], Decimal("80.00"))
         self.assertEqual(response.context["purchase_due"], Decimal("85.00"))
 
@@ -127,7 +127,7 @@ class DashboardAnalyticsTests(TestCase):
             variant=self.variant,
             defaults={"on_hand": 5, "reserved_quantity": 3, "low_stock_threshold": 2},
         )
-        response = Client().get("/dashboard/")
+        response = self.client.get("/dashboard/")
         row = next(row for row in response.context["stock_alert_rows"] if row["sku"] == self.variant.sku)
         self.assertEqual(row["available"], 2)
         self.assertEqual(row["severity"], "Low stock")
@@ -135,7 +135,7 @@ class DashboardAnalyticsTests(TestCase):
     def test_period_filter_excludes_old_sales(self):
         self.make_sale("TB-DASH-RECENT", amount="100.00", days_ago=1)
         self.make_sale("TB-DASH-OLD", amount="900.00", days_ago=10)
-        response = Client().get("/dashboard/?period=7d")
+        response = self.client.get("/dashboard/?period=7d")
         self.assertEqual(response.context["dashboard_summary"]["net_sales"], Decimal("100.00"))
         self.assertEqual(response.context["dashboard_period"]["key"], "7d")
 

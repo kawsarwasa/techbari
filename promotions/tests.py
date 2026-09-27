@@ -252,14 +252,13 @@ class PromotionMarketingTests(TestCase):
 
     def test_featured_product_can_be_toggled_from_marketing_dashboard(self):
         self.assertFalse(self.product.is_featured)
-        response = Client().post("/dashboard/marketing/", {"action": "toggle-featured", "product_id": self.product.pk})
+        response = self.client.post("/dashboard/marketing/", {"action": "toggle-featured", "product_id": self.product.pk})
         self.assertEqual(response.status_code, 302)
         self.product.refresh_from_db()
         self.assertTrue(self.product.is_featured)
 
     def test_dashboard_marketing_pages_are_database_backed(self):
         self.make_coupon()
-        client = Client()
-        self.assertEqual(client.get("/dashboard/marketing/").status_code, 200)
-        self.assertEqual(client.get("/dashboard/coupons/").status_code, 200)
-        self.assertEqual(client.get("/dashboard/coupons/add/").status_code, 200)
+        self.assertEqual(self.client.get("/dashboard/marketing/").status_code, 200)
+        self.assertEqual(self.client.get("/dashboard/coupons/").status_code, 200)
+        self.assertEqual(self.client.get("/dashboard/coupons/add/").status_code, 200)
