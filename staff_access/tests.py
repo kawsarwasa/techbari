@@ -290,6 +290,43 @@ class StaffAccessTests(TestCase):
                     expected = 200 if route in allowed_routes else 403
                     self.assertEqual(response.status_code, expected, f"{role}: {route}")
 
+    def test_variant_catalog_routes_use_view_permission_for_get_and_manage_permission_for_post(self):
+        routes = (
+            "catalog_variant_builder",
+            "catalog_variant_attributes",
+            "catalog_variant_presets",
+            "catalog_variant_options",
+        )
+        for route in routes:
+            with self.subTest(route=route, method="GET"):
+                self.assertEqual(_permission(route, "GET"), "staff_access.view_catalog")
+            with self.subTest(route=route, method="POST"):
+                self.assertEqual(_permission(route, "POST"), "staff_access.manage_catalog")
+
+    def test_variant_catalog_routes_respect_staff_role_permissions(self):
+        routes = (
+            "catalog_variant_builder",
+            "catalog_variant_attributes",
+            "catalog_variant_presets",
+            "catalog_variant_options",
+        )
+
+        cashier = self.make_user("variantviewer", "Cashier")
+        self.client.force_login(cashier)
+        for route in routes:
+            with self.subTest(role="Cashier", route=route, method="GET"):
+                self.assertEqual(self.client.get(reverse(f"backoffice:{route}")).status_code, 200)
+            with self.subTest(role="Cashier", route=route, method="POST"):
+                self.assertEqual(self.client.post(reverse(f"backoffice:{route}"), {}).status_code, 403)
+
+        inventory_manager = self.make_user("variantmanager", "Inventory Manager")
+        self.client.force_login(inventory_manager)
+        for route in routes:
+            with self.subTest(role="Inventory Manager", route=route, method="GET"):
+                self.assertEqual(self.client.get(reverse(f"backoffice:{route}")).status_code, 200)
+            with self.subTest(role="Inventory Manager", route=route, method="POST"):
+                self.assertNotEqual(self.client.post(reverse(f"backoffice:{route}"), {}).status_code, 403)
+
     def test_permission_router_fails_closed_for_unclassified_dashboard_route(self):
         self.assertEqual(_permission("future_unclassified_route", "GET"), "__deny__")
         self.assertEqual(_permission("future_unclassified_route", "POST"), "__deny__")
